@@ -15,6 +15,8 @@ int main() {
   std::cout<<"------------- Tensor Addition ---------------"<<std::endl;
   Tensor::Tensor<float> tensor3(3,{2,2,2});  
   tensor3.m_data = tensor + tensor1;
-  tensor3.PrintTensor();  
+  tensor3.PrintTensor();   
+  std::cout<<"------------- Tensor Dot product ---------------"<<std::endl; 
+  std::cout<<Tensor::dot(tensor, tensor1)<<std::endl;
   return 0;
 }

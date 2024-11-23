@@ -122,6 +122,19 @@ struct Tensor{
         printRecursive(0, 0, 1);
         std::cout << "\n])" << std::endl;
     }
+  //Tensor operations 
+  std::vector<T> operator +(const Tensor<T>& tensor_in) {
+    std::vector<T> result; 
+    for(auto& lhs: this->m_data){
+      for(auto& rhs: tensor_in.m_data){
+        result.emplace_back(lhs+rhs); 
+        } 
+      }
+      return result; 
+    }
+    
+
+
   };
 }
 #endif

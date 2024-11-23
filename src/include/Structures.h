@@ -35,7 +35,6 @@ namespace Vec{
   Vec2(T x_in, T y_in)
   : m_x(x_in), 
     m_y(y_in){}
-  
   Vec2 operator+(const Vec2& rhs) const{return Vec2(m_x + rhs.m_x, m_y + rhs.m_y);}
 	Vec2& operator+=(const Vec2& rhs){return *this = *this + rhs;}
 	Vec2 operator*(float rhs) const{return Vec2(m_x * rhs, m_y * rhs);}

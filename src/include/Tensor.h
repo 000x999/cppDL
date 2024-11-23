@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <iostream> 
 #include <vector>
+#include <numeric>
 #include <math.h>
 #include <functional>
 #include <algorithm>
@@ -132,9 +133,20 @@ struct Tensor{
       }
       return result; 
     }
-    
-
-
-  };
+   
+  T dot(const Tensor<T>& tensor_in, const Tensor<T>& other_tensor)const{
+    std::vector<T> tempVec; 
+    T res = 0;   
+    for(size_t i; i < tensor_in.m_data.size(); i++){
+      assert(tensor_in.m_data.size() == other_tensor.m_data.size() && "Tensors are not the same size"); 
+      if(tensor_in.m_data.size() != other_tensor.m_data.size){
+        std::cout<<"Tensors are not the same size, dot product cannot be computed"<<std::endl;
+        break; 
+      }
+      tempVec.emplace_back(tensor_in.m_data[i]*other_tensor.m_data[i]);  
+     }  
+    return res = std::reduce(tempVec.begin(), tempVec.end());
+  }
+ };
 }
 #endif

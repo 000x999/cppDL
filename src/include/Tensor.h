@@ -74,7 +74,7 @@ struct Tensor{
    void FillTensor(){
     static std::random_device rd; 
     static std::mt19937 gen(rd()); 
-    static std::uniform_real_distribution<float> randVal(-10000.100000, 300000.300000); 
+    static std::uniform_real_distribution<float> randVal(-1, 1); 
     std::generate(m_data.begin(), m_data.end(), [&]() { return randVal(gen); });
   }
     void PrintTensor(size_t truncate = 5) const {
@@ -126,19 +126,19 @@ struct Tensor{
   //Tensor operations 
   std::vector<T> operator +(const Tensor<T>& tensor_in) {
     std::vector<T> result; 
-    for(auto& lhs: this->m_data){
-      for(auto& rhs: tensor_in.m_data){
-        result.emplace_back(lhs+rhs); 
-        } 
+      for(size_t i = 0; i < this->m_data.size(); i++){
+        result.emplace_back((this->m_data[i])+tensor_in.m_data[i]); 
       }
       return result; 
     } 
  };
+
   template <typename T>
   T dot(const Tensor<T>& tensor_in, const Tensor<T>& other_tensor){
     std::vector<T> tempVec; 
     T res = 0;   
     for(size_t i = 0; i < tensor_in.m_data.size(); i++){
+      assert(tensor_in.m_data.size() == other_tensor.m_data.size() && "Tensor data set sizes must match");  
       tempVec.emplace_back(tensor_in.m_data[i]*other_tensor.m_data[i]);  
      }  
     return res = std::reduce(tempVec.begin(), tempVec.end());

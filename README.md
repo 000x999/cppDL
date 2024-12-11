@@ -12,7 +12,20 @@ An extensive and complete Machine Learning library written entirely in C++.
 ## How It Works:
 - ***A research paper and documentation will be written in due time.***
 ## **Notes**:
-- ***STILL A WORK IN PROGRESS****
+ ***STILL A WORK IN PROGRESS***
+<br><br>
+## **CURRENT FEATURES**:
+- Currently supports Tensor operations with up to 10 Million parameters in under 26ms.
+- Currently supports Tensor transformations and with up to 10 Million parameters.
+- Multiple activation functions have been implemented such as softmax, RELU, Sigmoid, SiLU, Softplus, SquarePlus and BinStep.
+<br><br>
+## ***CURRENTLY WORKING ON:***
+- Custom memory alligned memory allocator to increase Tensor and Matrix operation and transformation speeds.
+   - By alligning all data structures so they are contiguous, I estimate the ability to completely eliminate any loops/iterators used for Vector/Tensor operations. This will drastically increase performance as all data can be fetched from the next memory register in line. 
+- Generalized Neural Network templates with the ability to be trained on any type of data set.
+- Generalized Feed Forward and Back propagation methods.
+- Image and Audio procressing functionalities.
+- Tokenization.  
 <br><br>
 ## Requirements
 - C++17 or newer

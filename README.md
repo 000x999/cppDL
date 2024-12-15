@@ -15,7 +15,7 @@ An extensive and complete Machine Learning library written entirely in C++.
  ***STILL A WORK IN PROGRESS***
 <br><br>
 ## **CURRENT FEATURES**:
-- Currently supports Tensor operations with up to 10 Million parameters in under 26ms.
+- Currently supports Tensor operations with up to 312 Million parameters in a negligible amount of time.
 - Currently supports Tensor transformations and with up to 10 Million parameters.
 - Multiple activation functions have been implemented such as softmax, RELU, Sigmoid, SiLU, Softplus, SquarePlus and BinStep.
 <br><br>

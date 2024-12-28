@@ -5,12 +5,13 @@
 #include <functional>
 #include <numeric>
 #include <algorithm>
+#include <iostream>
 #include <vector>
 
 namespace Functions{
 //Softmax
 template <typename T>
-inline std::vector<T> Softmax(std::vector<T> val_in, T beta){
+inline std::vector<T> Softmax(const std::vector<T>& val_in, T beta){
   std::vector<T> exponentiated; 
   std::vector<T> res;
   for(size_t i = 0; i < val_in.size(); i++){
@@ -23,7 +24,7 @@ inline std::vector<T> Softmax(std::vector<T> val_in, T beta){
 }
 //RELU
 template <typename T>
-inline std::vector<T> RELU(std::vector<T> val_in){
+inline std::vector<T> RELU(const std::vector<T>& val_in){
   std::vector<T> tempVec;
   for(size_t i = 0; i < val_in.size(); i++){
     if(val_in[i] > 0){
@@ -36,14 +37,14 @@ inline std::vector<T> RELU(std::vector<T> val_in){
 }
 //Sigmoid
 template <typename T>
-inline std::vector<T> Sigmoid(std::vector<T> val_in){
+inline std::vector<T> Sigmoid(const std::vector<T>& val_in){
   std::vector<T> tempVec; 
   for(auto& val: val_in){tempVec.emplace_back(1.0f / (1.0f + std::expf(-val)));} 
   return tempVec;
 }
 //SiLU
 template <typename T>
-inline std::vector<T> SILU(std::vector<T> val_in){
+inline std::vector<T> SILU(const std::vector<T>& val_in){
   std::vector<T> tempVec;
   std::vector<T> sigVec = Sigmoid(val_in);
   for(size_t i = 0; i < val_in.size(); i++){
@@ -53,7 +54,7 @@ inline std::vector<T> SILU(std::vector<T> val_in){
 }
 //mish
 template <typename T> 
-inline std::vector<T> Mish(std::vector<T> val_in){
+inline std::vector<T> Mish(const std::vector<T>& val_in){
   std::vector<T> tempVec;
   std::vector<T> softVec = Softplus(val_in);
   for(size_t i = 0; i < val_in.size(); i++){
@@ -63,7 +64,7 @@ inline std::vector<T> Mish(std::vector<T> val_in){
 }
 //softplus
 template <typename T>
-inline std::vector<T> Softplus(std::vector<T> val_in){
+inline std::vector<T> Softplus(const std::vector<T>& val_in){
   std::vector<T> tempVec; 
   for(size_t i = 0; i < val_in.size(); i++){
   tempVec.emplace_back(std::log(1+exp(val_in[i]))); 
@@ -72,7 +73,7 @@ inline std::vector<T> Softplus(std::vector<T> val_in){
 }
 //squareplus 
 template <typename T> 
-inline std::vector<T> Squareplus(std::vector<T> val_in, T hyperparam){
+inline std::vector<T> Squareplus(const std::vector<T>& val_in, T hyperparam){
   std::vector<T> tempVec;
   for(size_t i = 0; i <val_in.size(); i++){
     tempVec.emplace_back((val_in[i] + sqrtf((val_in[i]*val_in[i]) + hyperparam)) * 0.5f);
@@ -81,7 +82,7 @@ inline std::vector<T> Squareplus(std::vector<T> val_in, T hyperparam){
 }
 //binary step
 template <typename T>
-inline std::vector<T> BinStep(std::vector<T> val_in){
+inline std::vector<T> BinStep(const std::vector<T>& val_in){
   std::vector<T> tempVec; 
   for(size_t i =0; i < val_in.size(); i++){
     if(val_in[i] < 0){
@@ -96,21 +97,15 @@ inline std::vector<T> BinStep(std::vector<T> val_in){
 }
 //Mean
 template <typename T>
-inline T Mean(std::vector<T> val_in){
-  return (std::reduce(val_in.begin(), val_in.end())) / val_in.size();
-}
-//SSE
-template <typename T>
-inline T SSE(std::vector<T> val_in){
-  T res; 
-  T mean = Mean(val_in); 
-  for(size_t i =0; i < val_in.size(); i++){
-   res = res + ((val_in[i] - mean)*(val_in[i] - mean)); 
-  }
-  return res; 
+inline T Mean(const std::vector<T>& val_in){
+  T sum = std::accumulate(val_in.begin(), val_in.end(), 0.0); 
+  T mean = sum / val_in.size(); 
+  return mean;
 }
 //feed forward
 //backprop
-//gradient descent 
+//gradient descent
+//Calculate Out Gradients
+//Calculate Hidden gradients 
 }
 #endif

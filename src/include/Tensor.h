@@ -2,7 +2,7 @@
 #define TENSOR_H
 #include "glm/detail/qualifier.hpp"
 #include "glm/ext/matrix_float2x2.hpp"
-#include <cfloat>
+#include "RandomGen.h"
 #include <glm/glm.hpp>
 #include <iostream> 
 #include <vector>
@@ -71,13 +71,15 @@ struct Tensor{
     void SetElem(const std::vector<size_t>& indices, T val_in) {
       m_data[GetFlatIndex(indices)] = val_in;
     }
+
    void FillTensor(){
     static std::random_device rd; 
     static std::mt19937 gen(rd()); 
     static std::uniform_real_distribution<float> randVal(-1, 1); 
     std::generate(m_data.begin(), m_data.end(), [&]() { return randVal(gen); });
-  }
-    void PrintTensor(size_t truncate = 5) const {
+    }
+
+   void PrintTensor(size_t truncate = 5) const {
         size_t totalDims = m_dimensions.size();
         if (totalDims < 2) {
             std::cout << "Tensor rank too low to display properly." << std::endl;

@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <random>
+#include <iostream>
 #include <immintrin.h>
 
 namespace Neuron{
@@ -102,6 +104,86 @@ namespace Vec{
 	Vec4& Normalize(){return *this = GetNormalized();}
 	Vec4 GetNormalized(){const float len = GetLength(); if (len != 0.0f){return *this * (1.0f / len);} return *this;} 
   T dot(const Vec4& vec4_in){return *this.m_x * vec4_in.m_x + *this.m_y * vec4_in.m_y + *this.m_z * vec4_in.m_z + *this.m_w * vec4_in.m_w;}
-  };
+  }; 
+}
+
+#define MATRIX
+namespace mat{
+template <typename T>
+struct matrix{
+  size_t m_row; 
+  size_t m_col;
+
+  std::vector<std::vector<T>> mat; 
+  matrix(size_t row_in, size_t col_in)
+        : 
+    m_row(row_in), 
+    m_col(col_in),
+    mat(row_in, std::vector<T>(col_in, 0)) {}
+  
+  void displayMat(){
+   std::cout<<"["<<std::endl;
+    for(size_t i = 0; i < m_row; i++){
+      for(size_t j = 0; j < m_col; j++){
+       std::cout << mat[i][j]<<", ";   
+      }
+      std::cout<<""<<std::endl;
+    }
+   std::cout<<" ]";
+  }
+
+  void fillMat(){
+    static std::random_device rd; 
+    static std::mt19937 gen(rd()); 
+    static std::uniform_real_distribution<float> randVal(0, 1);
+    for(size_t i = 0; i < m_row; i++){
+      for(size_t j = 0; j < m_col; j++){
+      mat[i][j] = randVal(gen);  
+      }
+    }
+  }
+
+  matrix operator*(const matrix<T> &rhs)const{
+    matrix<T> tempMat(m_row, rhs.m_col); 
+    if(m_col != rhs.m_row){
+      std::cout<<"Invalid matrix sizes"<<std::endl;
+    }
+    for(size_t i = 0; i <tempMat.m_row; i++){
+      for(size_t j = 0; j <tempMat.m_col; j++){
+        for(size_t k = 0; k < m_col; k++){
+        tempMat.mat[i][j] += mat[i][k] * rhs.mat[k][j];
+        }
+      }
+    }
+    return tempMat; 
+  }
+
+  matrix operator+(const matrix<T> &rhs)const{
+    matrix<T> tempMat(m_row, m_col); 
+    if(m_row != rhs.m_row && m_col != rhs.m_col){
+      std::cout<<"Invalid matrix sizes"<<std::endl; 
+    }
+    for(size_t i = 0; i < tempMat.m_row; i++){
+      for(size_t j = 0; j < tempMat.m_col; j++){
+        tempMat.mat[i][j] = mat[i][j]+rhs.mat[i][j];  
+      }
+    }
+   return tempMat;  
+  }
+  
+  matrix operator-(const matrix<T> &rhs)const{
+    matrix<T> tempMat(m_row, m_col); 
+    if(m_row != rhs.m_row && m_col != rhs.m_col){
+      std::cout<<"Invalid matrix sizes"<<std::endl; 
+    }
+    for(size_t i = 0; i < tempMat.m_row; i++){
+      for(size_t j = 0; j < tempMat.m_col; j++){
+        tempMat.mat[i][j] = mat[i][j]-rhs.mat[i][j];  
+      }
+    }
+   return tempMat;  
+  }
+
+ };
 }
 #endif

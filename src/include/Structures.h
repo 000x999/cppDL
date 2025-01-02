@@ -142,6 +142,21 @@ struct matrix{
       }
     }
   }
+  
+  matrix matmul(const matrix<T> &a, const matrix<T> &b){
+    matrix<T> tempMat(a.m_row, b.m_col); 
+    if(a.m_col != b.m_row){
+      std::cout<<"Invalid matrix sizes"<<std::endl;
+    }
+    for(size_t i = 0; i <tempMat.m_row; i++){
+      for(size_t j = 0; j <tempMat.m_col; j++){
+        for(size_t k = 0; k < m_col; k++){
+        tempMat.mat[i][j] += a.mat[i][k] * b.mat[k][j];
+        }
+      }
+    }
+    return tempMat;
+  }
 
   matrix operator*(const matrix<T> &rhs)const{
     matrix<T> tempMat(m_row, rhs.m_col); 
@@ -169,8 +184,8 @@ struct matrix{
       }
     }
    return tempMat;  
-  }
-  
+  } 
+
   matrix operator-(const matrix<T> &rhs)const{
     matrix<T> tempMat(m_row, m_col); 
     if(m_row != rhs.m_row && m_col != rhs.m_col){

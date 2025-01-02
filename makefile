@@ -3,7 +3,7 @@ CXXFLAGS := -IC:/w64devkit/include/include -std=c++17 -Wall -Wpedantic -Wextra -
 
 SRC_DIR := src
 BUILD_DIR := build
-BIN := cppML
+BIN := cppDL
 
 SRCS := $(wildcard $(SRC_DIR)/*.cpp)
 

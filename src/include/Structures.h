@@ -157,6 +157,19 @@ struct matrix{
     }
     return tempMat;
   }
+  
+  T dot(const matrix<T>&a, const matrix<T>&b){
+    T sum = 0; 
+    if(a.m_col != b.m_col){
+      std::cout<<"Invalid matrix sizes"<<std::endl;
+    }
+    for(size_t i = 0; i < a.m_row; i++ ){
+      for(size_t j = 0; j <a.m_col; j++){
+        sum += a.mat[i][j] * b.mat[i][j]; 
+      }
+    }
+    return sum;
+  }
 
   matrix operator*(const matrix<T> &rhs)const{
     matrix<T> tempMat(m_row, rhs.m_col); 

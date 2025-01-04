@@ -171,6 +171,33 @@ struct matrix{
     return sum;
   }
 
+ matrix operator=(const matrix<T> &rhs)const{
+    matrix<T> tempMat(rhs.m_row,rhs.m_col);
+    for(size_t i = 0; i < tempMat.m_row; i++){
+      for(size_t j = 0; j < tempMat.m_col; i++){
+        tempMat[i][j] = rhs.mat[i][j];
+      }
+    }
+    return tempMat;
+  }
+
+  void TP(){
+    matrix<T> tempMat(this->m_row, this->m_col); 
+    for(size_t i = 0; i < this->m_row; i++){
+      for(size_t j = 0; j < this->m_col; j++){
+        tempMat.mat[i][j] = this->mat[i][j]; 
+      }
+    }
+    size_t temp = this->m_row; 
+    this->m_row = this->m_col; 
+    this->m_col = temp;
+    for(size_t i = 0; i < this->m_row; i++){
+      for(size_t j = 0; j < this->m_col; j++){
+        this->mat[i][j] = tempMat.mat[j][i]; 
+      }
+    }
+  }
+
   matrix operator*(const matrix<T> &rhs)const{
     matrix<T> tempMat(m_row, rhs.m_col); 
     if(m_col != rhs.m_row){

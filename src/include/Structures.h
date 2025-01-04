@@ -1,32 +1,10 @@
 #ifndef STRUCTURES_H
 #define STRUCTURES_H
 #include <cstdint>
-#include <memory>
 #include <vector>
 #include <random>
 #include <iostream>
 #include <immintrin.h>
-
-namespace Neuron{
-  #define CONNECTION
-  typedef struct Connection{
-    float m_weight; 
-    float m_deltaWeight; 
-  }Connection;
-
-  #define NEURON
-  typedef struct Neuron{
-    float m_outputVal;
-    float m_grad;
-    uint8_t m_index; 
-    std::vector<std::shared_ptr<Connection>> m_OutPutWeights; 
-  }Neuron;
-
-  #define LAYER
-  typedef struct Layer{
-    std::vector<std::shared_ptr<Neuron>> Layers;    
-  }Layer;
-}
 
 namespace Vec{
   #define VEC2
@@ -158,14 +136,14 @@ struct matrix{
     return tempMat;
   }
   
-  T dot(const matrix<T>&a, const matrix<T>&b){
+  T dot(const matrix<T>&b){
     T sum = 0; 
-    if(a.m_col != b.m_col){
+    if(m_col != b.m_col){
       std::cout<<"Invalid matrix sizes"<<std::endl;
     }
-    for(size_t i = 0; i < a.m_row; i++ ){
-      for(size_t j = 0; j <a.m_col; j++){
-        sum += a.mat[i][j] * b.mat[i][j]; 
+    for(size_t i = 0; i < m_row; i++ ){
+      for(size_t j = 0; j <m_col; j++){
+        sum += mat[i][j] * b.mat[i][j]; 
       }
     }
     return sum;

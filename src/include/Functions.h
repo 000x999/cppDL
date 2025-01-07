@@ -4,6 +4,7 @@
 #include <math.h>
 #include <functional>
 #include <numeric>
+#include "Structures.h"
 #include <algorithm>
 #include <iostream>
 #include <vector>
@@ -102,6 +103,68 @@ inline T Mean(const std::vector<T>& val_in){
   T mean = sum / val_in.size(); 
   return mean;
 }
+
+template <typename T> 
+inline T MSE(const std::vector<mat::matrix<T>>& in1, const std::vector<mat::matrix<T>>& in2){ 
+  T err = 0; 
+  size_t elems = 0; 
+  for(size_t i = 0; i < in1.size(); ++i){
+    const auto &mat1 = in1[i]; 
+    const auto &mat2 = in2[i];
+    for(size_t j = 0; j < mat1.size(); ++j){
+      const auto &row1 = mat1[j]; 
+      const auto &row2 = mat2[j]; 
+      for(size_t k = 0; k < row1.size(); ++k){
+        T diff = row1[k] - row2[k]; 
+        err += diff * diff; 
+        ++elems; 
+      }
+    }
+  }
+  return (err/elems); 
+}
+  
+template <typename T>
+inline T Conv2D(const mat::matrix<T> &x, const mat::matrix<T> &kernel, uint8_t padding){
+  const uint8_t ir = x.m_row; 
+  const uint8_t ic = x.m_col;
+  const uint8_t kr = kernel.m_row;
+  const uint8_t kc = kernel.m_col; 
+  if(ir < kr) throw std::invalid_argument("ERR");
+  if(ic < kc) throw std::invalid_argument("ERR");
+  const uint8_t rows = ir - kr + 2 * padding + 1; 
+  const uint8_t cols = ic - kc + 2 * padding + 1; 
+  mat::matrix<T> res(rows, cols); 
+  res.zeros();
+  auto resizeDims = [&padding](uint8_t pos, uint8_t k, uint8_t len){
+    uint8_t input = pos - padding;
+    uint8_t kernel = 0; 
+    uint8_t size = k; 
+    if (input < 0){
+      kernel = -input;
+      size += input; 
+      input = 0; 
+    }
+    if(input + size > len){
+      size = len - input; 
+    }
+    return std::make_tuple(input, kernel, size);
+  }; 
+ 
+  for(size_t i = 0; i < rows; ++i){
+    const auto[in_i, k_i, size_i] = resizeDims(i, kr,ir); 
+    for(size_t j = 0; size_i > 0 && j < cols; ++j){
+      const auto[in_j,k_j, size_j] = resizeDims(j,kc,ic);
+      if(size_j > 0){
+        auto in_t = x.block(in_i, in_j, size_i, size_j);
+        auto in_k = kernel.block(k_i, size_i, size_j);
+        res(i,j) = (in_t * in_k).sum();
+      }
+    }
+    
+  }
+  return res; 
+};
 //feed forward
 //backprop
 //gradient descent

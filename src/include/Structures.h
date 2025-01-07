@@ -120,6 +120,14 @@ struct matrix{
       }
     }
   }
+
+  void zeros(){
+    for(size_t i = 0; i < m_row; i++){
+      for(size_t j = 0; j < m_col; j++){
+      mat[i][j] = 1;  
+      }
+    }
+  }
   
   matrix matmul(const matrix<T> &a, const matrix<T> &b){
     matrix<T> tempMat(a.m_row, b.m_col); 
@@ -148,17 +156,20 @@ struct matrix{
     }
     return sum;
   }
-
- matrix operator=(const matrix<T> &rhs)const{
-    matrix<T> tempMat(rhs.m_row,rhs.m_col);
-    for(size_t i = 0; i < tempMat.m_row; i++){
-      for(size_t j = 0; j < tempMat.m_col; i++){
-        tempMat[i][j] = rhs.mat[i][j];
+  
+  matrix block(size_t i,size_t j,size_t p,size_t q){
+     if (i + p > this->m_row || j + q > this->m_col) {
+        throw std::out_of_range("Block indices out of range");
+    }
+    matrix<T> tempMat(p, q);
+    for(size_t a = 0; a < p; ++a){
+      for(size_t b = 0; b < q; ++b){
+        tempMat.mat[a][b] = mat[a+i][b+j]; 
       }
     }
     return tempMat;
   }
-
+ 
   void TP(){
     matrix<T> tempMat(this->m_row, this->m_col); 
     for(size_t i = 0; i < this->m_row; i++){
@@ -176,6 +187,23 @@ struct matrix{
     }
   }
 
+  T sum(){
+    T res = 0;
+    /*
+    T res = std::accumulate(mat.begin(), mat.end(),0.0, 
+          [](matrix<T> lhs, const matrix<T>& rhs){
+                            return std::accumulate(rhs.mat.begin(), lhs.mat.end(), lhs);
+                            });*/
+    typename std::vector<std::vector<T>>::iterator row; 
+    typename std::vector<T>::iterator col; 
+    for(row = mat.begin(); row != mat.end(); ++row){
+      for(col = row->begin(); col != row->end(); ++col){
+          res += *col; 
+      }
+    }
+    return res; 
+  }
+
   matrix operator*(const matrix<T> &rhs)const{
     matrix<T> tempMat(m_row, rhs.m_col); 
     if(m_col != rhs.m_row){
@@ -191,6 +219,10 @@ struct matrix{
     return tempMat; 
   }
 
+  matrix& operator*=(const matrix<T> rhs)const{
+    return *this = *this * rhs;
+  }
+
   matrix operator+(const matrix<T> &rhs)const{
     matrix<T> tempMat(m_row, m_col); 
     if(m_row != rhs.m_row && m_col != rhs.m_col){
@@ -202,7 +234,11 @@ struct matrix{
       }
     }
    return tempMat;  
-  } 
+  }
+
+  matrix& operator+=(const matrix<T> rhs)const{
+    return *this = *this + rhs; 
+  }
 
   matrix operator-(const matrix<T> &rhs)const{
     matrix<T> tempMat(m_row, m_col); 
@@ -215,6 +251,10 @@ struct matrix{
       }
     }
    return tempMat;  
+  }
+
+  matrix& operator -=(const matrix<T> rhs)const{
+    return *this = *this - rhs; 
   }
 
  };

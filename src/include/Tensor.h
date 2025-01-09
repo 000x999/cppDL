@@ -1,9 +1,6 @@
 #ifndef TENSOR_H
 #define TENSOR_H
-#include "glm/detail/qualifier.hpp"
-#include "glm/ext/matrix_float2x2.hpp"
 #include "RandomGen.h"
-#include <glm/glm.hpp>
 #include <iostream> 
 #include <vector>
 #include <numeric>
@@ -21,6 +18,7 @@
 namespace Tensor{ 
 template <typename T>
 struct Tensor{
+  #pragma pack(push, 1)
   uint8_t m_rank;
   std::vector<size_t> m_dimensions; 
   std::vector<T> m_data;
@@ -29,9 +27,7 @@ struct Tensor{
   static const uint8_t fixed4x4 = 4;
   //Static pre-defined sizes for ease of use
   std::vector<T> rank1Tensor; 
-  std::vector<glm::mat<fixed2x2, fixed2x2, T>> rank3Tensor2x2;
-  std::vector<glm::mat<fixed3x3, fixed3x3, T>> rank3Tensor3x3;
-  std::vector<glm::mat<fixed4x4, fixed4x4, T>> rank3Tensor4x4;
+  #pragma pack(pop)
   //Dynamic Flat Tensor implementation
     Tensor(uint8_t rank, const std::vector<size_t>& dimensions)
         : m_rank(rank), m_dimensions(dimensions) {

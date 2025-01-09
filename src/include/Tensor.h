@@ -27,7 +27,6 @@ struct Tensor{
   static const uint8_t fixed4x4 = 4;
   //Static pre-defined sizes for ease of use
   std::vector<T> rank1Tensor; 
-  #pragma pack(pop)
   //Dynamic Flat Tensor implementation
     Tensor(uint8_t rank, const std::vector<size_t>& dimensions)
         : m_rank(rank), m_dimensions(dimensions) {
@@ -53,6 +52,7 @@ struct Tensor{
         }
         return flatIndex;
     }
+  #pragma pack(pop)
     void ReshapeTensor(const std::vector<size_t>& reshape_in) {
       size_t newSize = 1;
       for (const auto& dim : reshape_in) newSize *= dim;

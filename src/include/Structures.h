@@ -6,6 +6,7 @@
 #include <iostream>
 #include <immintrin.h>
 
+#pragma pack(push, 1)
 namespace Vec{
   #define VEC2
   template <typename T>
@@ -29,7 +30,9 @@ namespace Vec{
 	Vec2 GetNormalized(){const float len = GetLength(); if (len != 0.0f){return *this * (1.0f / len);} return *this;} 
   T dot(const Vec2& vec2_in){return *this.m_x * vec2_in.m_x + *this.m_y * vec2_in.m_y;}
 };
+#pragma pack(pop)
 
+#pragma pack(push, 1)
   #define VEC3  
   template <typename T>
   struct Vec3{
@@ -55,7 +58,9 @@ namespace Vec{
 	Vec3 GetNormalized(){const float len = GetLength(); if (len != 0.0f){return *this * (1.0f / len);} return *this;} 
   T dot(const Vec3& vec3_in){return *this.m_x * vec3_in.m_x + *this.m_y * vec3_in.m_y + *this.m_z * vec3_in.m_z;}  
 };
+#pragma pack(pop)
 
+#pragma pack(push, 1)
   #define VEC4  
   template <typename T>
   struct Vec4{
@@ -84,7 +89,9 @@ namespace Vec{
   T dot(const Vec4& vec4_in){return *this.m_x * vec4_in.m_x + *this.m_y * vec4_in.m_y + *this.m_z * vec4_in.m_z + *this.m_w * vec4_in.m_w;}
   }; 
 }
+#pragma pack(pop)
 
+#pragma pack(push, 4)
 #define MATRIX
 namespace mat{
 template <typename T>
@@ -258,5 +265,7 @@ struct matrix{
   }
 
  };
+
+#pragma pack(pop)
 }
 #endif

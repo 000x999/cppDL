@@ -12,7 +12,7 @@
 namespace Functions{
 //Softmax
 template <typename T>
-inline std::vector<T> Softmax(const std::vector<T>& val_in, T beta){
+std::vector<T> Softmax(const std::vector<T>& val_in, T beta){
   std::vector<T> exponentiated; 
   std::vector<T> res;
   for(size_t i = 0; i < val_in.size(); i++){
@@ -25,7 +25,7 @@ inline std::vector<T> Softmax(const std::vector<T>& val_in, T beta){
 }
 //RELU
 template <typename T>
-inline std::vector<T> RELU(const std::vector<T>& val_in){
+std::vector<T> RELU(const std::vector<T>& val_in){
   std::vector<T> tempVec;
   for(size_t i = 0; i < val_in.size(); i++){
     if(val_in[i] > 0){
@@ -38,14 +38,14 @@ inline std::vector<T> RELU(const std::vector<T>& val_in){
 }
 //Sigmoid
 template <typename T>
-inline std::vector<T> Sigmoid(const std::vector<T>& val_in){
+std::vector<T> Sigmoid(const std::vector<T>& val_in){
   std::vector<T> tempVec; 
   for(auto& val: val_in){tempVec.emplace_back(1.0f / (1.0f + std::expf(-val)));} 
   return tempVec;
 }
 //SiLU
 template <typename T>
-inline std::vector<T> SILU(const std::vector<T>& val_in){
+std::vector<T> SILU(const std::vector<T>& val_in){
   std::vector<T> tempVec;
   std::vector<T> sigVec = Sigmoid(val_in);
   for(size_t i = 0; i < val_in.size(); i++){
@@ -55,7 +55,7 @@ inline std::vector<T> SILU(const std::vector<T>& val_in){
 }
 //mish
 template <typename T> 
-inline std::vector<T> Mish(const std::vector<T>& val_in){
+std::vector<T> Mish(const std::vector<T>& val_in){
   std::vector<T> tempVec;
   std::vector<T> softVec = Softplus(val_in);
   for(size_t i = 0; i < val_in.size(); i++){
@@ -65,7 +65,7 @@ inline std::vector<T> Mish(const std::vector<T>& val_in){
 }
 //softplus
 template <typename T>
-inline std::vector<T> Softplus(const std::vector<T>& val_in){
+std::vector<T> Softplus(const std::vector<T>& val_in){
   std::vector<T> tempVec; 
   for(size_t i = 0; i < val_in.size(); i++){
   tempVec.emplace_back(std::log(1+exp(val_in[i]))); 
@@ -74,7 +74,7 @@ inline std::vector<T> Softplus(const std::vector<T>& val_in){
 }
 //squareplus 
 template <typename T> 
-inline std::vector<T> Squareplus(const std::vector<T>& val_in, T hyperparam){
+std::vector<T> Squareplus(const std::vector<T>& val_in, T hyperparam){
   std::vector<T> tempVec;
   for(size_t i = 0; i <val_in.size(); i++){
     tempVec.emplace_back((val_in[i] + sqrtf((val_in[i]*val_in[i]) + hyperparam)) * 0.5f);
@@ -83,7 +83,7 @@ inline std::vector<T> Squareplus(const std::vector<T>& val_in, T hyperparam){
 }
 //binary step
 template <typename T>
-inline std::vector<T> BinStep(const std::vector<T>& val_in){
+std::vector<T> BinStep(const std::vector<T>& val_in){
   std::vector<T> tempVec; 
   for(size_t i =0; i < val_in.size(); i++){
     if(val_in[i] < 0){
@@ -98,14 +98,14 @@ inline std::vector<T> BinStep(const std::vector<T>& val_in){
 }
 //Mean
 template <typename T>
-inline T Mean(const std::vector<T>& val_in){
+T Mean(const std::vector<T>& val_in){
   T sum = std::accumulate(val_in.begin(), val_in.end(), 0.0); 
   T mean = sum / val_in.size(); 
   return mean;
 }
 
 template <typename T> 
-inline T MSE(const std::vector<mat::matrix<T>>& in1, const std::vector<mat::matrix<T>>& in2){ 
+T MSE(const std::vector<mat::matrix<T>>& in1, const std::vector<mat::matrix<T>>& in2){ 
   T err = 0; 
   size_t elems = 0; 
   for(size_t i = 0; i < in1.size(); ++i){
@@ -125,7 +125,7 @@ inline T MSE(const std::vector<mat::matrix<T>>& in1, const std::vector<mat::matr
 }
   
 template <typename T>
-inline T Conv2D(const mat::matrix<T> &x, const mat::matrix<T> &kernel, uint8_t padding){
+T Conv2D(const mat::matrix<T> &x, const mat::matrix<T> &kernel, uint8_t padding){
   const uint8_t ir = x.m_row; 
   const uint8_t ic = x.m_col;
   const uint8_t kr = kernel.m_row;

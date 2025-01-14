@@ -11,32 +11,32 @@
 #include <cstdint>
 
 #pragma pack(push, 4)
-struct BMPFileHeader {
+struct IMGHead {
     //Declare all u16's before u32's to reduce bit padding and ensure alignment 
     //this also reduces mem size for each instance of this struct
-    uint16_t file_type{0x4D42};
+    uint16_t fileType{0x4D42};
     uint16_t reserved1{0};   
     uint16_t reserved2{0};  
-    uint32_t file_size{0}; 
-    uint32_t offset_data{0};
+    uint32_t fileSize{0}; 
+    uint32_t dataOffset{0};
 };   
-struct BMPInfoHeader {
+struct IMGInfo {
   //Declare all u16's before u32s again for the same reasons 
   //u32's come before i32's again to elemina te bit padding reqs
   uint16_t planes{ 1 };
-  uint16_t bit_count{ 0 };
+  uint16_t bpp{ 0 };
   uint32_t compression{ 0 }; 
-  uint32_t size_image{ 0 };   
+  uint32_t imgSize{ 0 };   
   uint32_t size{ 0 };
-  uint32_t colors_used{ 0 };     
-  uint32_t colors_important{ 0 };
+  uint32_t activeCols{ 0 };     
+  uint32_t colorsImp{ 0 };
   int32_t width{ 0 };
   int32_t height{ 0 };
-  int32_t x_pixels_per_meter{ 0 };
-  int32_t y_pixels_per_meter{ 0 };
+  int32_t xpp{ 0 };
+  int32_t ypp{ 0 };
 };
 
-struct BMPColorHeader {
+struct IMGCol {
   //No padding check needed, all are u32's
   uint32_t redM{0x00ff0000}; 
   uint32_t greenM{0x0000ff00}; 
@@ -47,9 +47,9 @@ struct BMPColorHeader {
 };
 
 struct BMP{
-  BMPFileHeader fileH; 
-  BMPInfoHeader bmpInfo; 
-  BMPColorHeader bmpCol; 
+  IMGHead fileH; 
+  IMGInfo bmpInfo; 
+  IMGCol bmpCol; 
   std::vector<uint8_t> data; 
 
   BMP(const char* fname){
@@ -60,12 +60,12 @@ struct BMP{
     std::ifstream inp{fname, std::ios_base::binary};
     if(inp){
       inp.read((char*)&fileH, sizeof(fileH));
-      if(fileH.file_type != 0x4D42){
+      if(fileH.fileType != 0x4D42){
         throw std::runtime_error("Error!, wrong file format"); 
       }
       inp.read((char*)&bmpInfo, sizeof(bmpInfo)); 
-      if(bmpInfo.bit_count == 32){
-        if(bmpInfo.size >= (sizeof(BMPInfoHeader) + sizeof(BMPColorHeader)))
+      if(bmpInfo.bpp == 32){
+        if(bmpInfo.size >= (sizeof(IMGInfo) + sizeof(IMGCol)))
           inp.read((char*)&bmpCol, sizeof(bmpCol)); 
       }else{
         std::cerr<<"Warning! the file \"" << fname << "\" does not seem to contain the bit mask info\n"; 
@@ -73,33 +73,33 @@ struct BMP{
       }
     }
     //jump to the pixel data location 
-    inp.seekg(fileH.offset_data, inp.beg);
+    inp.seekg(fileH.dataOffset, inp.beg);
     //Adjust header fields for output
-    if(bmpInfo.bit_count == 32){
-      bmpInfo.size = sizeof(BMPInfoHeader) + sizeof(BMPColorHeader);
-      fileH.offset_data = sizeof(BMPFileHeader) + sizeof(BMPInfoHeader) + sizeof(BMPColorHeader); 
+    if(bmpInfo.bpp == 32){
+      bmpInfo.size = sizeof(IMGInfo) + sizeof(IMGCol);
+      fileH.dataOffset = sizeof(IMGHead) + sizeof(IMGInfo) + sizeof(IMGCol); 
     }else{
-      bmpInfo.size = sizeof(BMPInfoHeader); 
-      fileH.offset_data = sizeof(BMPFileHeader) + sizeof(BMPInfoHeader);
+      bmpInfo.size = sizeof(IMGInfo); 
+      fileH.dataOffset = sizeof(IMGHead) + sizeof(IMGInfo);
     }
-    fileH.file_size = fileH.offset_data; 
+    fileH.fileSize = fileH.dataOffset; 
     if(bmpInfo.height < 0){
       throw std::runtime_error("Only BMP images with positive height are valid");
     }
-    data.resize(bmpInfo.width * bmpInfo.height * bmpInfo.bit_count / 8);
+    data.resize(bmpInfo.width * bmpInfo.height * bmpInfo.bpp / 8);
     //Check to see if we need padding or not 
     if(bmpInfo.width % 4 == 0){
       inp.read((char*)data.data(), data.size()); 
-      fileH.file_size += data.size();
+      fileH.fileSize += data.size();
     }else{
-      row_stride = bmpInfo.width * bmpInfo.bit_count / 8;
-      uint32_t newStride = make_stride_aligned(4);
-      std::vector<uint8_t> paddingRow(newStride - row_stride); 
+      rowStride = bmpInfo.width * bmpInfo.bpp / 8;
+      uint32_t newStride = AlignStride(4);
+      std::vector<uint8_t> paddingRow(newStride - rowStride); 
       for(size_t y = 0; y < bmpInfo.height; ++y){
-        inp.read((char*)(data.data() + row_stride * y), row_stride);
+        inp.read((char*)(data.data() + rowStride * y), rowStride);
         inp.read((char*)paddingRow.data(), paddingRow.size()); 
       }
-      fileH.file_size += data.size() + bmpInfo.height*paddingRow.size();
+      fileH.fileSize += data.size() + bmpInfo.height*paddingRow.size();
     } 
   }
 
@@ -110,22 +110,22 @@ struct BMP{
     bmpInfo.width = width; 
     bmpInfo.height = height; 
     if(alpha){
-      bmpInfo.size = sizeof(BMPInfoHeader) + sizeof(BMPColorHeader); 
-      fileH.offset_data = sizeof(BMPFileHeader) + sizeof(BMPInfoHeader) + sizeof(BMPColorHeader); 
-      bmpInfo.bit_count = 32;
+      bmpInfo.size = sizeof(IMGInfo) + sizeof(IMGCol); 
+      fileH.dataOffset = sizeof(IMGHead) + sizeof(IMGInfo) + sizeof(IMGCol); 
+      bmpInfo.bpp = 32;
       bmpInfo.compression = 3; 
-      row_stride = width * 4;
-      data.resize(row_stride * height); 
-      fileH.file_size = fileH.offset_data + data.size();
+      rowStride = width * 4;
+      data.resize(rowStride * height); 
+      fileH.fileSize = fileH.dataOffset + data.size();
     }else{
-      bmpInfo.size = sizeof(BMPInfoHeader); 
-      fileH.offset_data = sizeof(BMPFileHeader) + sizeof(BMPInfoHeader);
-      bmpInfo.bit_count = 24;
+      bmpInfo.size = sizeof(IMGInfo); 
+      fileH.dataOffset = sizeof(IMGHead) + sizeof(IMGInfo);
+      bmpInfo.bpp = 24;
       bmpInfo.compression = 0; 
-      row_stride = width * 3;
-      data.resize(row_stride * height);
-      uint32_t newStride = make_stride_aligned(4);
-      fileH.file_size = fileH.offset_data + data.size() + bmpInfo.height * (newStride - row_stride);
+      rowStride = width * 3;
+      data.resize(rowStride * height);
+      uint32_t newStride = AlignStride(4);
+      fileH.fileSize = fileH.dataOffset + data.size() + bmpInfo.height * (newStride - rowStride);
     }
   }
   
@@ -133,7 +133,7 @@ struct BMP{
     if(x0 + w > (uint32_t)bmpInfo.width||y0+h > (uint32_t)bmpInfo.height){
       throw std::runtime_error("The region doesn't fit in the image"); 
     }
-    uint32_t channels = bmpInfo.bit_count / 8; 
+    uint32_t channels = bmpInfo.bpp / 8; 
     for(uint32_t y = y0; y < y0 + h; ++y){
       for(uint32_t x = x0; x < x0 + w; ++x){
         data[channels * (y * bmpInfo.width + x) + 0] = B; 
@@ -149,17 +149,17 @@ struct BMP{
   void write(const char* fname){
     std::ofstream of{fname, std::ios_base::binary}; 
     if(of){
-      if(bmpInfo.bit_count == 32){
-        write_headers_and_data(of);
-      }else if(bmpInfo.bit_count == 24){
+      if(bmpInfo.bpp == 32){
+        WriteHeadData(of);
+      }else if(bmpInfo.bpp == 24){
         if(bmpInfo.width % 4 == 0){
-          write_headers_and_data(of);
+          WriteHeadData(of);
         }else{
-          uint32_t newStride = make_stride_aligned(4);
-          std::vector<uint8_t> paddingRow(newStride - row_stride); 
-          write_headers(of);
+          uint32_t newStride = AlignStride(4);
+          std::vector<uint8_t> paddingRow(newStride - rowStride); 
+          WriteHead(of);
           for(size_t y = 0; y < bmpInfo.height; ++y){
-            of.write((const char*)(data.data() + row_stride*y), row_stride);
+            of.write((const char*)(data.data() + rowStride*y), rowStride);
             of.write((const char*)paddingRow.data(), paddingRow.size());
           }
         }
@@ -174,31 +174,31 @@ struct BMP{
   }
 
 private:
- uint32_t row_stride{ 0 };
+ uint32_t rowStride{ 0 };
 
-  void write_headers(std::ofstream &of){
+  void WriteHead(std::ofstream &of){
     of.write((const char*) &fileH, sizeof(fileH)); 
     of.write((const char*)&bmpInfo, sizeof(bmpInfo)); 
-    if(bmpInfo.bit_count==32){
+    if(bmpInfo.bpp==32){
       of.write((const char*)&bmpCol, sizeof(bmpCol)); 
     }
   }
 
- void write_headers_and_data(std::ofstream &of){
-    write_headers(of); 
+ void WriteHeadData(std::ofstream &of){
+    WriteHead(of); 
     of.write((const char*) data.data(), data.size());
   }
   
- uint32_t make_stride_aligned(uint32_t align_stride){
-    uint32_t newStride = row_stride; 
-    while(newStride % align_stride != 0){
+ uint32_t AlignStride(uint32_t restStride){
+    uint32_t newStride = rowStride; 
+    while(newStride % restStride != 0){
       newStride++; 
     }
     return newStride; 
   } 
 
-  void check_color_header(BMPColorHeader &bmpCol){
-    BMPColorHeader expectedCol; 
+  void HeadColor(IMGCol &bmpCol){
+    IMGCol expectedCol; 
     if(expectedCol.redM != bmpCol.redM || expectedCol.blueM != bmpCol.blueM ||
      expectedCol.greenM != bmpCol.greenM ||expectedCol.alphaM != bmpCol.alphaM){
       throw std::runtime_error("Unexpected color format");

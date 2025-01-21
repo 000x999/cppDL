@@ -60,18 +60,18 @@ namespace Vec{
     public:
       Vec3Ops(Vec::Vec3<T> &vec3)
         :vec3(vec3){}
-      Vec::Vec3<T> operator+(const Vec::Vec3<T>& rhs) const{return Vec3(vec3.m_x + rhs.m_x, vec3.m_y + rhs.m_y, vec3.m_z+rhs.m_z);}
-      Vec::Vec3<T>& operator+=(const Vec::Vec3<T>& rhs){return *this = *this + rhs;}
-      Vec::Vec3<T> operator*(float rhs) const{return Vec3(vec3.m_x * rhs, vec3.m_y * rhs, vec3.m_z * rhs);}
-      Vec::Vec3<T>& operator*=(float rhs){return *this = *this * rhs;}
-      Vec::Vec3<T> operator-(const Vec::Vec3<T>& rhs) const{return Vec3(vec3.m_x - rhs.m_x, vec3.m_y - rhs.m_y, vec3.m_z - rhs.m_z);}
-      Vec::Vec3<T>& operator-=(const Vec::Vec3<T>& rhs){return *this = *this - rhs;}
+      Vec3Ops<T> operator+(const Vec3Ops<T>& rhs) const{return Vec3(vec3.m_x + rhs.vec3.m_x, vec3.m_y + rhs.vec3.m_y, vec3.m_z+rhs.vec3.m_z);}
+      Vec3Ops<T>& operator+=(const Vec3Ops<T>& rhs){return *this = *this + rhs;}
+      Vec3Ops<T> operator*(float rhs) const{return Vec3(vec3.m_x * rhs, vec3.m_y * rhs, vec3.m_z * rhs);}
+      Vec3Ops<T>& operator*=(float rhs){return *this = *this * rhs;}
+      Vec3Ops<T> operator-(const Vec3Ops<T>& rhs) const{return Vec3(vec3.m_x - rhs.vec3.m_x, vec3.m_y - rhs.vec3.m_y, vec3.m_z - rhs.vec3.m_z);}
+      Vec3Ops<T>& operator-=(const Vec3Ops<T>& rhs){return *this = *this - rhs;}
       float fast_rsqrt(float x) { return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x))); }
       float fast_sqrt(float x) { return x * fast_rsqrt(x); }
       float GetLength(){return fast_sqrt(vec3.m_x*vec3.m_x + vec3.m_y*vec3.m_y + vec3.m_z*vec3.m_z);}
       float GetLengthSq() const{return vec3.m_x*vec3.m_x + vec3.m_y*vec3.m_y + vec3.m_z*vec3.m_z;}
-      Vec::Vec3<T>& Normalize(){return *this = GetNormalized();}
-      Vec::Vec3<T> GetNormalized(){const float len = GetLength(); if (len != 0.0f){return *this * (1.0f / len);} return *this;} 
+      Vec3Ops<T>& Normalize(){return *this = GetNormalized();}
+      Vec3Ops<T> GetNormalized(){const float len = GetLength(); if (len != 0.0f){return *this * (1.0f / len);} return *this;} 
       T dot(const Vec::Vec3<T>& vec3_in){return *this.m_x * vec3_in.m_x + *this.m_y * vec3_in.m_y + *this.m_z * vec3_in.m_z;}   
   };
 };

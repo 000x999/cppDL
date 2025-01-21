@@ -98,18 +98,18 @@ namespace Vec{
     public:
       Vec4Ops(Vec::Vec4<T> &vec4)
         :vec4(vec4){}
-      Vec::Vec4<T> operator+(const Vec::Vec4<T>& rhs) const{return Vec4(vec4.m_x + rhs.m_x, vec4.m_y + rhs.m_y, vec4.m_z+rhs.m_z);}
-      Vec::Vec4<T>& operator+=(const Vec::Vec4<T>& rhs){return *this = *this + rhs;}
-      Vec::Vec4<T> operator*(float rhs) const{return Vec4(vec4.m_x * rhs, vec4.m_y * rhs, vec4.m_z * rhs);}
-      Vec::Vec4<T>& operator*=(float rhs){return *this = *this * rhs;}
-      Vec::Vec4<T> operator-(const Vec::Vec4<T>& rhs) const{return Vec4(vec4.m_x - rhs.m_x, vec4.m_y - rhs.m_y, vec4.m_z - rhs.m_z, vec4.m_w - rhs.m_w );}
-      Vec::Vec4<T>& operator-=(const Vec::Vec4<T>& rhs){return *this = *this - rhs;}
+      Vec4Ops<T> operator+(const Vec4Ops<T>& rhs) const{return Vec4Ops(vec4.m_x + rhs.vec4.m_x, vec4.m_y + rhs.vec4.m_y, vec4.m_z+rhs.vec4.m_z);}
+      Vec4Ops<T>& operator+=(const Vec4Ops<T>& rhs){return *this = *this + rhs;}
+      Vec4Ops<T> operator*(float rhs) const{return Vec4Ops(vec4.m_x * rhs, vec4.m_y * rhs, vec4.m_z * rhs);}
+      Vec4Ops<T>& operator*=(float rhs){return *this = *this * rhs;}
+      Vec4Ops<T> operator-(const Vec4Ops<T>& rhs) const{return Vec4Ops(vec4.m_x - rhs.vec4.m_x, vec4.m_y - rhs.vec4.m_y, vec4.m_z - rhs.vec4.m_z, vec4.m_w - rhs.vec4.m_w );}
+      Vec4Ops<T>& operator-=(const Vec::Vec4<T>& rhs){return *this = *this - rhs;}
       float fast_rsqrt(float x) { return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x))); }
       float fast_sqrt(float x) { return x * fast_rsqrt(x); }
       float GetLength(){return fast_sqrt(vec4.m_x*vec4.m_x + vec4.m_y*vec4.m_y + vec4.m_z*vec4.m_z + vec4.m_w*vec4.m_w);}
       float GetLengthSq() const{return vec4.m_x*vec4.m_x + vec4.m_y*vec4.m_y + vec4.m_z*vec4.m_z + vec4.m_w*vec4.m_w;}
-      Vec::Vec4<T>& Normalize(){return *this = GetNormalized();}
-      Vec::Vec4<T> GetNormalized(){const float len = GetLength(); if (len != 0.0f){return *this * (1.0f / len);} return *this;} 
+      Vec4Ops<T>& Normalize(){return *this = GetNormalized();}
+      Vec4Ops<T> GetNormalized(){const float len = GetLength(); if (len != 0.0f){return *this * (1.0f / len);} return *this;} 
       T dot(const Vec::Vec4<T>& vec4_in){return *this.m_x * vec4_in.m_x + *this.m_y * vec4_in.m_y + *this.m_z * vec4_in.m_z + *this.m_w * vec4_in.m_w;}
     };
   };

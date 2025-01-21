@@ -18,7 +18,7 @@ int main() {
   std::cout<< "\n" << C.sum(); 
   */
   Tensor::Tensor<float> tensor(5,{5,5,5,5,5});  
-  TensorMath::TensorMath<float> ops(tensor);
+  TensorOps::TensorOps<float> ops(tensor);
   ops.FillTensor();
   std::cout<<"\n=========== OG Tensor ===============\n"; 
   ops.PrintTensor();

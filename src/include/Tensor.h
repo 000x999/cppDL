@@ -28,7 +28,6 @@ struct Tensor{
         if (dimensions.size() != rank) {
             throw std::invalid_argument("Rank does not match dimensions.");
         }
-
         size_t totalSize = 1;
         for (const auto& dim : dimensions) {
             totalSize *= dim;
@@ -39,13 +38,13 @@ struct Tensor{
 };
 
 #pragma pack(pop)
-namespace TensorMath{
+namespace TensorOps{
   template <typename T>  
-  class TensorMath{
+  class TensorOps{
     private:
     Tensor::Tensor<T> tensor; 
     public:
-        TensorMath(Tensor::Tensor<T> &tensor)
+        TensorOps(Tensor::Tensor<T> &tensor)
           :tensor(tensor){}
     std::vector<T> GetData()const{return tensor.m_data;}; 
     size_t GetFlatIndex(const std::vector<size_t>& indices) const {

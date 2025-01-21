@@ -128,7 +128,7 @@ struct matrix{
     m_col(col_in),
     mat(row_in, std::vector<T>(col_in, 0)) {}
   };
-
+  
 namespace MatOps{
   template <typename T>
   class MatOps{
@@ -167,14 +167,14 @@ namespace MatOps{
         }
       }
       
-     MatOps<T> matmul(const mat::matrix<T> &a, const mat::matrix<T> &b){
+     static mat::matrix<T> matmul(const mat::matrix<T>&a, const mat::matrix<T> &b){
         matrix<T> tempMat(a.m_row, b.m_col); 
-        if(a.m_col != b.m_row){
+        if(a.mat.m_col != b.mat.m_row){
           std::cout<<"Invalid matrix sizes"<<std::endl;
         }
         for(size_t i = 0; i < tempMat.m_row; i++){
           for(size_t j = 0; j < tempMat.m_col; j++){
-            for(size_t k = 0; k < mat.m_col; k++){
+            for(size_t k = 0; k < tempMat.m_col; k++){
             tempMat.mat[i][j] += a.mat[i][k] * b.mat[k][j];
             }
           }

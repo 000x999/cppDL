@@ -129,8 +129,7 @@ struct matrix{
     mat(row_in, std::vector<T>(col_in, 0)) {}
   };
 
-
-  namespace MatOps{
+namespace MatOps{
   template <typename T>
   class MatOps{
     private:
@@ -168,7 +167,7 @@ struct matrix{
         }
       }
       
-  mat::matrix<T> matmul(const mat::matrix<T> &a, const mat::matrix<T> &b){
+     MatOps<T> matmul(const mat::matrix<T> &a, const mat::matrix<T> &b){
         matrix<T> tempMat(a.m_row, b.m_col); 
         if(a.m_col != b.m_row){
           std::cout<<"Invalid matrix sizes"<<std::endl;
@@ -196,7 +195,7 @@ struct matrix{
         return sum;
       }
       
-    mat::matrix<T> block(size_t i,size_t j,size_t p,size_t q){
+     mat::matrix<T> block(size_t i,size_t j,size_t p,size_t q){
          if (i + p > this->mat.m_row || j + q > this->mat.m_col) {
             throw std::out_of_range("Block indices out of range");
         }
@@ -235,7 +234,7 @@ struct matrix{
                                 });*/
         typename std::vector<std::vector<T>>::iterator row; 
         typename std::vector<T>::iterator col; 
-        for(row = mat.begin(); row != mat.end(); ++row){
+        for(row = mat.mat.begin(); row != mat.mat.end(); ++row){
           for(col = row->begin(); col != row->end(); ++col){
               res += *col; 
           }
@@ -243,28 +242,28 @@ struct matrix{
         return res; 
       }
 
-    mat::matrix<T> operator*(const mat::matrix<T> &rhs)const{
-        matrix<T> tempMat(mat.m_row, rhs.m_col); 
-        if(mat.m_col != rhs.m_row){
+    MatOps<T> operator*(const MatOps<T> &rhs)const{
+        matrix<T> tempMat(mat.m_row, rhs.mat.m_col); 
+        if(mat.m_col != rhs.mat.m_row){
           std::cout<<"Invalid matrix sizes"<<std::endl;
         }
         for(size_t i = 0; i <tempMat.m_row; i++){
           for(size_t j = 0; j <tempMat.m_col; j++){
             for(size_t k = 0; k < mat.m_col; k++){
-            tempMat.mat[i][j] += mat.mat[i][k] * rhs.mat[k][j];
+            tempMat.mat[i][j] += mat.mat[i][k] * rhs.mat.mat[k][j];
             }
           }
         }
         return tempMat; 
       }
 
-    mat::matrix<T>& operator*=(const mat::matrix<T> rhs)const{
+    MatOps<T>& operator*=(const MatOps<T> &rhs)const{
         return *this = *this * rhs;
       }
 
-    mat::matrix<T> operator+(const mat::matrix<T> &rhs)const{
+    MatOps<T> operator+(const MatOps<T> &rhs)const{
         matrix<T> tempMat(mat.m_row, mat.m_col); 
-        if(mat.m_row != rhs.m_row && mat.m_col != rhs.m_col){
+        if(mat.m_row != rhs.mat.m_row && mat.m_col != rhs.mat.m_col){
           std::cout<<"Invalid matrix sizes"<<std::endl; 
         }
         for(size_t i = 0; i < tempMat.m_row; i++){
@@ -275,13 +274,13 @@ struct matrix{
        return tempMat;  
       }
 
-    mat::matrix<T>& operator+=(const mat::matrix<T> rhs)const{
+    MatOps<T>& operator+=(const MatOps<T> rhs)const{
         return *this = *this + rhs; 
       }
 
-    mat::matrix<T> operator-(const mat::matrix<T> &rhs)const{
+    MatOps<T> operator-(const MatOps<T> &rhs)const{
         matrix<T> tempMat(mat.m_row, mat.m_col); 
-        if(mat.m_row != rhs.m_row && mat.m_col != rhs.m_col){
+        if(mat.m_row != rhs.mat.m_row && mat.m_col != rhs.mat.m_col){
           std::cout<<"Invalid matrix sizes"<<std::endl; 
         }
         for(size_t i = 0; i < tempMat.m_row; i++){
@@ -292,7 +291,7 @@ struct matrix{
        return tempMat;  
       }
 
-    mat::matrix<T>& operator -=(const mat::matrix<T> rhs)const{
+    MatOps<T>& operator -=(const MatOps<T> rhs)const{
         return *this = *this - rhs; 
       }
   };

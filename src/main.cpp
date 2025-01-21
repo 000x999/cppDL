@@ -6,17 +6,22 @@ int main() {
   //First param is rank 
   //All the rest are dimension size 
   //If rank = 5 --> {x,x,x,x,x} and each dimension gets it's own size 
-  /*
-  mat::matrix<float> D(10,10); 
-  mat::matrix<float> A(9,9);
-  int** arr; 
-  A.zeros(); 
-  A.displayMat();
+  
+  mat::matrix<float> D(5,5); 
+  mat::matrix<float> A(5,5);
+  mat::MatOps::MatOps<float> matops(A); 
+  mat::MatOps::MatOps<float> matopsD(D); 
+  std::cout<<"MATOPS A ZEROES"<<std::endl;
+  matops.fillMat();
+  mat::MatOps::MatOps<float> newOp = matops * matopsD;
+  std::cout<<"NEW OP DISPLAY"<<std::endl;
+  newOp.displayMat();
+  std::cout<<"MATOPS A DISPLAY"<<std::endl;
+  matops.displayMat();
   std::cout<<"\n";
-  mat::matrix<float> C = A.block(3,3,3,3); 
-  C.displayMat();
-  std::cout<< "\n" << C.sum(); 
-  */
+  std::cout<< "\n" << matops.sum(); 
+  
+  /*
   Tensor::Tensor<float> tensor(5,{5,5,5,5,5});  
   TensorOps::TensorOps<float> ops(tensor);
   ops.FillTensor();
@@ -24,6 +29,6 @@ int main() {
   ops.PrintTensor();
   std::cout<<"\n=========== Tensor Mean ===============\n";
   std::cout<<Functions::Mean(ops.GetData());
-  
+  */
   return 0;
 }

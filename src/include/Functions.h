@@ -103,7 +103,7 @@ T Mean(const std::vector<T>& val_in){
   T mean = sum / val_in.size(); 
   return mean;
 }
-
+//MSE
 template <typename T> 
 T MSE(const std::vector<mat::matrix<T>>& in1, const std::vector<mat::matrix<T>>& in2){ 
   T err = 0; 
@@ -165,8 +165,6 @@ T Conv2D(const mat::matrix<T> &x, const mat::matrix<T> &kernel, uint8_t padding)
   }
   return res; 
 };
-//feed forward
-//backprop
 //gradient descent
 //Calculate Out Gradients
 //Calculate Hidden gradients 

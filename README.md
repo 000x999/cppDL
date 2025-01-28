@@ -53,7 +53,7 @@ An extensive and complete Deep Learning library written entirely in C++.
     ops3.PrintTensor(); 
 
     //Output of a 3 dimensional 5x5x5 Tensor
-    tensor([
+    tensor(
   [
     [
       [5.8694, 9.0286, 5.1757, 3.3696, 2.9557],

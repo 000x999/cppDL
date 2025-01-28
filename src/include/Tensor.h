@@ -63,15 +63,15 @@ namespace TensorOps{
           size_t newSize = 1;
           for (const auto& dim : reshape_in) newSize *= dim;
           assert(newSize == tensor.m_data.size() && "Reshape must not change total number of elements");
-          tensor.m_dimensions = reshape_in;
+          this->tensor.m_dimensions = reshape_in;
         }
 
         T& ReturnAt(const std::vector<size_t>& indices) {
-          return tensor.m_data[GetFlatIndex(indices)];
+          return this->tensor.m_data[GetFlatIndex(indices)];
         }
       
         void SetElem(const std::vector<size_t>& indices, T val_in) {
-          tensor.m_data[GetFlatIndex(indices)] = val_in;
+          this->tensor.m_data[GetFlatIndex(indices)] = val_in;
         }
 
        void FillTensor(){
@@ -127,25 +127,55 @@ namespace TensorOps{
             printRecursive(0, 0, 1);
             std::cout << "\n])" << std::endl;
         }
+      void zero(){
+        for(size_t i = 0; i < this->tensor.m_data.size(); ++i){
+          this->tensor.m_data[i] = 0;
+         }
+       }
+
       //Tensor operations 
-      std::vector<T> operator +(const Tensor::Tensor<T>& tensor_in) {
-        std::vector<T> result; 
-          for(size_t i = 0; i < this->tensor.m_data.size(); i++){
-            result.emplace_back((this->tensor.m_data[i])+tensor_in.m_data[i]); 
+       TensorOps<T> operator +(const TensorOps<T>& tensor_in) {
+          TensorOps<T> result(tensor_in);
+          for(size_t i = 0; i < this->tensor.m_data.size(); ++i){
+            result.tensor.m_data[i] = ((this->tensor.m_data[i]) + tensor_in.tensor.m_data[i]); 
+            //std::cout<< "res:" << result.tensor.m_data[i]<<std::endl;
+            //std::cout<< "this:" << this->tensor.m_data[i]<<std::endl;
+            //std::cout<< "tens_in:" << tensor_in.tensor.m_data[i]<<std::endl;
           }
           return result; 
-        } 
-     };
+        }
+       
+       TensorOps<T> operator *(const TensorOps<T>& tensor_in) {
+          TensorOps<T> result(tensor_in);
+          for(size_t i = 0; i < this->tensor.m_data.size(); ++i){
+            result.tensor.m_data[i] = ((this->tensor.m_data[i]) * tensor_in.tensor.m_data[i]); 
+            //std::cout<< "res:" << result.tensor.m_data[i]<<std::endl;
+            //std::cout<< "this:" << this->tensor.m_data[i]<<std::endl;
+            //std::cout<< "tens_in:" << tensor_in.tensor.m_data[i]<<std::endl;
+          }
+          return result; 
+        }
+ 
+       TensorOps<T> operator -(const TensorOps<T>& tensor_in) {
+          TensorOps<T> result(tensor_in);
+          for(size_t i = 0; i < this->tensor.m_data.size(); ++i){
+            result.tensor.m_data[i] = ((this->tensor.m_data[i]) - tensor_in.tensor.m_data[i]); 
+            //std::cout<< "res:" << result.tensor.m_data[i]<<std::endl;
+            //std::cout<< "this:" << this->tensor.m_data[i]<<std::endl;
+            //std::cout<< "tens_in:" << tensor_in.tensor.m_data[i]<<std::endl;
+          }
+          return result; 
+      } 
 
-      template <typename T>
-      T dot(const Tensor::Tensor<T>& tensor_in, const Tensor::Tensor<T>& other_tensor){
+      T dot(const TensorOps<T>& tensor_in, const TensorOps<T>& other_tensor){
         std::vector<T> tempVec; 
         T res = 0;   
-        for(size_t i = 0; i < tensor_in.m_data.size(); i++){
-          assert(tensor_in.m_data.size() == other_tensor.m_data.size() && "Tensor data set sizes must match");  
-          tempVec.emplace_back(tensor_in.m_data[i]*other_tensor.m_data[i]);  
+        for(size_t i = 0; i < tensor_in.tensor.m_data.size(); i++){
+          assert(tensor_in.tensor.m_data.size() == other_tensor.tensor.m_data.size() && "Tensor data set sizes must match");  
+          tempVec.emplace_back(tensor_in.tensor.m_data[i]*other_tensor.tensor.m_data[i]);  
          }  
         return res = std::reduce(tempVec.begin(), tempVec.end());
       }
-    }
+    };
+  };
 #endif

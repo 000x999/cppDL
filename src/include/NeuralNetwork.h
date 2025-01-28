@@ -76,8 +76,15 @@ class linear : public layer{
   
 class ReLU: public layer{
   public:
-  void Forward(const std::vector<float> &inputVals, layerData &data)override{};
-  void Backwards(const std::vector<float> &targetVals, const std::vector<float> &gradOut, layerData &data)override{};
+  void Forward(const std::vector<float> &inputVals, layerData &data)override{
+    data.activations = Functions::RELU(inputVals); 
+  };
+
+  void Backwards(const std::vector<float> &targetVals, const std::vector<float> &gradOut, layerData &data)override{
+    for(size_t i = 0; i < data.outputSize; ++i){
+      data.grad[i] = (targetVals[i] > 0) ? gradOut[i] : 0.0f; 
+    }
+  };
 };
 
 class nn {

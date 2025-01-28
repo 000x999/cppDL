@@ -123,6 +123,16 @@ T MSE(const std::vector<mat::matrix<T>>& in1, const std::vector<mat::matrix<T>>&
   }
   return (err/elems); 
 }
+
+template <typename T>
+T MSEvec(const std::vector<T> &in, const std::vector<T> &in2){
+  T loss = 0.0; 
+  for(size_t i = 0; i < in.size(); ++i){
+    T diff = in[i] - in2[i]; 
+    loss += 0.5f * diff * diff; 
+  }
+  return loss; 
+}
   
 template <typename T>
 T Conv2D(const mat::matrix<T> &x, const mat::matrix<T> &kernel, uint8_t padding){

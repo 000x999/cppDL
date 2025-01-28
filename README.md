@@ -157,13 +157,16 @@ An extensive and complete Deep Learning library written entirely in C++.
 - Neural Networks Operations:
     ```c++
     //Regular Feed Forward function
-    /*Depending on the Layer types and the number of layers, calling net.Forward() will initiate a callback sequence
+    /*Depending on the Layer types and the number of layers,
+    calling net.Forward() will initiate a callback sequence
     to each of the net's layers corresponding Forward() methods*/
     net.Forward();
-    /*Depending on the Layer types and the number of layers, calling net.Backward() will initiate a callback sequence
+    /*Depending on the Layer types and the number of layers,
+    calling net.Backward() will initiate a callback sequence
     to each of the net's layers corresponding Backward() methods*/
     net.Backward();
-    /*Depending on the Layer types and the number of layers, calling net.update(float eta) will initiate a callback sequence
+    /*Depending on the Layer types and the number of layers,
+    calling net.update(float eta) will initiate a callback sequence
     to each of the net's layers corresponding update() methods and update the learning rates*/
     net.update(float eta);
 

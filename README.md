@@ -156,22 +156,54 @@ An extensive and complete Deep Learning library written entirely in C++.
     
 - Neural Networks Operations:
     ```c++
-    //Regular Feed Forward function
-    /*Depending on the Layer types and the number of layers,
-    calling net.Forward() will initiate a callback sequence
-    to each of the net's layers corresponding Forward() methods*/
-    net.Forward();
-    /*Depending on the Layer types and the number of layers,
-    calling net.Backward() will initiate a callback sequence
-    to each of the net's layers corresponding Backward() methods*/
-    net.Backward();
-    /*Depending on the Layer types and the number of layers,
-    calling net.update(float eta) will initiate a callback sequence
-    to each of the net's layers corresponding update() methods and update the learning rates*/
-    net.update(float eta);
+  Neural::nn net;
+  net.addLinear(3,2); 
+  net.addRelu(2); 
+  net.addLinear(2,1);
+  //Attaches a Loss function to the neural network
+  //using make_unique ensures the neural networks ownership of the loss function
+  net.addLoss(std::make_unique<Neural::MSEloss>());
+  
+  std::vector<float> inputVals = {15.6f, -25.1f, 33.5f}; 
+  std::vector<float> targetVals = {1.0f};
 
-    //More Neural Net specific methods are being implemented... 
-                       
+  float eta = 0.1f; 
+  for(size_t epoch = 0; epoch < 100; ++epoch){
+    //Returns a vector from the Feed forward callback sequence
+    auto out = net.Forward(inputVals);
+    //Computes the loss based off of the target value vector
+    float loss = net.getLoss(targetVals); 
+    std::cout << "Epoch: " << epoch << "Loss: " << loss << " | Output = " << out[0] << " | Target = " << targetVals[0] << std::endl;
+    //Computes the loss gradient
+    auto derivOut  = net.getGrad(targetVals);
+    //Initiates the back propagation callback sequence
+    net.Backwards(derivOut);
+    //Initiates the callback sequence to update the learning rate
+    net.update(eta);
+  }
+
+  //Example output of this Neural network is as follows
+   Epoch: 0 | Loss: 139.941 | Output[1] = 17.7297 | Target = 1
+   Epoch: 1 | Loss: 4.80543 | Output[1] = -2.10014 | Target = 1
+   Epoch: 2 | Loss: 3.8924 | Output[1] = -1.79012 | Target = 1
+   Epoch: 3 | Loss: 3.15284 | Output[1] = -1.51111 | Target = 1
+   Epoch: 4 | Loss: 2.5538 | Output[1] = -1.26 | Target = 1
+   Epoch: 5 | Loss: 2.06858 | Output[1] = -1.034 | Target = 1
+   Epoch: 6 | Loss: 1.67555 | Output[1] = -0.830601 | Target = 1
+   Epoch: 7 | Loss: 1.35719 | Output[1] = -0.64754 | Target = 1
+   Epoch: 8 | Loss: 1.09933 | Output[1] = -0.482786 | Target = 1
+   Epoch: 9 | Loss: 0.890455 | Output[1] = -0.334508 | Target = 1
+   ... A few dozen epochs later ...
+   Epoch: 91 | Loss: 2.78983e-08 | Output[1] = 0.999764 | Target = 1
+   Epoch: 92 | Loss: 2.26015e-08 | Output[1] = 0.999787 | Target = 1
+   Epoch: 93 | Loss: 1.83038e-08 | Output[1] = 0.999809 | Target = 1
+   Epoch: 94 | Loss: 1.4826e-08 | Output[1] = 0.999828 | Target = 1
+   Epoch: 95 | Loss: 1.20082e-08 | Output[1] = 0.999845 | Target = 1
+   Epoch: 96 | Loss: 9.72662e-09 | Output[1] = 0.999861 | Target = 1
+   Epoch: 97 | Loss: 7.87856e-09 | Output[1] = 0.999874 | Target = 1
+   Epoch: 98 | Loss: 6.37894e-09 | Output[1] = 0.999887 | Target = 1 
+   Epoch: 99 | Loss: 5.16997e-09 | Output[1] = 0.999898 | Target = 1
+                            
 ## How It Works:
 - ***A research paper and documentation will be written in due time.***
 ## **Notes**:

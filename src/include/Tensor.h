@@ -123,10 +123,11 @@ namespace TensorOps{
                         std::cout << "]";
                     }
                 };
-            std::cout << "tensor([\n";
+            std::cout << "tensor(\n";
             printRecursive(0, 0, 1);
             std::cout << "\n])" << std::endl;
         }
+
       void zero(){
         for(size_t i = 0; i < this->tensor.m_data.size(); ++i){
           this->tensor.m_data[i] = 0;

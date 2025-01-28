@@ -13,61 +13,61 @@
 #include "Structures.h"
 #include "Functions.h"
 
-namespace nn{
-  //Parent base for all derivations of layer
-  class Layer {
+namespace Neural{
+//Parent base for all derivations of layer
+class layer{ 
   public:
-    virtual ~Layer() = 0; 
-    virtual std::vector<float> Forward(const std::vector<float> &inputVals) = 0;
-    virtual std::vector<float> Backwards(const std::vector<float> &targetVals) = 0; 
-    virtual void update (float eta) {}; 
-  };
-
-  class Net : Layer {
-    private:
-      std::vector<std::vector<float>> weights; 
-      std::vector<float> biasNodes; 
-      std::vector<float> outputNodes; 
-  public:
-    ~Net() override; 
-     Net(size_t inputSize, size_t outputSize){
-      static std::random_device rd; 
-      static std::mt19937 gen(rd()); 
-      static std::uniform_real_distribution<float> randVal(0, 1);
-      weights.resize(outputSize, std::vector<float>(inputSize)); 
-      biasNodes.resize(outputSize,0.0f);
-      //Give the weights and biases random values
-      for(auto& w: weights){
-        for(auto& v: w){
-          v = randVal(gen);
-        }
-      }
-    }
-    std::vector<float> Forward(const std::vector<float> &inputVals) override{}; 
-    std::vector<float> Backwards(const std::vector<float> &inputVals) override{};
-    void update(float eta)override{}; 
-   };
-  //Inherits the same methods as Layer except they have ReLU logic applied to them. 
-  //This will be using the Functions.h methods as they are already implemented 
-  //In place math can be done and will be tested alongside callable functions 
-  class ReLU: Layer{
-    public:
-    std::vector<float> output; 
-    std::vector<float> Forward(const std::vector<float> &inputVals)override{};
-    std::vector<float> Backwards(const std::vector<float> &inputVals)override{};
-    void update(float eta) override{};
-  };
-
-  class Network {
-    public:
-    std::vector<std::unique_ptr<Layer>> layers;
-    Network() = default; 
-    template <typename T, typename... Args>
-    void connectLayer(Args&&... args){
-      layers.emplace_back(std::make_unique<T>(std::forward<Args>(args)...));
-    }
-  };
+  virtual ~layer() = default; 
+  virtual void Forward(const std::vector<float> &inputVals) = 0;
+  virtual void Backwards(const std::vector<float> &targetVals) = 0; 
+  virtual void update (float eta) {}; 
+};
   
+class layerData{
+  public:
+  size_t inputSize; 
+  size_t outputSize;
+  std::vector<float> weights; 
+  std::vector<float> biases; 
+  std::vector<float> activations;
+  std::vector<float> grad;
+  layerData(size_t input, size_t output)
+    :
+    inputSize(input),
+    outputSize(output),
+    weights(input*output, 0.0f),
+    biases(output, 0.0f),
+    activations(output,0.0f),
+    grad(output,0.0f){}
+};
+
+class linear : public layer{
+  public:
+  void Forward(const std::vector<float> &inputVals) override{};
+  void Backwards(const std::vector<float> &inputVals) override{};
+  void update(float eta)override{}; 
+};
+  
+class ReLU: public layer{
+  public:
+  void Forward(const std::vector<float> &inputVals)override{};
+  void Backwards(const std::vector<float> &inputVals)override{};
+};
+
+class nn {
+  public:
+  std::vector<layerData> layerData;
+  std::vector<std::unique_ptr<layer>> layers; 
+  void addLinear(size_t input, size_t output){
+    layerData.emplace_back(input, output); 
+    layers.push_back(std::make_unique<linear>()); 
+  }
+  void addRelu(size_t input){
+    layerData.emplace_back(input,input); 
+    layers.push_back(std::make_unique<ReLU>()); 
+  }
+};
+
 };
 
 

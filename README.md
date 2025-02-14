@@ -3,8 +3,7 @@
 An extensive and complete Deep Learning library written entirely in C++. 
 <br><br>
 ## **CURRENT FEATURES**:
-- Currently supports Tensor operations with up to 312 Million parameters in a negligible amount of time.
-- Currently supports Tensor transformations and with up to 312 Million parameters.
+- Currently supports Tensor operations, transformations and dimensional reshaping with up to 312 Million parameters.
 - Multiple activation/attention functions have been implemented such as softmax, RELU, Sigmoid, SiLU, Softplus, SquarePlus and BinStep.
 - Support for custom N-Sized Matrices as well as matrix addition, subtraction and multiplication through operator overloading. 
 <br><br>

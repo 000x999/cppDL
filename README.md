@@ -1,25 +1,104 @@
 # cppDL
-
-An extensive and complete Deep Learning library written entirely in C++. 
+Extensive Deep Learning library written entirely in C++ STL without any external dependencies. 
 <br><br>
 ## **CURRENT FEATURES**:
 - Currently supports Tensor operations, transformations and dimensional reshaping with up to 312 Million parameters.
-- Multiple activation/attention functions have been implemented such as softmax, RELU, Sigmoid, SiLU, Softplus, SquarePlus and BinStep.
-- Support for custom N-Sized Matrices as well as matrix addition, subtraction and multiplication through operator overloading. 
+- Threaded Tiled Matrix Multiplications of 8192x8192 sized matrices using AVX256 instructions, in ~1.3s at 90GFLOP/s FP32 (CPU Bound).
+- Multi-Threaded, Matrix Transpose of 16384x16384 sized matrices at ~0.8s at 2.55GB/s FP32 (CPU Bound).
+- Custom Sized and Layered Neural Networks with attachable loss functions and optims. 
 <br><br>
 ## ***CURRENTLY WORKING ON:***
-- Custom memory alligned memory allocator to increase Tensor and Matrix operation and transformation speeds **HIGH PRIORITY**.
-- Gradient descent and grad optim methods **HIGH PRIORITY**.
-- Generalized Neural Network templates with the ability to be trained on any type of data set.
+- Optimized methods to increase Tensor and Matrix operations and transformation speeds (Currently being done through AVX256/512 and openMP, strictly CPU bound) **- MATMUL DONE ✅ - TENSOR MUL ⏳**
+- Custom GPU Kernel backend and Kernel execution pipeline using PTX, SPIR-V and SIMT **- IN PROGRESS ⏳**
+- Gradient descent and grad optim methods **- HIGH PRIORITY**.
+- Generalized Neural Network template **- DONE ✅** 
 - Conv functions, Pooling functions, Attention functions/mechanisms (Some are already done), Loss functions, dropout functions, sparse functions and distance functions **HIGH PRIORITY** 
-- Generalized Feed Forward and Back propagation methods.
+- Generalized Feed Forward and Back propagation methods **- DONE ✅**
 - Image and Audio procressing functionalities.
 - Tokenization.
 - ***NOTE 1:*** **Currently refactoring and switching to a Hybrid DOD approach as opposed to a typical OOP approach, I found through some separate testing that this greatly increased performance AND reduced overall memory consumption.**
              **This switch will make writing code in the library slighty more verbose/elaborate. A Hybrid implementation angle is the best move at the moment as it somewhat caps how verbose the code becomes. Obviously this is still in early stages of development so more changes might surface later down the line.** ***!!!!***
 - ***NOTE 2:*** **All the code/structuring for the library that is currently available is NOT final, I am mainly looking to get a working skeleton for the library to allow extensive testing and quick edits to the code. Once the library is in a semi-decent state I will go back and smooth everything out, optimize, implement more robust error checking as well as**
              **Macros, pre-processor implementations for SIMD, multi-platform support/specific operations and architectures, Compiler specific directives and so on.** ***!!!!***
-            
+
+## Benchmarks:
+- MatMul Benchmark:
+    ```c++
+    void MatMulBenchmark(float A, int blocksize){
+       double totalOps = 2.0 * double(A) * double(A) * double(A);
+       double gflopFactor = 1.0e-9;
+       std::cout<< totalOps * 1e-9 << " GFLOP" << std::endl; 
+       mat::matrix<float> mat1(A, A);
+       mat::matrix<float> mat2(A, A); 
+       mat::MatOps<float> op1(mat1); 
+       mat::MatOps<float> op2(mat2);
+       op1.fillMat(); 
+       op2.fillMat(); 
+       op1.setBlockSize(blocksize); 
+       auto start = nanos(); 
+       mat::MatOps<float> op3 = op1 * op2; 
+       auto end = nanos(); 
+       double optTime = (end - start) * 1e-9;
+       double optGflops = (totalOps * gflopFactor) / optTime;
+       std::cout << "AVX MatMul: " << optTime
+       << "s, GFLOP/S = " << optGflops << "\n";
+    }
+    
+    int main(){
+     //First argument is the size of the matrix (Multiple of 8)
+     //Second argument is the block size for the MatMul
+     MatMulBenchmark(1024, 8);
+    }
+
+    //==========Benchmark output==========:
+    2.14748 GFLOP
+    //Cpu specific thread activation info will appear here...
+    Thread 9 out of 16
+    Thread 4 out of 16
+    Thread 1 out of 16
+    Thread 11 out of 16
+    Thread 12 out of 16
+    Thread 14 out of 16
+    Thread 8 out of 16
+           ...
+    AVX MatMul: 0.0310571s, GFLOP/S = 250.1463
+
+- Mattrix Transpose:
+    ```c++
+    void TransposeBenchmark(float A){
+       double totalOps =  double(A) * double(A);
+       double memfactor = 2.0 * A *  A * sizeof(float);
+       double memfactorgb = memfactor / (1024.0 * 1024.0 * 1024.0); 
+       std::cout<< totalOps * 1e-6<< " KB" << std::endl; 
+       mat::matrix<float> mat1(A, A);
+       mat::MatOps<float> op1(mat1); 
+       op1.fillMat();
+       auto start = nanos();
+       op1.TP();
+       auto end = nanos(); 
+       double optTime = (end - start) * 1e-9;
+       double optmem =  memfactorgb / optTime;
+       std::cout << "Transpose: " << optTime
+          << "s, GB/S = " << optmem << "\n";
+    }
+    
+    int main(){
+     //First argument is the size of the matrix 
+     TransposeBenchmark(16384);
+    }
+    
+    //==========Benchmark output==========:
+    268.435 KB
+    //Cpu specific thread activation info will appear here...
+    Thread 9 out of 16
+    Thread 4 out of 16
+    Thread 1 out of 16
+    Thread 11 out of 16
+    Thread 12 out of 16
+    Thread 14 out of 16
+    Thread 8 out of 16
+           ...
+    Transpose: 0.842949s, GB/S = 2.37262
 <br>
 
 ## Code examples:
@@ -43,9 +122,9 @@ An extensive and complete Deep Learning library written entirely in C++.
     ops1.FillTensor();
     ops2.FillTensor();
     //Supports operator overloading and direct assigning to a new TensorOp
-    TensorOps::TensorOps<float> ops3 = ops1 + ops2;
-    TensorOps::TensorOps<float> ops4 = ops3 - ops2;
-    TensorOps::TensorOps<float> ops5 = ops3 * ops4;
+    Tensor::TensorOps<float> ops3 = ops1 + ops2;
+    Tensor::TensorOps<float> ops4 = ops3 - ops2;
+    Tensor::TensorOps<float> ops5 = ops3 * ops4;
     //Zero's out all values in the Tensor
     ops5.zero()
     //Prints Tensor formatted according to it's dimensionality
@@ -103,14 +182,14 @@ An extensive and complete Deep Learning library written entirely in C++.
     mat::matrix<float> D(5,5); 
     mat::matrix<float> A(5,5);
     //Like Tensors we have to pass them through the MatOps constructor to gain access to all matrix operations
-    MatOps::MatOps<float> ops1(A);
-    MatOps::MatOps<float> ops2(D);
+    mat::MatOps<float> ops1(A);
+    mat::MatOps<float> ops2(D);
     ops1.fillMat();
     ops2.fillMat();
     //Supports operator overloading and direct assigning to a new MatOp
-    mat::MatOps::MatOps<float> ops3 = ops1 + ops2;
-    mat::MatOps::MatOps<float> ops4 = ops3 - ops2;
-    mat::MatOps::MatOps<float> ops5 = ops3 * ops4;
+    mat::MatOps<float> ops3 = ops1 + ops2;
+    mat::MatOps<float> ops4 = ops3 - ops2;
+    mat::MatOps<float> ops5 = ops3 * ops4;
     //Matrix Transpose
     ops1.TP();
     ops2.TP();
@@ -121,10 +200,7 @@ An extensive and complete Deep Learning library written entirely in C++.
     //p and q determine the step size of the block, right and down respectively
     //Block returns a regular Matrix or a direct MatOps object
     mat::matrix<float> C = ops1.block(size_t i, size_t j, size_t p, size_ q);        
-    mat::MatOps::MatOps<float> ops6 = ops1.block(size_t i, size_t j, size_t p, size_ q);
-    //Regular MatMul of two Matrices and MatOps is also available
-    mat::matrix<float> E = mat::MatOps::MatOps<float>::matmul(A,D);
-    mat::MatOps::MatOps<float> ops6 = mat::MatOps::MatOps<float>::matmul(ops1,ops2);
+    mat::MatOps<float> ops6 = ops1.block(size_t i, size_t j, size_t p, size_ q);
     //Scalar sum of a Matrix or MatOp is also available
     T sum = A.sum();
     T sum = ops1.sum();

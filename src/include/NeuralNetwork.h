@@ -52,7 +52,7 @@ class layerData{
     for (auto &b : biases) {
         b = dist(gen);
     } 
-    }
+  }
 };
 
 //Parent base for all derivations of layer
@@ -111,7 +111,7 @@ class linear : public layer{
 }
 
 };
-  
+
 class ReLU: public layer{
   public:
   void Forward(const std::vector<float> &inputActivations, layerData &data)override{
@@ -121,7 +121,7 @@ class ReLU: public layer{
       data.output[i] = std::max(0.0f, inputActivations[i]);
     }
   }
-
+  
   void Backwards(const std::vector<float> &derivOut, layerData &data)override{
     assert(derivOut.size() == data.outputSize); 
     std::fill(data.derivIn.begin(), data.derivIn.end(), 0.0f);
@@ -149,7 +149,7 @@ class Sigmoid : public layer{
     }
     data.derivOut = derivOut; 
   }
-}; 
+};
 
 class loss {
   public:
@@ -169,13 +169,33 @@ class MSEloss : public loss{
     }
     return loss;
   }
-  void Backwards(const std::vector<float> &preds, 
-                 const std::vector<float> &targetVals, std::vector<float> &derivOut) override{
+  void Backwards(const std::vector<float> &preds,const std::vector<float> &targetVals, std::vector<float> &derivOut) override{
     assert(preds.size() == targetVals.size()); 
     derivOut.resize(preds.size()); 
     for(size_t i = 0; i < preds.size(); ++i){
       derivOut[i] = preds[i] - targetVals[i]; 
     } 
+  }
+};
+
+class CrossEntropyLoss : public loss{
+  public:
+  float Forward(const std::vector<float> &preds, const std::vector<float> &targetVals) override{
+    assert(preds.size() == targetVals.size());
+    float loss = 0.0f;
+    float epsi = 1e-15; 
+    for(size_t i = 0; i < preds.size(); ++i){
+      float temp = std::max(preds[i], epsi); 
+      loss -= targetVals[i] * std::log(temp); 
+    }
+    return loss; 
+  }
+  void Backwards(const std::vector<float> &preds,const std::vector<float> &targetVals, std::vector<float> &derivOut) override{
+    assert(preds.size() == targetVals.size()); 
+    derivOut.resize(preds.size()); 
+    for(size_t i = 0; i < preds.size(); ++i){
+      derivOut[i] = preds[i] - targetVals[i]; 
+    }
   }
 };
 

@@ -1,6 +1,6 @@
 CXX := g++
-CXXFLAGS := -IC:/w64devkit/include/include -std=c++17 -Wall -Wpedantic -Wextra -g
-
+CXXFLAGS := -IC:/w64devkit/include/include -std=c++17 -Ofast -march=native -flto -mavx2 -mfma -fopenmp -Wall  -g
+LDFLAGS := -fopenmp
 SRC_DIR := src
 BUILD_DIR := build
 BIN := cppDL

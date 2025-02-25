@@ -1,18 +1,20 @@
 # cppDL
 
-An extensive and complete Deep Learning library written entirely in C++. 
+An extensive and complete Deep Learning library written entirely in C++ STL without any external dependencies. 
 <br><br>
 ## **CURRENT FEATURES**:
 - Currently supports Tensor operations, transformations and dimensional reshaping with up to 312 Million parameters.
-- Multiple activation/attention functions have been implemented such as softmax, RELU, Sigmoid, SiLU, Softplus, SquarePlus and BinStep.
-- Support for custom N-Sized Matrices as well as matrix addition, subtraction and multiplication through operator overloading. 
+- Multi-Threaded Matrix Multiplications of 4096x4096 sized matrices, in ~1.3s at 90GFLOP/s FP32 (CPU Bound).
+- Multi-Threaded Matrix Transpose of 16384x16384 sized matrices at ~0.8s at 2.55GB/s FP32 (CPU Bound).
+- Custom Sized and Layered Neural Networks with attachable loss functions and optims. 
 <br><br>
 ## ***CURRENTLY WORKING ON:***
-- Custom memory alligned memory allocator to increase Tensor and Matrix operation and transformation speeds **HIGH PRIORITY**.
-- Gradient descent and grad optim methods **HIGH PRIORITY**.
-- Generalized Neural Network templates with the ability to be trained on any type of data set.
+- Optimized methods to increase Tensor and Matrix operations and transformation speeds (Currently being done through AVX256/512 and openMP, strictly CPU bound) **- MATMUL DONE ✅ - TENSOR MUL ⏳**
+- Custom GPU Kernel backend and Kernel execution pipeline using PTX, SPIR-V and SIMT **- IN PROGRESS ⏳**
+- Gradient descent and grad optim methods **- HIGH PRIORITY**.
+- Generalized Neural Network template **- DONE ✅** 
 - Conv functions, Pooling functions, Attention functions/mechanisms (Some are already done), Loss functions, dropout functions, sparse functions and distance functions **HIGH PRIORITY** 
-- Generalized Feed Forward and Back propagation methods.
+- Generalized Feed Forward and Back propagation methods **- DONE ✅**
 - Image and Audio procressing functionalities.
 - Tokenization.
 - ***NOTE 1:*** **Currently refactoring and switching to a Hybrid DOD approach as opposed to a typical OOP approach, I found through some separate testing that this greatly increased performance AND reduced overall memory consumption.**

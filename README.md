@@ -61,7 +61,7 @@ Extensive Deep Learning library written entirely in C++ STL without any external
     Thread 14 out of 16
     Thread 8 out of 16
            ...
-    AVX MatMul: 0.0310571s, GFLOP/S = 250.1463
+    AVX MatMul: 0.0110571s, GFLOP/S = 194.217
 
 - Mattrix Transpose:
     ```c++

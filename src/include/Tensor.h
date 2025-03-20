@@ -1,6 +1,5 @@
 #ifndef TENSOR_H
 #define TENSOR_H
-#include "RandomGen.h"
 #include <iostream> 
 #include <vector>
 #include <numeric>
@@ -31,8 +30,8 @@ struct Tensor{
       totalSize *= dim;
     }
     m_data = std::vector<T>(totalSize, T()); 
-  }
-};
+    }
+  };
 
 template <typename T>  
 class TensorOps{

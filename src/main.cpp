@@ -2,7 +2,11 @@
 #include "include/Functions.h"
 #include "include/Structures.h"
 #include "include/NeuralNetwork.h"
+#include "include/Tokenizer.h"
 #include <stdlib.h>
+#include <fstream>
+#include <chrono>
+#include <thread>
 #include <x86intrin.h>
 
 uint64_t nanos() {
@@ -11,9 +15,24 @@ uint64_t nanos() {
     return (uint64_t)start.tv_sec * 1000000000ULL + (uint64_t)start.tv_nsec;
 }
 
+void loadicon(){
+  std::cout<<"\033[35;106m\r\033[m";
+  fflush(0);
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  std::cout<<"\033[35;106m\r\033[m";
+  fflush(0);
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  std::cout<<"\033[35;106m\r\033[m";
+  fflush(0);
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  std::cout<<"\033[35;106m\r\033[m";
+  fflush(0);
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+}
+
 void loadbar(int x){
   float prog = (float)x / 2500; 
-  float bw = 70;
+  float bw = 90;
   float pos = bw * prog;
   for(size_t i = 0; i < bw; ++i){
     if(i < pos) std::cout << "\033[35;106m \033[m"; 
@@ -77,7 +96,7 @@ void TensorBenchmark(){
 
 void NeuralTest(){ 
   size_t epochmax = 2500;
-  size_t squeezemax = 10; 
+  size_t squeezemax = 1; 
   auto start = nanos(); 
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -116,7 +135,7 @@ void NeuralTest(){
       printf("\033[47;30m | OUTPUT[0] = %f\033[m", out[0]);
       printf("\033[47;30m | TARGET VAL = %i\033[m", (int)targetVals[0]);
       std::cout<<" [ ";
-      loadbar(epoch); 
+      loadbar(epoch);
     }
   }
   auto end = nanos(); 
@@ -129,10 +148,46 @@ void NeuralTest(){
   std::cout<<"\n"; 
 }
 
+void tokenizerTest(){
+  BPE::BPETokenizer tokenizer;
+  std::string filePath = "src/TokenModels/DataSet.txt"; 
+  std::ifstream infile {filePath};
+  std::string trainingText {std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>()};
+  size_t numMerges = 5;
+  std::cout << "Training BPE tokenizer with " << numMerges << " merges...\n";
+  tokenizer.train(trainingText, numMerges);
+  std::string testText = "I am testing out a large training data set for the tokenizer, we will see if this works properly.";
+  std::vector<BPE::g_tokenid> encodedIds = tokenizer.encode(testText);
+  std::cout << "Encoded IDs for test text:\n";
+  int idCount = 0; 
+  for (const auto& id : encodedIds) {
+    std::cout << "Encoded ID: " << id << " -> '" << tokenizer.decode({id}) << "'\n";
+    idCount++;
+    if(idCount == 10){
+      std::cout<<"The rest of the encoded ID's output here ...\n" << std::endl;
+      break;
+    }
+  }
+  std::string decodedText = tokenizer.decode(encodedIds);
+  std::cout << "Decoded text: " << decodedText << std::endl;
+  if (decodedText == testText) {
+    std::cout << "***NOTE***: Encoding/decoding is lossless" << std::endl;
+  } 
+  else {
+    std::cout << "***WARNING***: Encoding/decoding is not lossless" << std::endl;
+  }
+  tokenizer.saveModel("src/TokenModels/bpe_vocab.txt", "src/TokenModels/bpe_merges.txt");
+  std::cout << "Model saved to files" << std::endl;
+  tokenizer.printStats();
+}
+
 int main() {
   //NeuralTest();
- //MatMulBenchmark(1024, 16);
- TransposeBenchmark(8192*2);  
- //TensorBenchmark(); 
+  //MatMulBenchmark(128,8);
+  //MatMulBenchmark(1024, 32);
+  //TransposeBenchmark(199);
+  //TransposeBenchmark(16384);  
+  //TensorBenchmark();
+  tokenizerTest();
   return 0;
 }

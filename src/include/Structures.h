@@ -81,19 +81,6 @@ public:
       }
     }
   }
-     
-  T dot(const matrix<T>&b){
-    T sum = 0; 
-    if(mat.m_col != b.m_col){
-      std::cout<<"Invalid matrix sizes"<<std::endl;
-    }
-    for(size_t i = 0; i < mat.m_row; i++ ){
-      for(size_t j = 0; j < mat.m_col; j++){
-        sum += mat.mat[i][j] * b.mat[i][j]; 
-      }
-    }
-    return sum;
-  }
     
   mat::matrix<T> block(size_t i,size_t j,size_t p,size_t q){
     if (i + p > this->mat.m_row || j + q > this->mat.m_col) {
@@ -149,9 +136,7 @@ public:
   }
 
   MatOps<T> operator*(const MatOps<T> &rhs)const{
-    
   #define N static_cast<int>(this->mat.m_row)
-     
    __attribute__((aligned(32))) mat::matrix<float> A = this->mat;  
    __attribute__((aligned(32))) mat::matrix<float> B = rhs.mat;
    __attribute__((aligned(32))) mat::matrix<float> C(this->mat.m_row, this->mat.m_col);
@@ -243,7 +228,7 @@ public:
 
   MatOps<T>& operator -=(const MatOps<T> rhs)const{
       return *this = *this - rhs; 
-    }
+  }
 };
 };
 #endif

@@ -5,7 +5,8 @@ Extensive Deep Learning library written entirely in C++ STL without any external
 - Currently supports Tensor operations, transformations and dimensional reshaping with up to 312 Million parameters.
 - Threaded Tiled Matrix Multiplications of 8192x8192 sized matrices using AVX256 instructions, in ~1.3s at 90GFLOP/s FP32 (CPU Bound).
 - Multi-Threaded, Matrix Transpose of 16384x16384 sized matrices at ~0.8s at 2.55GB/s FP32 (CPU Bound).
-- Custom Sized and Layered Neural Networks with attachable loss functions and optims. 
+- Custom Sized and Layered Neural Networks with attachable loss functions and optims.
+- Text tokenization through Byte pair encoding, automatic grammar generation through token merge rules, vocabulary saving/loading, encoding and decoding of text. 
 <br><br>
 ## ***CURRENTLY WORKING ON:***
 - Optimized methods to increase Tensor and Matrix operations and transformation speeds (Currently being done through AVX256/512 and openMP, strictly CPU bound) **- MATMUL DONE ✅ - TENSOR MUL ⏳**

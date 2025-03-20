@@ -205,7 +205,8 @@ Extensive Deep Learning library written entirely in C++ STL without any external
     std::cout << "Training BPE tokenizer with " << numMerges << " merges...\n";
     //Initialize the training sequence
     tokenizer.train(trainingText, numMerges);
-    std::string testText = "I am testing out a large training data set for the tokenizer, we will see if this works properly.";
+    std::string testText = "I am testing out a large training data set for the tokenizer,
+                            we will see if this works properly.";
     /*The training process will write two text files, bpe_vocab and bpe_merges. From the vocabulary set contained within them,
       We can now encode any input text with the same rules and grammar compression found in the initial data set.*/
     std::vector<BPE::g_tokenid> encodedIds = tokenizer.encode(testText);

@@ -102,6 +102,95 @@ Extensive Deep Learning library written entirely in C++ STL without any external
 <br>
 
 ## Code examples:
+    
+- Creating Neural Networks:
+    ```c++
+    //Creates a net object
+    Neural::nn net;
+    //Adds a linear layer with 30 input nodes and 50 output nodes
+    net.addLinear(30,50);
+    //Adds a ReLU layer that takes in 50 input nodes
+    net.addRelu(50);
+    //Adds a Linear layer with 50 input nodes and 20 output nodes
+    net.addLinear(50,25);
+    net.addLeakyReLU(25);
+    net.addLinear(25,10);
+    net.addReLU(10);
+    net.addSigmoid(10,1);
+    
+- Neural Networks Operations:
+    ```c++
+   //Define a maximum amount of epochs and a squeezemax (not required, so can be set to 1)
+   size_t epochmax = 100;
+   size_t squeezemax = 1; 
+   auto start = nanos(); 
+   std::random_device rd;
+   std::mt19937 gen(rd());
+   std::uniform_real_distribution<float> dist(-50.0f, 100.0f);
+   std::vector<float> inputVals;
+   for(size_t i = 0; i < 10000; ++i) {
+     inputVals.emplace_back(dist(gen));
+   }
+   std::vector<float> targetVals = {1.0f};
+   float eta = 0.000001; 
+   //Create a net object
+   Neural::nn net;
+   //The first layer input size has to be as big as the data set
+   net.addLinear(inputVals.size(),1000);
+   //Adds a relu layer
+   net.addRelu(1000);
+   net.addLinear(1000,100);
+   //Adds a sigmoid layer
+   net.addSigmoid(100);
+   net.addLinear(100,1);
+   //Attaches a loss function to the net as a make_unique to ensure ownership
+   net.addLoss(std::make_unique<Neural::MSEloss>());
+  
+   std::vector<float> out; 
+   float loss; 
+              
+   for(size_t epoch = 0; epoch < epochmax; ++epoch){
+     for(size_t squeeze = 0; squeeze < squeezemax; ++squeeze){
+       //Returns a vector from the Feed forward callback sequence
+       out = net.Forward(inputVals);
+       //Computes the loss based off of the target value vector
+       loss = net.getLoss(targetVals);
+       //Computes the loss gradient
+       auto derivOut  = net.getGrad(targetVals);
+       net.Backwards(derivOut);
+       //Initiates the callback sequence to update the learning rate
+       net.update(eta);
+     }
+     if(epoch % 10 == 0){
+       //Simple output 
+       printf("\033[47;30m | EPOCH = %i\033[m", (int)epoch);
+       printf("\033[47;30m | LOSS = %f\033[m", loss);
+       printf("\033[47;30m | OUTPUT[0] = %f\033[m", out[0]);
+       printf("\033[47;30m | TARGET VAL = %i\033[m", (int)targetVals[0]);
+       std::cout<<" [ ";
+       //Loadbar is just a helper function to display a training progress bar
+       loadbar(epoch);
+     }
+   }
+   auto end = nanos(); 
+   auto opttime = (end - start) * 1e-9;
+   std::cout<<"\n\n";
+   std::cout<< "||| Total training time: " << opttime << std::endl; 
+   std::cout<< "||| Total EPOCHS: " << epochmax <<std::endl; 
+   std::cout<< "||| Total SQUEEZE: " << squeezemax << std::endl;
+   std::cout<< "||| Training data size: " << inputVals.size() << " data points" <<std::endl; 
+   std::cout<<"\n"; 
+
+  //Example output of this Neural network is as follows
+  **EXECUTING**
+  | EPOCH = 90 | LOSS = 50.924828 | OUTPUT[0] = 11.092059 | TARGET VAL = 1 [=====                                       ] 3.6%
+ 
+  ||| Total training time: 1.11512
+  ||| Total EPOCHS: 100
+  ||| Total SQUEEZE: 1
+  ||| Training data size: 10000 data points
+
+
 
 - Tokenizing:
     ```c++
@@ -253,71 +342,7 @@ Extensive Deep Learning library written entirely in C++ STL without any external
     0.355872, 0.781755, 0.446186, 0.108611, 0.472237,
     0.95464, 0.185323, 0.506123, 0.951211, 0.517346,
     ]
-    
-- Creating Neural Networks:
-    ```c++
-    //Creates a net object
-    Neural::nn net;
-    //Adds a linear layer with 30 input nodes and 50 output nodes
-    net.addLinear(30,50);
-    //Adds a ReLU layer that takes in 50 input nodes
-    net.addRelu(50);
-    //Adds a Linear layer with 50 input nodes and 20 output nodes
-    net.addLinear(50,25);
-    net.addLeakyReLU(25);
-    net.addLinear(25,10);
-    net.addReLU(10);
-    net.addSigmoid(10,1);
-    
-- Neural Networks Operations:
-    ```c++
-  Neural::nn net;
-  net.addLinear(3,2); 
-  net.addRelu(2); 
-  net.addLinear(2,1);
-  //Attaches a Loss function to the neural network
-  //using make_unique ensures the neural networks ownership of the loss function
-  net.addLoss(std::make_unique<Neural::MSEloss>());
-  
-  std::vector<float> inputVals = {15.6f, -25.1f, 33.5f}; 
-  std::vector<float> targetVals = {1.0f};
 
-  float eta = 0.1f; 
-  for(size_t epoch = 0; epoch < 100; ++epoch){
-    //Returns a vector from the Feed forward callback sequence
-    auto out = net.Forward(inputVals);
-    //Computes the loss based off of the target value vector
-    float loss = net.getLoss(targetVals); 
-    std::cout << "Epoch: " << epoch << "Loss: " << loss << " | Output = " << out[0] << " | Target = " << targetVals[0] << std::endl;
-    //Computes the loss gradient
-    auto derivOut  = net.getGrad(targetVals);
-    //Initiates the back propagation callback sequence
-    net.Backwards(derivOut);
-    //Initiates the callback sequence to update the learning rate
-    net.update(eta);
-  }
-
-  //Example output of this Neural network is as follows
-   Epoch: 0 | Loss: 139.941 | Output[1] = 17.7297 | Target = 1
-   Epoch: 1 | Loss: 4.80543 | Output[1] = -2.10014 | Target = 1
-   Epoch: 2 | Loss: 3.8924 | Output[1] = -1.79012 | Target = 1
-   Epoch: 3 | Loss: 3.15284 | Output[1] = -1.51111 | Target = 1
-   Epoch: 4 | Loss: 2.5538 | Output[1] = -1.26 | Target = 1
-   Epoch: 5 | Loss: 2.06858 | Output[1] = -1.034 | Target = 1
-   Epoch: 6 | Loss: 1.67555 | Output[1] = -0.830601 | Target = 1
-   Epoch: 7 | Loss: 1.35719 | Output[1] = -0.64754 | Target = 1
-   Epoch: 8 | Loss: 1.09933 | Output[1] = -0.482786 | Target = 1
-   Epoch: 9 | Loss: 0.890455 | Output[1] = -0.334508 | Target = 1
-   ... A few dozen epochs later ...
-   Epoch: 91 | Loss: 2.78983e-08 | Output[1] = 0.999764 | Target = 1
-   Epoch: 92 | Loss: 2.26015e-08 | Output[1] = 0.999787 | Target = 1
-   Epoch: 93 | Loss: 1.83038e-08 | Output[1] = 0.999809 | Target = 1
-   Epoch: 94 | Loss: 1.4826e-08 | Output[1] = 0.999828 | Target = 1
-   Epoch: 95 | Loss: 1.20082e-08 | Output[1] = 0.999845 | Target = 1
-   Epoch: 96 | Loss: 9.72662e-09 | Output[1] = 0.999861 | Target = 1
-   Epoch: 97 | Loss: 7.87856e-09 | Output[1] = 0.999874 | Target = 1
-   Epoch: 98 | Loss: 6.37894e-09 | Output[1] = 0.999887 | Target = 1 
-   Epoch: 99 | Loss: 5.16997e-09 | Output[1] = 0.999898 | Target = 1
                             
 ## How It Works:
 - ***A research paper and documentation will be written in due time.***

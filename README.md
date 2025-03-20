@@ -9,7 +9,8 @@ Extensive Deep Learning library written entirely in C++ STL without any external
 <br><br>
 ## ***CURRENTLY WORKING ON:***
 - Optimized methods to increase Tensor and Matrix operations and transformation speeds (Currently being done through AVX256/512 and openMP, strictly CPU bound) **- MATMUL DONE ✅ - TENSOR MUL ⏳**
-- Custom GPU Kernel backend and Kernel execution pipeline using PTX, SPIR-V and SIMT **- IN PROGRESS ⏳**
+- ~Custom GPU Kernel backend and Kernel execution pipeline using PTX, SPIR-V and SIMT **- IN PROGRESS ⏳**~
+- I'm tabling the custom GPU kernel, Drivers and Execution pipeline for now... The furthest I got with a custom driver was detecting and talking to the GPU (On windows) but anything beyond that is outside my current knowledge unfortunately. I'll be switching to a custom VULKAN Computer Shader backend for all GPU operation offloading, I'll be using VULKAN since it's readily available on any GPU and doesn't rely on maker specific BLAS libraries like CUDA or ROCm.
 - Gradient descent and grad optim methods **- HIGH PRIORITY**.
 - Generalized Neural Network template **- DONE ✅** 
 - Conv functions, Pooling functions, Attention functions/mechanisms (Some are already done), Loss functions, dropout functions, sparse functions and distance functions **HIGH PRIORITY** 

@@ -103,6 +103,46 @@ Extensive Deep Learning library written entirely in C++ STL without any external
 
 ## Code examples:
 
+- Tokenizing:
+    ```c++
+    //Initialize a tokenizer object 
+    BPE::BPETokenizer tokenizer;
+    std::string filePath = "src/TokenModels/DataSet.txt"; 
+    std::ifstream infile {filePath};
+    std::string trainingText {std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>()};
+    //Define the number of merges for any possible detected grammar in the data set
+    size_t numMerges = 5;
+    std::cout << "Training BPE tokenizer with " << numMerges << " merges...\n";
+    //Initialize the training sequence
+    tokenizer.train(trainingText, numMerges);
+    std::string testText = "I am testing out a large training data set for the tokenizer, we will see if this works properly.";
+    /*The training process will write two text files, bpe_vocab and bpe_merges. From the vocabulary set contained within them,
+      We can now encode any input text with the same rules and grammar compression found in the initial data set.*/
+    std::vector<BPE::g_tokenid> encodedIds = tokenizer.encode(testText);
+    std::cout << "Encoded IDs for test text:\n";
+    int idCount = 0; 
+    for (const auto& id : encodedIds) {
+      std::cout << "Encoded ID: " << id << " -> '" << tokenizer.decode({id}) << "'\n";
+      idCount++;
+      if(idCount == 10){
+        std::cout<<"The rest of the encoded ID's output here ...\n" << std::endl;
+        break;
+      }
+    }
+    //Decode the encoded text ID's 
+    std::string decodedText = tokenizer.decode(encodedIds);
+    std::cout << "Decoded text: " << decodedText << std::endl;
+    if (decodedText == testText) {
+      std::cout << "***NOTE***: Encoding/decoding is lossless" << std::endl;
+    } 
+    else {
+      std::cout << "***WARNING***: Encoding/decoding is not lossless" << std::endl;
+    }
+    //Saves current model vocabulary and merge rules so they can be re-used.
+    tokenizer.saveModel("src/TokenModels/bpe_vocab.txt", "src/TokenModels/bpe_merges.txt");
+    std::cout << "Model saved to files" << std::endl;
+    tokenizer.printStats();
+
 - Creating Tensors:
     ```c++
     /*The first parameter is the Tensor's rank,

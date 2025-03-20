@@ -15,7 +15,7 @@ Extensive Deep Learning library written entirely in C++ STL without any external
 - Conv functions, Pooling functions, Attention functions/mechanisms (Some are already done), Loss functions, dropout functions, sparse functions and distance functions **HIGH PRIORITY** 
 - Generalized Feed Forward and Back propagation methods **- DONE ✅**
 - Image and Audio procressing functionalities.
-- Tokenization **- DONE ✅ -BPE Tokenizer, Saving vocabularies, Loading vocabularies** **- IN PROGRESS: -Text modeling, -Text generation and prediction⏳** 
+- Tokenization **- DONE ✅ -BPE Tokenizer, Saving vocabularies, Loading vocabularies** **- IN PROGRESS: -Text modeling, -Text generation and prediction, -SIMD and Multi-Threading optimizations still need to be done⏳** 
 - ***NOTE 1:*** **Currently refactoring and switching to a Hybrid DOD approach as opposed to a typical OOP approach, I found through some separate testing that this greatly increased performance AND reduced overall memory consumption.**
              **This switch will make writing code in the library slighty more verbose/elaborate. A Hybrid implementation angle is the best move at the moment as it somewhat caps how verbose the code becomes. Obviously this is still in early stages of development so more changes might surface later down the line.** ***!!!!***
 - ***NOTE 2:*** **All the code/structuring for the library that is currently available is NOT final, I am mainly looking to get a working skeleton for the library to allow extensive testing and quick edits to the code. Once the library is in a semi-decent state I will go back and smooth everything out, optimize, implement more robust error checking as well as**

@@ -1,5 +1,5 @@
 # cppDL
-Extensive Deep Learning library written entirely in C++ STL without any external dependencies. 
+Extensive Deep Learning library written entirely in C++ STL and VULKAN 
 <br><br>
 ## **CURRENT FEATURES**:
 - Currently supports Tensor operations, transformations and dimensional reshaping with up to 312 Million parameters.

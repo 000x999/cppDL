@@ -30,18 +30,6 @@ void loadicon(){
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
 }
 
-void loadbar(int x){
-  float prog = (float)x / 2500; 
-  float bw = 90;
-  float pos = bw * prog;
-  for(size_t i = 0; i < bw; ++i){
-    if(i < pos) std::cout << "\033[35;106m \033[m"; 
-    else std::cout << " "; 
-  }
-  std::cout<<"] " << prog * 100 << "%\r" << std::flush;
-  
-}
-
 void MatMulBenchmark(float A, int blocksize){
   double totalOps = 2.0 * double(A) * double(A) * double(A);
   double gflopFactor = 1.0e-9;
@@ -95,7 +83,7 @@ void TensorBenchmark(){
 }
 
 void NeuralTest(){ 
-  size_t epochmax = 2500;
+  size_t epochmax = 100;
   size_t squeezemax = 1; 
   auto start = nanos(); 
   std::random_device rd;
@@ -128,14 +116,12 @@ void NeuralTest(){
       net.update(eta);
     }
     if(epoch % 10 == 0){
-      /*std::cout << "\033[47;30m EPOCH = \033[m" << epoch << "\033[47;30m | LOSS = \033[m" << loss << "\033[47;30m | OUTPUT[0] = \033[m" << out[0] 
-       << "\033[47;30m | TARGET VAL = \033[m" << targetVals[0] << " [ ";*/
       printf("\033[47;30m | EPOCH = %i\033[m", (int)epoch);
       printf("\033[47;30m | LOSS = %f\033[m", loss);
       printf("\033[47;30m | OUTPUT[0] = %f\033[m", out[0]);
       printf("\033[47;30m | TARGET VAL = %i\033[m", (int)targetVals[0]);
       std::cout<<" [ ";
-      loadbar(epoch);
+      net.loadbar(epoch);
     }
   }
   auto end = nanos(); 
@@ -182,12 +168,12 @@ void tokenizerTest(){
 }
 
 int main() {
-  //NeuralTest();
+  NeuralTest();
   //MatMulBenchmark(128,8);
   //MatMulBenchmark(1024, 32);
   //TransposeBenchmark(199);
   //TransposeBenchmark(16384);  
   //TensorBenchmark();
-  tokenizerTest();
+  //tokenizerTest();
   return 0;
 }

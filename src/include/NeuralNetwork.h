@@ -265,6 +265,18 @@ class nn {
       layers[i]->update(layerData[i], eta); 
     }
   }
+  
+  void loadbar(int x){
+   float prog = (float)x / 2500; 
+   float bw = 90;
+   float pos = bw * prog;
+   for(size_t i = 0; i < bw; ++i){
+    if(i < pos) std::cout << "\033[35;106m \033[m"; 
+    else std::cout << " "; 
+  }
+  std::cout<<"] " << prog * 100 << "%\r" << std::flush;
+}
+
 };
 };
 #endif 

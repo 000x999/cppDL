@@ -360,19 +360,15 @@ Extensive Deep Learning library written entirely in C++ STL and VULKAN
                             
 ## How It Works:
 - ***A research paper and documentation will be written in due time.***
-## **Notes**:
- ***STILL A WORK IN PROGRESS***
 <br><br>
 ## Requirements
 - C++17 or newer
 - MinGW/GCC/G++
 <br><br>
-## Usage instructions
-- ***A comprehensive guide to use this library will be written in due time.***
-<br><br>
 ### Building 
 - Compile and run using the provided Makefile:
     ```bash
     - Make sure to have 'Make' installed and 'GCC'/'G++' 
-    - Set your C++ STL 'Includes' folder path in the CXXFLAGS section inside the Makefile. 
+    - Set your C++ STL 'Includes' folder path in the CXXFLAGS section inside the Makefile
+      (Only required if you do NOT have a config.yaml path file for your compiler)
     - Simply run 'make' directly in the command line from within the 'cppDL' folder.  

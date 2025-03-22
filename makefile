@@ -1,9 +1,20 @@
 CXX := g++
-CXXFLAGS := -IC:/w64devkit/include/include -std=c++17 -Ofast -march=native -flto -mavx2 -mfma -fopenmp -Wall  -g
-LDFLAGS := -fopenmp
+CXXFLAGS := -std=c++17 -Wall  -g
+LDFLAGS := 
 SRC_DIR := src
 BUILD_DIR := build
 BIN := cppDL
+
+USE_AVX256 ?= 1
+USE_VULKAN ?= 0 
+USE_OPENGL ?= 0 
+
+ifeq ($(USE_AVX256),1)
+	CXXFLAGS += -DUSE_AVX256 -Ofast -march=native -flto -mavx2 -mfma -fopenmp
+	LDFLAGS += -DUSE_AVX256 -fopenmp
+else 
+	CXXFLAGS += -DUSE_AVX256=0
+endif
 
 SRCS := $(wildcard $(SRC_DIR)/*.cpp)
 

@@ -104,6 +104,17 @@ Extensive Deep Learning library written entirely in C++ STL and VULKAN
 <br>
 
 ## Code examples:
+- How to use the makefile and extra compile flags:
+    ```js
+    //This cleans all .o files from the /build folder
+    make clean
+    //This builds the current project as is with ALL preprocessors disabled by default except AVX256
+    make
+    //You can explicitly disable/enable AVX256 optimizations (Currently supported by MatMul and MatrixTranspose)
+    /*If left enabled or specified as enabled, the makefile will automatically
+    add all required CXXFLAGS and LDFLAGS to the current commandline instance*/
+    make USE_AVX256=0
+    make USE_AVX256=1
     
 - Creating Neural Networks:
     ```c++

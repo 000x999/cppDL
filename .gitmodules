@@ -1,0 +1,3 @@
+[submodule "src/include/blas"]
+	path = src/include/blas
+	url = https://github.com/000x999/CRUSHBLAS.git

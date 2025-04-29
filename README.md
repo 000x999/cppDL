@@ -1,5 +1,6 @@
 # cppDL
-Extensive Deep Learning library written entirely in C++ STL and VULKAN 
+- Extensive Deep Learning/Machine Learning library written entirely in C++ STL and VULKAN. 
+- Uses my custom BLAS/Encryption/Compression library CRUSHBLAS.
 <br><br>
 ## **CURRENT FEATURES**:
 - Currently supports Tensor operations, transformations and dimensional reshaping with up to 312 Million parameters.

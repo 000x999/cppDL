@@ -4,10 +4,11 @@
 <br><br>
 ## **CURRENT FEATURES**:
 - Currently supports Tensor operations, transformations and dimensional reshaping with up to 312 Million parameters.
-- Threaded Tiled Matrix Multiplications of 8192x8192 sized matrices using AVX256 instructions, in ~1.3s at 90GFLOP/s FP32 (CPU Bound).
-- Multi-Threaded, Matrix Transpose of 16384x16384 sized matrices at ~0.8s at 2.55GB/s FP32 (CPU Bound).
 - Custom Sized and Layered Neural Networks with attachable loss functions and optims.
-- Text tokenization through Byte pair encoding, automatic grammar generation through token merge rules, vocabulary saving/loading, encoding and decoding of text. 
+- Text tokenization through Byte pair encoding, automatic grammar generation through token merge rules, vocabulary saving/loading, encoding and decoding of text.
+- Generalized matrix and matrix operations containers using a single contiguous array structure.
+- Threaded Tiled Matrix Multiplications of matrices using AVX256 instructions, speed will depend on the machine, but you can expect 4096x4096 matrices in ~0.66s at 225 GFLOP/s FP32 (CPU Bound).
+- Multi-Threaded and Tiled, Matrix Transpose of matrices using AVX256 instructions , speed will depend on the machine, but you can expect 16384x16384 matrices in ~0.889s at 2.25 GB/s FP32 (CPU Bound). 
 <br><br>
 ## ***CURRENTLY WORKING ON:***
 - Optimized methods to increase Tensor and Matrix operations and transformation speeds (Currently being done through AVX256/512 and openMP, strictly CPU bound) **- MATMUL DONE ✅ - TENSOR MUL ⏳**

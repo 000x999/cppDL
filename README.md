@@ -1,12 +1,14 @@
 # cppDL
-Extensive Deep Learning library written entirely in C++ STL and VULKAN 
+- Extensive Deep Learning/Machine Learning library written entirely in C++ STL and VULKAN. 
+- Uses my custom BLAS/Encryption/Compression library CRUSHBLAS.
 <br><br>
 ## **CURRENT FEATURES**:
 - Currently supports Tensor operations, transformations and dimensional reshaping with up to 312 Million parameters.
-- Threaded Tiled Matrix Multiplications of 8192x8192 sized matrices using AVX256 instructions, in ~1.3s at 90GFLOP/s FP32 (CPU Bound).
-- Multi-Threaded, Matrix Transpose of 16384x16384 sized matrices at ~0.8s at 2.55GB/s FP32 (CPU Bound).
 - Custom Sized and Layered Neural Networks with attachable loss functions and optims.
-- Text tokenization through Byte pair encoding, automatic grammar generation through token merge rules, vocabulary saving/loading, encoding and decoding of text. 
+- Text tokenization through Byte pair encoding, automatic grammar generation through token merge rules, vocabulary saving/loading, encoding and decoding of text.
+- Generalized matrix and matrix operations containers using a single contiguous array structure.
+- Threaded Tiled Matrix Multiplications of matrices using AVX256 instructions, speed will depend on the machine, but you can expect 4096x4096 matrices in ~0.66s at 225 GFLOP/s FP32 (CPU Bound).
+- Multi-Threaded and Tiled, Matrix Transpose of matrices using AVX256 instructions , speed will depend on the machine, but you can expect 16384x16384 matrices in ~0.889s at 2.25 GB/s FP32 (CPU Bound). 
 <br><br>
 ## ***CURRENTLY WORKING ON:***
 - Optimized methods to increase Tensor and Matrix operations and transformation speeds (Currently being done through AVX256/512 and openMP, strictly CPU bound) **- MATMUL DONE ✅ - TENSOR MUL ⏳**
@@ -104,6 +106,17 @@ Extensive Deep Learning library written entirely in C++ STL and VULKAN
 <br>
 
 ## Code examples:
+- How to use the makefile and extra compile flags:
+    ```js
+    //This cleans all .o files from the /build folder
+    make clean
+    //This builds the current project as is with ALL preprocessors disabled by default except AVX256
+    make
+    //You can explicitly disable/enable AVX256 optimizations (Currently supported by MatMul and MatrixTranspose)
+    /*If left enabled or specified as enabled, the makefile will automatically
+    add all required CXXFLAGS and LDFLAGS to the current commandline instance*/
+    make USE_AVX256=0
+    make USE_AVX256=1
     
 - Creating Neural Networks:
     ```c++
@@ -349,19 +362,15 @@ Extensive Deep Learning library written entirely in C++ STL and VULKAN
                             
 ## How It Works:
 - ***A research paper and documentation will be written in due time.***
-## **Notes**:
- ***STILL A WORK IN PROGRESS***
 <br><br>
 ## Requirements
 - C++17 or newer
 - MinGW/GCC/G++
 <br><br>
-## Usage instructions
-- ***A comprehensive guide to use this library will be written in due time.***
-<br><br>
 ### Building 
 - Compile and run using the provided Makefile:
     ```bash
     - Make sure to have 'Make' installed and 'GCC'/'G++' 
-    - Set your C++ STL 'Includes' folder path in the CXXFLAGS section inside the Makefile. 
+    - Set your C++ STL 'Includes' folder path in the CXXFLAGS section inside the Makefile
+      (Only required if you do NOT have a config.yaml path file for your compiler)
     - Simply run 'make' directly in the command line from within the 'cppDL' folder.  

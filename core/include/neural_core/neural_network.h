@@ -14,33 +14,33 @@
 
 namespace Neural{
 
-class layerData{
+class layer_data{
   public:
-  size_t inputSize; 
-  size_t outputSize;
+  size_t layer_input_size; 
+  size_t layer_output_size;
   std::vector<float> weights; 
   std::vector<float> biases;
   
   std::vector<float> input; 
   std::vector<float> output;
   
-  std::vector<float> derivIn; 
-  std::vector<float> derivOut; 
+  std::vector<float> layer_deriv_in; 
+  std::vector<float> layer_deriv_out; 
 
-  std::vector<float> weightGrad;
-  std::vector<float> biasGrad;
-  layerData(size_t input, size_t output)
+  std::vector<float> weight_grad;
+  std::vector<float> bias_grad;
+  layer_data(size_t input, size_t output)
     :
-    inputSize(input),
-    outputSize(output),
+    layer_input_size(input),
+    layer_output_size(output),
     weights(input*output),
     biases(output),
     input(input,0.0f),
     output(output,0.0f),
-    derivIn(input,0.0f),
-    derivOut(output,0.0f),
-    weightGrad(input*output, 0.0f),
-    biasGrad(output,0.0f){
+    layer_deriv_in(input,0.0f),
+    layer_deriv_out(output,0.0f),
+    weight_grad(input*output, 0.0f),
+    bias_grad(output,0.0f){
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
@@ -58,214 +58,214 @@ class layerData{
 class layer{ 
   public:
   virtual ~layer() = default; 
-  virtual void Forward(const std::vector<float> &inputActivations, layerData &data) = 0;
-  virtual void Backwards(const std::vector<float> &derivOut, layerData &data) = 0; 
-  virtual void update (layerData &data, float eta) {}; 
+  virtual void forward(const std::vector<float> &layer_input_activations, layer_data &data) = 0;
+  virtual void backwards(const std::vector<float> &layer_deriv_out, layer_data &data) = 0; 
+  virtual void update (layer_data &data, float eta) {}; 
 };
 
 class linear : public layer{
   public:
-  void Forward(const std::vector<float> &inputActivations, layerData &data) override{
-    assert(inputActivations.size() == data.inputSize);
-    data.input = inputActivations; 
+  void forward(const std::vector<float> &layer_input_activations, layer_data &data) override{
+    assert(layer_input_activations.size() == data.layer_input_size);
+    data.input = layer_input_activations; 
 
-    for(size_t i = 0; i < data.outputSize; ++i){
+    for(size_t i = 0; i < data.layer_output_size; ++i){
       float sum  = data.biases[i]; 
-      for(size_t j = 0; j < data.inputSize; ++j){
-       sum += data.weights[i * data.inputSize + j] * inputActivations[j];
+      for(size_t j = 0; j < data.layer_input_size; ++j){
+       sum += data.weights[i * data.layer_input_size + j] * layer_input_activations[j];
       }
       data.output[i] = sum;
     }
   }
 
- void Backwards(const std::vector<float> &derivOut, layerData &data) override {
-    assert(derivOut.size() == data.outputSize);
-    std::fill(data.derivIn.begin(), data.derivIn.end(), 0.0f);
-    std::fill(data.weightGrad.begin(), data.weightGrad.end(), 0.0f);
-    std::fill(data.biasGrad.begin(), data.biasGrad.end(), 0.0f);
+ void backwards(const std::vector<float> &layer_deriv_out, layer_data &data) override {
+    assert(layer_deriv_out.size() == data.layer_output_size);
+    std::fill(data.layer_deriv_in.begin(), data.layer_deriv_in.end(), 0.0f);
+    std::fill(data.weight_grad.begin(), data.weight_grad.end(), 0.0f);
+    std::fill(data.bias_grad.begin(), data.bias_grad.end(), 0.0f);
 
-    for(size_t i = 0; i < data.outputSize; ++i){
-        for(size_t j = 0; j < data.inputSize; ++j){
-            data.derivIn[j] += data.weights[i * data.inputSize + j] * derivOut[i];
+    for(size_t i = 0; i < data.layer_output_size; ++i){
+        for(size_t j = 0; j < data.layer_input_size; ++j){
+            data.layer_deriv_in[j] += data.weights[i * data.layer_input_size + j] * layer_deriv_out[i];
         }
     }
-    for(size_t i = 0; i < data.outputSize; ++i){
-        data.biasGrad[i] = derivOut[i];
-        for(size_t j = 0; j < data.inputSize; ++j){
-            data.weightGrad[i * data.inputSize + j] =
-                derivOut[i] * data.input[j];
+    for(size_t i = 0; i < data.layer_output_size; ++i){
+        data.bias_grad[i] = layer_deriv_out[i];
+        for(size_t j = 0; j < data.layer_input_size; ++j){
+            data.weight_grad[i * data.layer_input_size + j] =
+                layer_deriv_out[i] * data.input[j];
         }
     }
-    data.derivOut = derivOut;
+    data.layer_deriv_out = layer_deriv_out;
 }
 
- void update(layerData &data, float eta) override {
-    for(size_t i = 0; i < data.outputSize; ++i){
-        data.biases[i] -= eta * data.biasGrad[i];
-        for(size_t j = 0; j < data.inputSize; ++j){
-            data.weights[i * data.inputSize + j] -= 
-                eta * data.weightGrad[i * data.inputSize + j];
+ void update(layer_data &data, float eta) override {
+    for(size_t i = 0; i < data.layer_output_size; ++i){
+        data.biases[i] -= eta * data.bias_grad[i];
+        for(size_t j = 0; j < data.layer_input_size; ++j){
+            data.weights[i * data.layer_input_size + j] -= 
+                eta * data.weight_grad[i * data.layer_input_size + j];
         }
     }
 }
 
 };
 
-class ReLU: public layer{
+class RELU: public layer{
   public:
-  void Forward(const std::vector<float> &inputActivations, layerData &data)override{
-    assert(inputActivations.size() == data.inputSize); 
-    data.input = inputActivations;
-    for(size_t i = 0; i < data.outputSize; ++i){
-      data.output[i] = std::max(0.0f, inputActivations[i]);
+  void forward(const std::vector<float> &layer_input_activations, layer_data &data)override{
+    assert(layer_input_activations.size() == data.layer_input_size); 
+    data.input = layer_input_activations;
+    for(size_t i = 0; i < data.layer_output_size; ++i){
+      data.output[i] = std::max(0.0f, layer_input_activations[i]);
     }
   }
   
-  void Backwards(const std::vector<float> &derivOut, layerData &data)override{
-    assert(derivOut.size() == data.outputSize); 
-    std::fill(data.derivIn.begin(), data.derivIn.end(), 0.0f);
-    for(size_t i = 0; i < data.outputSize; ++i){
+  void backwards(const std::vector<float> &layer_deriv_out, layer_data &data)override{
+    assert(layer_deriv_out.size() == data.layer_output_size); 
+    std::fill(data.layer_deriv_in.begin(), data.layer_deriv_in.end(), 0.0f);
+    for(size_t i = 0; i < data.layer_output_size; ++i){
       float grad = (data.input[i] > 0.0f) ? 1.0f : 0.0f; 
-      data.derivIn[i] = derivOut[i] * grad; 
+      data.layer_deriv_in[i] = layer_deriv_out[i] * grad; 
     }
-    data.derivOut = derivOut; 
+    data.layer_deriv_out = layer_deriv_out; 
   }
 };
 
-class Sigmoid : public layer{
+class SIGMOID : public layer{
   public:
-  void Forward(const std::vector<float> &inputActivations, layerData &data)override{
-    assert(inputActivations.size() == data.inputSize);     
-    data.output = Functions::Sigmoid(inputActivations); 
+  void forward(const std::vector<float> &layer_input_activations, layer_data &data)override{
+    assert(layer_input_activations.size() == data.layer_input_size);     
+    data.output = Functions::Sigmoid(layer_input_activations); 
   }
-  void Backwards(const std::vector<float> &derivOut, layerData &data)override{
-    assert(derivOut.size() == data.outputSize); 
-    std::fill(data.derivIn.begin(), data.derivIn.end(), 0.0f); 
-    for(size_t i = 0; i < data.outputSize; ++i){
+  void backwards(const std::vector<float> &layer_deriv_out, layer_data &data)override{
+    assert(layer_deriv_out.size() == data.layer_output_size); 
+    std::fill(data.layer_deriv_in.begin(), data.layer_deriv_in.end(), 0.0f); 
+    for(size_t i = 0; i < data.layer_output_size; ++i){
       float v = data.output[i]; 
       float dv = v * (1.0f - v); 
-      data.derivIn[i] = derivOut[i] * dv; 
+      data.layer_deriv_in[i] = layer_deriv_out[i] * dv; 
     }
-    data.derivOut = derivOut; 
+    data.layer_deriv_out = layer_deriv_out; 
   }
 };
 
 class loss {
   public:
   virtual ~loss() = default; 
-  virtual float Forward(const std::vector<float> &preds, const std::vector<float> &targetVals) = 0; 
-  virtual void Backwards(const std::vector<float> &preds, const std::vector<float> &targetVals, std::vector<float> &derivOut) = 0; 
+  virtual float forward(const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals) = 0; 
+  virtual void backwards(const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals, std::vector<float> &layer_deriv_out) = 0; 
 };
 
-class MSEloss : public loss{
+class MSELOSS : public loss{
   public:
-  float Forward(const std::vector<float> &preds, const std::vector<float> &targetVals) override {
-    assert(preds.size() == targetVals.size());
+  float forward(const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals) override {
+    assert(layer_preds.size() == layer_target_vals.size());
     float loss = 0.0f; 
-    for(size_t i = 0; i < preds.size(); ++i){
-      float diff = preds[i] - targetVals[i]; 
+    for(size_t i = 0; i < layer_preds.size(); ++i){
+      float diff = layer_preds[i] - layer_target_vals[i]; 
       loss += 0.5f * diff * diff; 
     }
     return loss;
   }
-  void Backwards(const std::vector<float> &preds,const std::vector<float> &targetVals, std::vector<float> &derivOut) override{
-    assert(preds.size() == targetVals.size()); 
-    derivOut.resize(preds.size()); 
-    for(size_t i = 0; i < preds.size(); ++i){
-      derivOut[i] = preds[i] - targetVals[i]; 
+  void backwards(const std::vector<float> &layer_preds,const std::vector<float> &layer_target_vals, std::vector<float> &layer_deriv_out) override{
+    assert(layer_preds.size() == layer_target_vals.size()); 
+    layer_deriv_out.resize(layer_preds.size()); 
+    for(size_t i = 0; i < layer_preds.size(); ++i){
+      layer_deriv_out[i] = layer_preds[i] - layer_target_vals[i]; 
     } 
   }
 };
 
 class CrossEntropyLoss : public loss{
   public:
-  float Forward(const std::vector<float> &preds, const std::vector<float> &targetVals) override{
-    assert(preds.size() == targetVals.size());
+  float forward(const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals) override{
+    assert(layer_preds.size() == layer_target_vals.size());
     float loss = 0.0f;
     float epsi = 1e-15; 
-    for(size_t i = 0; i < preds.size(); ++i){
-      float temp = std::max(preds[i], epsi); 
-      loss -= targetVals[i] * std::log(temp); 
+    for(size_t i = 0; i < layer_preds.size(); ++i){
+      float temp = std::max(layer_preds[i], epsi); 
+      loss -= layer_target_vals[i] * std::log(temp); 
     }
     return loss; 
   }
-  void Backwards(const std::vector<float> &preds,const std::vector<float> &targetVals, std::vector<float> &derivOut) override{
-    assert(preds.size() == targetVals.size()); 
-    derivOut.resize(preds.size()); 
-    for(size_t i = 0; i < preds.size(); ++i){
-      derivOut[i] = preds[i] - targetVals[i]; 
+  void backwards(const std::vector<float> &layer_preds,const std::vector<float> &layer_target_vals, std::vector<float> &layer_deriv_out) override{
+    assert(layer_preds.size() == layer_target_vals.size()); 
+    layer_deriv_out.resize(layer_preds.size()); 
+    for(size_t i = 0; i < layer_preds.size(); ++i){
+      layer_deriv_out[i] = layer_preds[i] - layer_target_vals[i]; 
     }
   }
 };
 
 class nn {
   public:
-  std::vector<layerData> layerData;
+  std::vector<layer_data> layer_data;
   std::vector<std::unique_ptr<layer>> layers; 
-  std::unique_ptr<loss> lossFunc; 
+  std::unique_ptr<loss> layer_loss_function; 
 
-  void addLinear(size_t input, size_t output){
-    layerData.emplace_back(input, output); 
+  void add_linear(size_t input, size_t output){
+    layer_data.emplace_back(input, output); 
     layers.push_back(std::make_unique<linear>()); 
   }
 
-  void addRelu(size_t input){
-    layerData.emplace_back(input,input); 
-    layers.push_back(std::make_unique<ReLU>()); 
+  void add_RELU(size_t input){
+    layer_data.emplace_back(input,input); 
+    layers.push_back(std::make_unique<RELU>()); 
   }
 
-  void addSigmoid(size_t input){
-    layerData.emplace_back(input, input); 
-    layers.push_back(std::make_unique<Sigmoid>()); 
+  void add_SIGMOID(size_t input){
+    layer_data.emplace_back(input, input); 
+    layers.push_back(std::make_unique<SIGMOID>()); 
   }
 
-  void addLoss(std::unique_ptr<loss> lossIn){
-    lossFunc = std::move(lossIn); 
+  void add_loss(std::unique_ptr<loss> lossIn){
+    layer_loss_function = std::move(lossIn); 
   }
   
-  std::vector<float> Forward(const std::vector<float> &inputVals){
+  std::vector<float> forward(const std::vector<float> &layer_input_vals){
     assert(!layers.empty());
-    std::vector<float> current = inputVals; 
+    std::vector<float> current = layer_input_vals; 
     for(size_t i = 0; i < layers.size(); ++i){
-      layers[i]->Forward(current, layerData[i]); 
-      current = layerData[i].output; 
+      layers[i]->forward(current, layer_data[i]); 
+      current = layer_data[i].output; 
     }
     return current; 
   }
   
-  void Backwards(const std::vector<float> &targetVals){
-    std::vector<float> grad = targetVals; 
+  void backwards(const std::vector<float> &layer_target_vals){
+    std::vector<float> grad = layer_target_vals; 
     for(int i = static_cast<int>(layers.size() -1); i >= 0; --i){
-      layers[i]->Backwards(grad, layerData[i]); 
-      grad = layerData[i].derivIn; 
+      layers[i]->backwards(grad, layer_data[i]); 
+      grad = layer_data[i].layer_deriv_in; 
     }
   }
 
-  float getLoss(const std::vector<float> &targetVals){
-    if(!lossFunc){
+  float get_loss(const std::vector<float> &layer_target_vals){
+    if(!layer_loss_function){
       std::cerr << "NO LOSS ATTACHED\n"; 
       return 0.0f;
     }
-    return lossFunc->Forward(layerData.back().output, targetVals);
+    return layer_loss_function->forward(layer_data.back().output, layer_target_vals);
   }
 
-  std::vector<float> getGrad(const std::vector<float> &targetVals){
-    if(!lossFunc){
+  std::vector<float> get_grad(const std::vector<float> &layer_target_vals){
+    if(!layer_loss_function){
       std::cerr <<"NO LOSS ATTACHED\n"; 
       return {}; 
     }
-    std::vector<float> derivOut; 
-    lossFunc->Backwards(layerData.back().output, targetVals, derivOut);
-    return derivOut;
+    std::vector<float> layer_deriv_out; 
+    layer_loss_function->backwards(layer_data.back().output, layer_target_vals, layer_deriv_out);
+    return layer_deriv_out;
   }
 
   void update(float eta){
     for(size_t i = 0; i < layers.size(); ++i){
-      layers[i]->update(layerData[i], eta); 
+      layers[i]->update(layer_data[i], eta); 
     }
   }
   
-  void loadbar(int x){
+  void draw_load_bar(int x){
    float prog = (float)x / 2500; 
    float bw = 90;
    float pos = bw * prog;

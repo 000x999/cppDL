@@ -1,7 +1,7 @@
 CXX := g++
 CXXFLAGS := -std=c++17 -Wall  -g
 LDFLAGS := 
-SRC_DIR := src
+SRC_DIR := test_bed/src
 BUILD_DIR := build
 BIN := cppDL
 

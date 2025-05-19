@@ -4,7 +4,6 @@
 #include <math.h>
 #include <functional>
 #include <numeric>
-#include "Structures.h"
 #include <algorithm>
 #include <iostream>
 #include <vector>
@@ -103,6 +102,7 @@ T Mean(const std::vector<T>& val_in){
   T mean = sum / val_in.size(); 
   return mean;
 }
+/*
 //MSE
 template <typename T> 
 T MSE(const std::vector<mat::matrix<T>>& in1, const std::vector<mat::matrix<T>>& in2){ 
@@ -123,7 +123,7 @@ T MSE(const std::vector<mat::matrix<T>>& in1, const std::vector<mat::matrix<T>>&
   }
   return (err/elems); 
 }
-
+*/
 template <typename T>
 T MSEvec(const std::vector<T> &in, const std::vector<T> &in2){
   T loss = 0.0; 
@@ -133,7 +133,7 @@ T MSEvec(const std::vector<T> &in, const std::vector<T> &in2){
   }
   return loss; 
 }
-  
+/*  
 template <typename T>
 T Conv2D(const mat::matrix<T> &x, const mat::matrix<T> &kernel, uint8_t padding){
   const uint8_t ir = x.m_row; 
@@ -175,6 +175,7 @@ T Conv2D(const mat::matrix<T> &x, const mat::matrix<T> &kernel, uint8_t padding)
   }
   return res; 
 };
+*/
 //gradient descent
 //Calculate Out Gradients
 //Calculate Hidden gradients 

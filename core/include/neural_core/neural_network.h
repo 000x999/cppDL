@@ -9,9 +9,8 @@
 #include <algorithm> 
 #include <cstdlib> 
 #include <cassert> 
-#include "Tensor.h"
-#include "Structures.h"
-#include "Functions.h"
+#include "../tensor_core/tensor.h"
+#include "../functions_core/functions.h"
 
 namespace Neural{
 
@@ -246,7 +245,7 @@ class nn {
     if(!lossFunc){
       std::cerr << "NO LOSS ATTACHED\n"; 
       return 0.0f;
-     }
+    }
     return lossFunc->Forward(layerData.back().output, targetVals);
   }
 

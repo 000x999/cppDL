@@ -1,8 +1,7 @@
-#include "include/Tensor.h"
-#include "include/Functions.h"
-#include "include/Structures.h"
-#include "include/NeuralNetwork.h"
-#include "include/Tokenizer.h"
+#include "../../core/include/tensor_core/tensor.h"
+#include "../../core/include/functions_core/functions.h"
+#include "../../core/include/neural_core/neural_network.h"
+#include "../../core/include/tokenizer_core/tokenizer.h"
 #include <stdlib.h>
 #include <fstream>
 #include <chrono>
@@ -30,42 +29,6 @@ void loadicon(){
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
 }
 
-void MatMulBenchmark(float A, int blocksize){
-  double totalOps = 2.0 * double(A) * double(A) * double(A);
-  double gflopFactor = 1.0e-9;
-  std::cout<< totalOps * 1e-9 << " GFLOP" << std::endl; 
-  mat::matrix<float> mat1(A, A);
-  mat::matrix<float> mat2(A, A); 
-  mat::MatOps<float> op1(mat1); 
-  mat::MatOps<float> op2(mat2);
-  op1.fillMat(); 
-  op2.fillMat(); 
-  op1.setBlockSize(blocksize); 
-  auto start = nanos(); 
-  mat::MatOps<float> op3 = op1 * op2; 
-  auto end = nanos(); 
-  double optTime = (end - start) * 1e-9;
-  double optGflops = (totalOps * gflopFactor) / optTime;
-  std::cout << "AVX MatMul: " << optTime
-              << "s, GFLOP/S = " << optGflops << "\n";
-}
-
-void TransposeBenchmark(float A){
-  double totalOps =  double(A) * double(A);
-  double memfactor = 2.0 * A *  A * sizeof(float);
-  double memfactorgb = memfactor / (1024.0 * 1024.0 * 1024.0); 
-  std::cout<< totalOps * 1e-6<< " KB" << std::endl; 
-  mat::matrix<float> mat1(A, A);
-  mat::MatOps<float> op1(mat1); 
-  op1.fillMat();
-  auto start = nanos();
-  op1.TP();
-  auto end = nanos(); 
-  double optTime = (end - start) * 1e-9;
-  double optmem =  memfactorgb / optTime;
-  std::cout << "Transpose: " << optTime
-              << "s, GB/S = " << optmem << "\n";
-}
 
 void TensorBenchmark(){
   Tensor::Tensor<float> tensor1(3,{30,30,30});
@@ -117,7 +80,7 @@ void NeuralTest(){
     }
     if(epoch % 10 == 0){
       printf("\033[47;30m | EPOCH = %i\033[m", (int)epoch);
-      printf("\033[47;30m | LOSS = %f\033[m", loss);
+      printf("\033[47;30m | LOSS = %f\033[m", loss);  
       printf("\033[47;30m | OUTPUT[0] = %f\033[m", out[0]);
       printf("\033[47;30m | TARGET VAL = %i\033[m", (int)targetVals[0]);
       std::cout<<" [ ";
@@ -131,7 +94,7 @@ void NeuralTest(){
   std::cout<< "||| Total EPOCHS: " << epochmax <<std::endl; 
   std::cout<< "||| Total SQUEEZE: " << squeezemax << std::endl;
   std::cout<< "||| Training data size: " << inputVals.size() << " data points" <<std::endl; 
-  std::cout<<"\n"; 
+  std::cout<<"\n";
 }
 
 void tokenizerTest(){
@@ -139,7 +102,7 @@ void tokenizerTest(){
   std::string filePath = "src/TokenModels/DataSet.txt"; 
   std::ifstream infile {filePath};
   std::string trainingText {std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>()};
-  size_t numMerges = 5;
+  size_t numMerges = 1000;
   std::cout << "Training BPE tokenizer with " << numMerges << " merges...\n";
   tokenizer.train(trainingText, numMerges);
   std::string testText = "I am testing out a large training data set for the tokenizer, we will see if this works properly.";
@@ -167,12 +130,8 @@ void tokenizerTest(){
   tokenizer.printStats();
 }
 
-int main() {
-  NeuralTest();
-  //MatMulBenchmark(128,8);
-  //MatMulBenchmark(1024, 32);
-  //TransposeBenchmark(199);
-  //TransposeBenchmark(16384);  
+int main(){
+  //NeuralTest();
   //TensorBenchmark();
   //tokenizerTest();
   return 0;

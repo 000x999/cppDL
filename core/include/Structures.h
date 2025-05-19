@@ -161,13 +161,13 @@ public:
   MatOps<T> operator*(const MatOps<T> &rhs)const{
   std::cout<<"DEBUG: AVX256_MATMUL_STARTED"<<std::endl; 
   #define N static_cast<int>(this->mat.m_row)
-   __attribute__((aligned(32))) mat::matrix<float> A = this->mat;  
-   __attribute__((aligned(32))) mat::matrix<float> B = rhs.mat;
-   __attribute__((aligned(32))) mat::matrix<float> C(this->mat.m_row, this->mat.m_col);
-   __attribute__((aligned(32))) mat::matrix<float> C_ref(this->mat.m_row, this->mat.m_col); 
+  mat::matrix<float> A = this->mat;  
+  mat::matrix<float> B = rhs.mat;
+  mat::matrix<float> C(this->mat.m_row, this->mat.m_col);
+  mat::matrix<float> C_ref(this->mat.m_row, this->mat.m_col); 
    
-    omp_set_dynamic(0); 
-    omp_set_num_threads(omp_get_max_threads());
+    //omp_set_dynamic(0); 
+    //omp_set_num_threads(omp_get_max_threads());
     #pragma omp parallel for collapse(2)
       for(int index = 0; index < N; index += BLOCK_I) {
           for(int jindex = 0; jindex < N; jindex += BLOCK_J) {
@@ -208,10 +208,9 @@ public:
               }
           }
       }
-    #pragma omp parallel
-    printf("Thread %d out of %d\n", omp_get_thread_num(), omp_get_num_threads());
-    mat::matrix<T> tempMat = C; 
-    MatOps<T> ops(tempMat); 
+    //#pragma omp parallel
+    //printf("Thread %d out of %d\n", omp_get_thread_num(), omp_get_num_threads());
+    MatOps<T> ops(C); 
     return ops; 
   }
 #else

@@ -3,12 +3,15 @@
 - Uses my custom BLAS/Encryption/Compression library CRUSHBLAS.
 <br><br>
 ## **CURRENT FEATURES**:
-- Currently supports Tensor operations, transformations and dimensional reshaping with up to 312 Million parameters.
 - Custom Sized and Layered Neural Networks with attachable loss functions and optims.
 - Text tokenization through Byte pair encoding, automatic grammar generation through token merge rules, vocabulary saving/loading, encoding and decoding of text.
-- Generalized matrix and matrix operations containers using a single contiguous array structure.
-- Threaded Tiled Matrix Multiplications of matrices using AVX256 instructions, speed will depend on the machine, but you can expect 4096x4096 matrices in ~0.66s at 225 GFLOP/s FP32 (CPU Bound).
-- Multi-Threaded and Tiled, Matrix Transpose of matrices using AVX256 instructions , speed will depend on the machine, but you can expect 16384x16384 matrices in ~0.889s at 2.25 GB/s FP32 (CPU Bound). 
+- Generalized Matrix API and Matrix operations container using a single contiguous array structure. 
+- Threaded Tiled Matrix Multiplications of matrices using AVX256 instructions, speed will depend on the machine, but one can expect 4096x4096 matrices in ~0.51s at 265 GFLOP/s FP32 (CPU Bound).
+- Multi-Threaded and Tiled, Matrix Transpose of matrices using AVX256 instructions , speed will depend on the machine, but one can expect 16384x16384 matrices in ~0.889s at 2.25 GB/s FP32 (CPU Bound).
+- Level3 GEMM kernel using the custom Matrix API as well as AVX256 instruction acceleration.
+- Generalized Tensor API and Tensor operations container through the custom Matrix API.
+- Contracted TensorMul using the level3 GEMM kernel with AVX256 acceleration, speed will depend on the machine and the Tensor structure, but one can expect a Contracted TensorMul with,  ```Tensor(1,15,4096)```, that is, 1 batch, 15 slices of 4096x4096 matrices to be computed in ~8.1893s at 251.741 GFLOP/s FP32 (CPU Bound).
+- Batched TensorMul using the level3 GEMM kernel with AVX256 acceleration, speed will depend on the machine and the Tensor structure, but one can expect a Batched TensorMul with,  ```Tensor(1,15,4096)```, that is, 1 batch, 15 slices of 4096x4096 matrices to be computed in ~8.1893s at 237.869 GFLOP/s FP32 (CPU Bound).
 <br><br>
 ## ***CURRENTLY WORKING ON:***
 - Optimized methods to increase Tensor and Matrix operations and transformation speeds (Currently being done through AVX256/512 and openMP, strictly CPU bound) **- MATMUL DONE ✅ - TENSOR MUL ⏳**
@@ -25,89 +28,150 @@
 - ***NOTE 2:*** **All the code/structuring for the library that is currently available is NOT final, I am mainly looking to get a working skeleton for the library to allow extensive testing and quick edits to the code. Once the library is in a semi-decent state I will go back and smooth everything out, optimize, implement more robust error checking as well as**
              **Macros, pre-processor implementations for SIMD, multi-platform support/specific operations and architectures, Compiler specific directives and so on.** ***!!!!***
 
-## Benchmarks:
+### BENCHMARKS
+- Contracted TensorMul Benchmark:
+    ```c++
+    void contracted_tensor_mul_benchmark(size_t batches, size_t slices, size_t matrix_size){
+      tens::tensor tensor_a(dims,rank,matrix_size);
+      tens::tensor tensor_b(dims,rank,matrix_size);
+      tens::tensor_ops tensor_op_a(tensor_a);
+      tens::tensor_ops tensor_op_b(tensor_b); 
+      tens::tensor_ops::fill_tensor(tensor_op_a);
+      tens::tensor_ops::fill_tensor(tensor_op_b);
+      std::cout << "Matrix size: " << matrix_size << "x" << matrix_size << std::endl;
+      std::cout << "Tensor batches: " << tensor_a.m_batches << std::endl; 
+      std::cout << "Tensor slices: " << tensor_a.m_slices << std::endl;
+      double totalOps = tensor_a.m_slices * (2 * double(matrix_size) * double(matrix_size) * double(matrix_size));
+      double gflopFactor = 1.0e-9;
+      std::cout<< totalOps * 1e-9 << " GFLOP" << std::endl;
+      auto start = nanos();
+      mat::mat_ops C_mat = tens::tensor_ops::contract_tensor_mul(tensor_op_a, tensor_op_b);
+      auto end = nanos();
+      double optTime = (end - start) * 1e-9;
+      double optGflops = (totalOps * gflopFactor) / optTime;
+      std::cout << "AVX CONTRACTED TENSOR MUL: " << optTime
+                << "s, GFLOP/S = " << optGflops << "\n";
+    }
+
+    int main(){
+        //First argument is the total number of tensor batches
+        //The second argument is the total number of tensor slices
+        //The third argument is the size of the matrices in each tensor slice
+        /*Matrices should be multiples of 8 and MINIMUM 256x256 to make use of AVX256 optimizations
+        Otherwise any NxN or NxM sized matrix will work just fine but won't be accelerated through AVX256*/
+        contracted_tensor_mul_benchmark(1,15,4096)
+    }
+
+    //==========Benchmark output==========:
+    Matrix size: 4096x4096
+    Tensor batches: 1
+    Tensor slices: 15
+    2061.58 GFLOP
+    AVX CONTRACTED TENSOR MUL: 8.1893s, GFLOP/S = 251.741
+
+- Batched TensorMul Benchmark:
+    ```c++
+    void batched_tensor_mul_benchmark(size_t batches, size_t slices, size_t matrix_size){
+      tens::tensor tensor_a(dims,rank,matrix_size);
+      tens::tensor tensor_b(dims,rank,matrix_size);
+      tens::tensor_ops tensor_op_a(tensor_a);
+      tens::tensor_ops tensor_op_b(tensor_b); 
+      tens::tensor_ops::fill_tensor(tensor_op_a);
+      tens::tensor_ops::fill_tensor(tensor_op_b);
+      std::cout << "Matrix size: " << matrix_size << "x" << matrix_size << std::endl;
+      std::cout << "Tensor batches: " << tensor_a.m_batches << std::endl; 
+      std::cout << "Tensor slices: " << tensor_a.m_slices << std::endl;
+      double totalOps = tensor_a.m_slices * (2 * double(matrix_size) * double(matrix_size) * double(matrix_size));
+      double gflopFactor = 1.0e-9;
+      std::cout<< totalOps * 1e-9 << " GFLOP" << std::endl;
+      auto start = nanos();
+      tens::tensor_ops tensor_c = tens::tensor_ops::batch_tensor_mul(tensor_op_a, tensor_op_b);
+      auto end = nanos();
+      double optTime = (end - start) * 1e-9;
+      double optGflops = (totalOps * gflopFactor) / optTime;
+      std::cout << "AVX BATCHED TENSOR MUL: " << optTime
+                << "s, GFLOP/S = " << optGflops << "\n";
+    }
+    
+    int main(){
+        //First argument is the total number of tensor batches
+        //The second argument is the total number of tensor slices
+        //The third argument is the size of the matrices in each tensor slice
+        /*Matrices should be multiples of 8 and MINIMUM 256x256 to make use of AVX256 optimizations
+        Otherwise any NxN or NxM sized matrix will work just fine but won't be accelerated through AVX256*/
+        batched_tensor_mul_benchmark(1,15,4096)
+    }
+
+    //==========Benchmark output==========:
+    Matrix size: 4096x4096
+    Tensor batches: 1
+    Tensor slices: 15
+    2061.58 GFLOP
+    AVX BATCHED TENSOR MUL: 8.66689s, GFLOP/S = 237.869
+    
 - MatMul Benchmark:
     ```c++
-    void MatMulBenchmark(float A, int blocksize){
-       double totalOps = 2.0 * double(A) * double(A) * double(A);
-       double gflopFactor = 1.0e-9;
-       std::cout<< totalOps * 1e-9 << " GFLOP" << std::endl; 
-       mat::matrix<float> mat1(A, A);
-       mat::matrix<float> mat2(A, A); 
-       mat::MatOps<float> op1(mat1); 
-       mat::MatOps<float> op2(mat2);
-       op1.fillMat(); 
-       op2.fillMat(); 
-       op1.setBlockSize(blocksize); 
-       auto start = nanos(); 
-       mat::MatOps<float> op3 = op1 * op2; 
-       auto end = nanos(); 
-       double optTime = (end - start) * 1e-9;
-       double optGflops = (totalOps * gflopFactor) / optTime;
-       std::cout << "AVX MatMul: " << optTime
-       << "s, GFLOP/S = " << optGflops << "\n";
+   void MatMulBenchmark(float A){
+      double totalOps = 2.0 * double(A) * double(A) * double(A);
+      double gflopFactor = 1.0e-9;
+      std::cout<< totalOps * 1e-9 << " GFLOP" << std::endl; 
+      mat::matrix mat1(A, A);
+      mat::matrix mat2(A, A); 
+      mat::mat_ops op1(mat1); 
+      mat::mat_ops op2(mat2);
+      op1.fill_mat();
+      op2.fill_mat(); 
+      auto start = nanos(); 
+      mat::mat_ops op3 = mat::matops::mat_mul(op1,op2); 
+      auto end = nanos(); 
+      double optTime = (end - start) * 1e-9;
+      double optGflops = (totalOps * gflopFactor) / optTime;
+      std::cout << "AVX MatMul: " << optTime
+                << "s, GFLOP/S = " << optGflops << "\n";
     }
-    
+
     int main(){
-     //First argument is the size of the matrix (Multiple of 8)
-     //Second argument is the block size for the MatMul
-     MatMulBenchmark(1024, 8);
+       //First argument is the size of the matrix (Multiple of 8)
+       MatMulBenchmark(4096);
     }
 
     //==========Benchmark output==========:
-    2.14748 GFLOP
-    //Cpu specific thread activation info will appear here...
-    Thread 9 out of 16
-    Thread 4 out of 16
-    Thread 1 out of 16
-    Thread 11 out of 16
-    Thread 12 out of 16
-    Thread 14 out of 16
-    Thread 8 out of 16
-           ...
-    AVX MatMul: 0.0110571s, GFLOP/S = 194.217
+    137.439 GFLOP
+    DEBUG: AVX_MATMUL_STARTED
+    AVX MatMul: 0.517075s, GFLOP/S = 265.801
 
-- Mattrix Transpose:
+
+- Transpose Benchmark:
     ```c++
-    void TransposeBenchmark(float A){
-       double totalOps =  double(A) * double(A);
-       double memfactor = 2.0 * A *  A * sizeof(float);
-       double memfactorgb = memfactor / (1024.0 * 1024.0 * 1024.0); 
-       std::cout<< totalOps * 1e-6<< " KB" << std::endl; 
-       mat::matrix<float> mat1(A, A);
-       mat::MatOps<float> op1(mat1); 
-       op1.fillMat();
-       auto start = nanos();
-       op1.TP();
-       auto end = nanos(); 
-       double optTime = (end - start) * 1e-9;
-       double optmem =  memfactorgb / optTime;
-       std::cout << "Transpose: " << optTime
-          << "s, GB/S = " << optmem << "\n";
+   void TransposeBenchmark(float A){
+      double totalOps =  double(A) * double(A);
+      double memfactor = 2.0 * A *  A * sizeof(float);
+      double memfactorgb = memfactor / (1024.0 * 1024.0 * 1024.0); 
+      std::cout<< totalOps * 1e-6<< " KB" << std::endl; 
+      mat::matrix mat1(A, A);
+      mat::mat_ops op1(mat1); 
+      op1.fill_mat();
+      auto start = nanos();
+      op1 = mat::mat_ops::transpose_matrix(op1);
+      auto end = nanos(); 
+      double optTime = (end - start) * 1e-9;
+      double optmem =  memfactorgb / optTime;
+      std::cout << "Transpose: " << optTime
+              << "s, GB/S = " << optmem << "\n";
     }
-    
+
     int main(){
-     //First argument is the size of the matrix 
-     TransposeBenchmark(16384);
+       //First argument is the size of the matrix (Multiple of 8)
+       TransposeBenchmark(8192);
     }
-    
+
     //==========Benchmark output==========:
-    268.435 KB
-    //Cpu specific thread activation info will appear here...
-    Thread 9 out of 16
-    Thread 4 out of 16
-    Thread 1 out of 16
-    Thread 11 out of 16
-    Thread 12 out of 16
-    Thread 14 out of 16
-    Thread 8 out of 16
-           ...
-    Transpose: 0.842949s, GB/S = 2.37262
-<br>
+    67.1089 KB
+    Transpose: 0.160259s, GB/S = 3.11995
 
 ## Code examples:
 - How to use the makefile and extra compile flags:
-    ```js
+    ```make
     //This cleans all .o files from the /build folder
     make clean
     //This builds the current project as is with ALL preprocessors disabled by default except AVX256
@@ -198,14 +262,12 @@
 
   //Example output of this Neural network is as follows
   **EXECUTING**
-  | EPOCH = 90 | LOSS = 50.924828 | OUTPUT[0] = 11.092059 | TARGET VAL = 1 [=====                                       ] 3.6%
+  | EPOCH = 90 | LOSS = 50.924828 | OUTPUT[0] = 11.092059 | TARGET VAL = 1 [=====                ] 3.6%
  
   ||| Total training time: 1.11512
   ||| Total EPOCHS: 100
   ||| Total SQUEEZE: 1
   ||| Training data size: 10000 data points
-
-
 
 - Tokenizing:
     ```c++

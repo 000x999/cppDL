@@ -1,4 +1,3 @@
-#include "../../core/include/tensor_core/tensor.h"
 #include "../../core/include/functions_core/functions.h"
 #include "../../core/include/neural_core/neural_network.h"
 #include "../../core/include/tokenizer_core/tokenizer.h"
@@ -14,7 +13,7 @@ uint64_t nanos() {
     return (uint64_t)start.tv_sec * 1000000000ULL + (uint64_t)start.tv_nsec;
 }
 
-void loadicon(){
+void load_icon(){
   std::cout<<"\033[35;106m\r\033[m";
   fflush(0);
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -29,23 +28,7 @@ void loadicon(){
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
 }
 
-
-void TensorBenchmark(){
-  Tensor::Tensor<float> tensor1(3,{30,30,30});
-  Tensor::Tensor<float> tensor2(3,{30,30,30});
-  //Pass in previously created tensors through the TensorOp constructor to perform Tensor operations
-  Tensor::TensorOps<float> ops1(tensor1);
-  Tensor::TensorOps<float> ops2(tensor2);
-  ops1.FillTensor();
-  ops2.FillTensor();
-  //Supports operator overloading and direct assigning to a new TensorOp
-  Tensor::TensorOps<float> op3 = ops1*ops2; 
-  //Zero's out all values in the Tensor
-  //Prints Tensor formatted according to it's dimensionality
-  op3.PrintTensor(); 
-}
-
-void NeuralTest(){ 
+void neural_network_test(){ 
   size_t epochmax = 100;
   size_t squeezemax = 1; 
   auto start = nanos(); 
@@ -59,23 +42,23 @@ void NeuralTest(){
   std::vector<float> targetVals = {1.0f};
   float eta = 0.000001; 
  
-  Neural::nn net;
-  net.addLinear(inputVals.size(),1000); 
-  net.addRelu(1000);
-  net.addLinear(1000,100);
-  net.addSigmoid(100);
-  net.addLinear(100,1);
-  net.addLoss(std::make_unique<Neural::MSEloss>());
+  neural::nn net;
+  net.add_linear(inputVals.size(),1000); 
+  net.add_relu(1000);
+  net.add_linear(1000,100);
+  net.add_sigmoid(100);
+  net.add_linear(100,1);
+  net.add_loss(std::make_unique<neural::mse_loss>());
   
   std::vector<float> out; 
   float loss; 
   
   for(size_t epoch = 0; epoch < epochmax; ++epoch){
     for(size_t squeeze = 0; squeeze < squeezemax; ++squeeze){
-      out = net.Forward(inputVals); 
-      loss = net.getLoss(targetVals);
-      auto derivOut  = net.getGrad(targetVals);
-      net.Backwards(derivOut); 
+      out = net.forward(inputVals); 
+      loss = net.get_loss(targetVals);
+      auto derivOut  = net.get_grad(targetVals);
+      net.backwards(derivOut); 
       net.update(eta);
     }
     if(epoch % 10 == 0){
@@ -84,7 +67,7 @@ void NeuralTest(){
       printf("\033[47;30m | OUTPUT[0] = %f\033[m", out[0]);
       printf("\033[47;30m | TARGET VAL = %i\033[m", (int)targetVals[0]);
       std::cout<<" [ ";
-      net.loadbar(epoch);
+      net.draw_load_bar(epoch);
     }
   }
   auto end = nanos(); 
@@ -97,8 +80,8 @@ void NeuralTest(){
   std::cout<<"\n";
 }
 
-void tokenizerTest(){
-  BPE::BPETokenizer tokenizer;
+void tokenizer_test(){
+  bpe::bpe_tokenizer tokenizer;
   std::string filePath = "src/TokenModels/DataSet.txt"; 
   std::ifstream infile {filePath};
   std::string trainingText {std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>()};
@@ -106,7 +89,7 @@ void tokenizerTest(){
   std::cout << "Training BPE tokenizer with " << numMerges << " merges...\n";
   tokenizer.train(trainingText, numMerges);
   std::string testText = "I am testing out a large training data set for the tokenizer, we will see if this works properly.";
-  std::vector<BPE::g_tokenid> encodedIds = tokenizer.encode(testText);
+  std::vector<bpe::g_tokenid> encodedIds = tokenizer.encode(testText);
   std::cout << "Encoded IDs for test text:\n";
   int idCount = 0; 
   for (const auto& id : encodedIds) {
@@ -125,14 +108,11 @@ void tokenizerTest(){
   else {
     std::cout << "***WARNING***: Encoding/decoding is not lossless" << std::endl;
   }
-  tokenizer.saveModel("src/TokenModels/bpe_vocab.txt", "src/TokenModels/bpe_merges.txt");
+  tokenizer.save_model("src/TokenModels/bpe_vocab.txt", "src/TokenModels/bpe_merges.txt");
   std::cout << "Model saved to files" << std::endl;
-  tokenizer.printStats();
+  tokenizer.print_model_stats();
 }
 
 int main(){
-  //NeuralTest();
-  //TensorBenchmark();
-  //tokenizerTest();
   return 0;
 }

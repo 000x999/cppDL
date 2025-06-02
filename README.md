@@ -185,80 +185,69 @@
 - Creating Neural Networks:
     ```c++
     //Creates a net object
-    Neural::nn net;
+    neural::nn net;
     //Adds a linear layer with 30 input nodes and 50 output nodes
-    net.addLinear(30,50);
+    net.add_linear(30,50);
     //Adds a ReLU layer that takes in 50 input nodes
-    net.addRelu(50);
+    net.add_relu(50);
     //Adds a Linear layer with 50 input nodes and 20 output nodes
-    net.addLinear(50,25);
-    net.addLeakyReLU(25);
-    net.addLinear(25,10);
-    net.addReLU(10);
-    net.addSigmoid(10,1);
+    net.add_linear(50,25);
+    net.add_leaky_relu(25);
+    net.add_linear(25,10);
+    net.add_relu(10);
+    net.add_sigmoid(10,1);
     
 - Neural Networks Operations:
     ```c++
-   //Define a maximum amount of epochs and a squeezemax (not required, so can be set to 1)
-   size_t epochmax = 100;
-   size_t squeezemax = 1; 
-   auto start = nanos(); 
-   std::random_device rd;
-   std::mt19937 gen(rd());
-   std::uniform_real_distribution<float> dist(-50.0f, 100.0f);
-   std::vector<float> inputVals;
-   for(size_t i = 0; i < 10000; ++i) {
-     inputVals.emplace_back(dist(gen));
-   }
-   std::vector<float> targetVals = {1.0f};
-   float eta = 0.000001; 
-   //Create a net object
-   Neural::nn net;
-   //The first layer input size has to be as big as the data set
-   net.addLinear(inputVals.size(),1000);
-   //Adds a relu layer
-   net.addRelu(1000);
-   net.addLinear(1000,100);
-   //Adds a sigmoid layer
-   net.addSigmoid(100);
-   net.addLinear(100,1);
-   //Attaches a loss function to the net as a make_unique to ensure ownership
-   net.addLoss(std::make_unique<Neural::MSEloss>());
+    size_t epochmax = 100;
+    size_t squeezemax = 1; 
+    auto start = nanos(); 
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dist(-50.0f, 100.0f);
+    std::vector<float> inputVals;
+    for(size_t i = 0; i < 10000; ++i) {
+      inputVals.emplace_back(dist(gen));
+    }
+    std::vector<float> targetVals = {1.0f};
+    float eta = 0.000001; 
+ 
+    neural::nn net;
+    net.add_linear(inputVals.size(),1000); 
+    net.add_relu(1000);
+    net.add_linear(1000,100);
+    net.add_sigmoid(100);
+    net.add_linear(100,1);
+    net.add_loss(std::make_unique<neural::mse_loss>());
   
-   std::vector<float> out; 
-   float loss; 
-              
-   for(size_t epoch = 0; epoch < epochmax; ++epoch){
-     for(size_t squeeze = 0; squeeze < squeezemax; ++squeeze){
-       //Returns a vector from the Feed forward callback sequence
-       out = net.Forward(inputVals);
-       //Computes the loss based off of the target value vector
-       loss = net.getLoss(targetVals);
-       //Computes the loss gradient
-       auto derivOut  = net.getGrad(targetVals);
-       net.Backwards(derivOut);
-       //Initiates the callback sequence to update the learning rate
-       net.update(eta);
-     }
-     if(epoch % 10 == 0){
-       //Simple output 
-       printf("\033[47;30m | EPOCH = %i\033[m", (int)epoch);
-       printf("\033[47;30m | LOSS = %f\033[m", loss);
-       printf("\033[47;30m | OUTPUT[0] = %f\033[m", out[0]);
-       printf("\033[47;30m | TARGET VAL = %i\033[m", (int)targetVals[0]);
-       std::cout<<" [ ";
-       //Loadbar is just a helper function to display a training progress bar
-       loadbar(epoch);
-     }
-   }
-   auto end = nanos(); 
-   auto opttime = (end - start) * 1e-9;
-   std::cout<<"\n\n";
-   std::cout<< "||| Total training time: " << opttime << std::endl; 
-   std::cout<< "||| Total EPOCHS: " << epochmax <<std::endl; 
-   std::cout<< "||| Total SQUEEZE: " << squeezemax << std::endl;
-   std::cout<< "||| Training data size: " << inputVals.size() << " data points" <<std::endl; 
-   std::cout<<"\n"; 
+    std::vector<float> out; 
+    float loss; 
+  
+    for(size_t epoch = 0; epoch < epochmax; ++epoch){
+      for(size_t squeeze = 0; squeeze < squeezemax; ++squeeze){
+        out = net.forward(inputVals); 
+        loss = net.get_loss(targetVals);
+        auto derivOut  = net.get_grad(targetVals);
+        net.backwards(derivOut); 
+        net.update(eta);
+      }
+      if(epoch % 10 == 0){
+        printf("\033[47;30m | EPOCH = %i\033[m", (int)epoch);
+        printf("\033[47;30m | LOSS = %f\033[m", loss);  
+        printf("\033[47;30m | OUTPUT[0] = %f\033[m", out[0]);
+        printf("\033[47;30m | TARGET VAL = %i\033[m", (int)targetVals[0]);
+        std::cout<<" [ ";
+        net.draw_load_bar(epoch);
+      }
+    }
+    auto end = nanos(); 
+    auto opttime = (end - start) * 1e-9;
+    std::cout<<"\n\n";
+    std::cout<< "||| Total training time: " << opttime << std::endl; 
+    std::cout<< "||| Total EPOCHS: " << epochmax <<std::endl; 
+    std::cout<< "||| Total SQUEEZE: " << squeezemax << std::endl;
+    std::cout<< "||| Training data size: " << inputVals.size() << " data points" <<std::endl; 
+    std::cout<<"\n";
 
   //Example output of this Neural network is as follows
   **EXECUTING**
@@ -272,7 +261,7 @@
 - Tokenizing:
     ```c++
     //Initialize a tokenizer object 
-    BPE::BPETokenizer tokenizer;
+    bpe::bpe_tokenizer tokenizer;
     std::string filePath = "src/TokenModels/DataSet.txt"; 
     std::ifstream infile {filePath};
     std::string trainingText {std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>()};
@@ -285,7 +274,7 @@
                             we will see if this works properly.";
     /*The training process will write two text files, bpe_vocab and bpe_merges. From the vocabulary set contained within them,
       We can now encode any input text with the same rules and grammar compression found in the initial data set.*/
-    std::vector<BPE::g_tokenid> encodedIds = tokenizer.encode(testText);
+    std::vector<bpe::g_tokenid> encodedIds = tokenizer.encode(testText);
     std::cout << "Encoded IDs for test text:\n";
     int idCount = 0; 
     for (const auto& id : encodedIds) {
@@ -306,113 +295,71 @@
       std::cout << "***WARNING***: Encoding/decoding is not lossless" << std::endl;
     }
     //Saves current model vocabulary and merge rules so they can be re-used.
-    tokenizer.saveModel("src/TokenModels/bpe_vocab.txt", "src/TokenModels/bpe_merges.txt");
+    tokenizer.save_model("src/TokenModels/bpe_vocab.txt", "src/TokenModels/bpe_merges.txt");
     std::cout << "Model saved to files" << std::endl;
-    tokenizer.printStats();
+    tokenizer.print_model_stats();
 
 - Creating Tensors:
     ```c++
-    /*The first parameter is the Tensor's rank,
-    there must be dimensional parameters equal to the size of the tensor's rank,
-    each dimension gets it's own size as well.*/
+    /*The first parameter is the number of tensor batches
+      The second parameter is the number of tensor slices
+      The third parameter is the size of the matrices in each tensor slice*/
     
-    Tensor::Tensor<float> tensor1(5,{5,5,5,5,5});
-    Tensor::Tensor<int> tensor2(2,{10,10});
+    tens::tensor tensor_a(batches, slices, matrix_size)
+    tens::tensor tensor_a(1, 15, 4096); 
     
 - Tensor operations:
     ```c++
-    Tensor::Tensor<float> tensor1(3,{10,10,10});
-    Tensor::Tensor<float> tensor2(3,{10,10,10});
+    tens::tensor tensor_a(1, 15, 4096); 
+    tens::tensor tensor_b(1, 15, 4096);
     //Pass in previously created tensors through the TensorOp constructor to perform Tensor operations
-    Tensor::TensorOps<float> ops1(tensor1);
-    Tensor::TensorOps<float> ops2(tensor2);
-    ops1.FillTensor();
-    ops2.FillTensor();
-    //Supports operator overloading and direct assigning to a new TensorOp
-    Tensor::TensorOps<float> ops3 = ops1 + ops2;
-    Tensor::TensorOps<float> ops4 = ops3 - ops2;
-    Tensor::TensorOps<float> ops5 = ops3 * ops4;
-    //Zero's out all values in the Tensor
-    ops5.zero()
-    //Prints Tensor formatted according to it's dimensionality
-    ops3.PrintTensor(); 
-
-    //Output of a 3 dimensional 5x5x5 Tensor
-    tensor(
-  [
-    [
-      [5.8694, 9.0286, 5.1757, 3.3696, 2.9557],
-      [2.3397, 4.0062, 2.6034, 8.2668, 5.7308],
-      [7.0192, 1.3186, 1.6316, 2.9918, 6.1755],
-      [5.2543, 3.8435, 8.0567, 1.7100, 6.8338],
-      [9.3145, 9.3345, 1.8077, 1.8067, 7.3904]
-    ],
-    [
-      [2.3397, 4.0062, 2.6034, 8.2668, 5.7308],
-      [7.0192, 1.3186, 1.6316, 2.9918, 6.1755],
-      [5.2543, 3.8435, 8.0567, 1.7100, 6.8338],
-      [9.3145, 9.3345, 1.8077, 1.8067, 7.3904],
-      [2.2128, 4.4945, 4.1580, 8.7090, 3.9576]
-    ],
-    [
-      [7.0192, 1.3186, 1.6316, 2.9918, 6.1755],
-      [5.2543, 3.8435, 8.0567, 1.7100, 6.8338],
-      [9.3145, 9.3345, 1.8077, 1.8067, 7.3904],
-      [2.2128, 4.4945, 4.1580, 8.7090, 3.9576],
-      [4.4327, 5.9193, 9.3391, 6.4012, 3.5686]
-    ],
-    [
-      [5.2543, 3.8435, 8.0567, 1.7100, 6.8338],
-      [9.3145, 9.3345, 1.8077, 1.8067, 7.3904],
-      [2.2128, 4.4945, 4.1580, 8.7090, 3.9576],
-      [4.4327, 5.9193, 9.3391, 6.4012, 3.5686],
-      [1.8384, 7.5324, 9.1052, 9.1920, 1.3079]
-    ],
-    [
-      [9.3145, 9.3345, 1.8077, 1.8067, 7.3904],
-      [2.2128, 4.4945, 4.1580, 8.7090, 3.9576],
-      [4.4327, 5.9193, 9.3391, 6.4012, 3.5686],
-      [1.8384, 7.5324, 9.1052, 9.1920, 1.3079],
-      [9.1220, 2.5200, 1.1947, 6.8598, 7.3029]
-    ]
-  ]
-  ])
+    tens::tensor_ops tensor_op_a(tensor_a);
+    tens::tensor_ops tensor_op_b(tensor_b);
+    tens::tensor_ops::fill_tensor(tensor_op_a);
+    tens::tensor_ops::fill_tensor(tensor_op_b);
+    //Supports batched tensor mul and contracted tensor mul through custom level3 GEMM kernels
+    //Contracted tensor mul contracts all batches and slices of the tensors into one single matrix  
+    mat::mat_ops res_mat = tens::tensor_ops::contract_tensor_mul(tensor_op_a, tensor_op_b);
+    //Batched tensor mul computes the multiplication batch by batch, slice by slice and loads everything back into a new resulting tensor_op
+    tens::tensor_ops res_tensor_op = tens::tensor_ops::batch_tensor_mul(tensor_op_a, tensor_op_b); 
+    //Also supports tensor dimensionality reshaping
+    tens::tensor_ops::reshape_tensor(tensor_op_a, 20);
+    
 - Creating Matrices:
     ```c++
     //Creates 2 5x5 Matrices
-    mat::matrix<float> D(5,5); 
-    mat::matrix<float> A(5,5);
+    mat::matrix mat_a(5,5); 
+    mat::matrix mat_b(5,5);
     
 - Matrix Operations:
     ```c++
     //Creates 2 5x5 Matrices
-    mat::matrix<float> D(5,5); 
-    mat::matrix<float> A(5,5);
+    mat::matrix mat_a(5,5); 
+    mat::matrix mat_b(5,5);
     //Like Tensors we have to pass them through the MatOps constructor to gain access to all matrix operations
-    mat::MatOps<float> ops1(A);
-    mat::MatOps<float> ops2(D);
-    ops1.fillMat();
-    ops2.fillMat();
-    //Supports operator overloading and direct assigning to a new MatOp
-    mat::MatOps<float> ops3 = ops1 + ops2;
-    mat::MatOps<float> ops4 = ops3 - ops2;
-    mat::MatOps<float> ops5 = ops3 * ops4;
-    //Matrix Transpose
-    ops1.TP();
-    ops2.TP();
-    //Zero's out the matrix
-    ops1.zero();
+    mat::mat_ops mat_op_a(mat_op_a);
+    mat::mat_ops mat_op_b(mat_op_b);
+    mat::mat_ops::fill_mat(mat_op_a);
+    mat::mat_ops::fill_mat(mat_op_b);
+    /*Supports AVX256 MatMul and Transpose,
+    to be able and take advantage of AVX256 acceleration, matrix sizes must be multiples of 8 and at least 256x256.
+    Otherwise, the matrices are small enough that AVX256 won't really be needed*/
+    //All mat_ops operations return a mat_op 
+    mat::mat_ops res_mul_mat = mat::mat_ops::mat_mul(mat_op_a, mat_op_b);
+    mat::mat_ops re_transpose_mat = mat::mat_ops::transpose_matrix(mat_op_a);
+    /*There are also operations to return a smaller block/kernel of a larger matrix,
+    to add two matrices, to display matrices and zero matrices*/
+    //Adding two matrices
+    mat::mat_ops res_add_mat = mat::mat_ops::add_mat(mat_op_a, mat_op_b); 
+    //Zeroing a matrix
+    mat_op_a.zero_mat();
     //Matrix Block, Retruns a user-defined sub-matrix from a larger one (Kernel)
     //i and j determine the starting points of the block, right and down respectively
     //p and q determine the step size of the block, right and down respectively
-    //Block returns a regular Matrix or a direct MatOps object
-    mat::matrix<float> C = ops1.block(size_t i, size_t j, size_t p, size_ q);        
-    mat::MatOps<float> ops6 = ops1.block(size_t i, size_t j, size_t p, size_ q);
-    //Scalar sum of a Matrix or MatOp is also available
-    T sum = A.sum();
-    T sum = ops1.sum();
-    
+    mat::mat_ops res_block_mat = mat::mat_ops::block_mat(mat_ops &mat_in ,size_t i, size_t j, size_t p, size_ q);        
+
     //Output of a 5x5 Matrix
+    mat_op_a.display()
     [
     0.135728, 0.360411, 0.280317, 0.766647, 0.380475,
     0.689877, 0.408091, 0.897573, 0.501442, 0.851538,

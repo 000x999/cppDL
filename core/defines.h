@@ -33,6 +33,8 @@
     #define CRUSH_PLATFORM_LINUX 1
   #endif 
 
+#define CRUSH_API
+
 #ifdef CPPDL_EXPORT
   #ifdef _MSC_VER
     #define CPPDL_API __declspec(dllexport)

@@ -8,14 +8,14 @@
 #include <string>           
 #include <algorithm> 
 #include <cstdlib> 
-#include <cassert> 
-#include "../tensor_core/tensor.h"
+#include <random>
 #include "../functions_core/functions.h"
+#include "../logger_core/logger.h"
+#include "../../defines.h"
 
-namespace Neural{
-
+namespace neural{
 class layer_data{
-  public:
+public:
   size_t layer_input_size; 
   size_t layer_output_size;
   std::vector<float> weights; 
@@ -56,7 +56,7 @@ class layer_data{
 
 //Parent base for all derivations of layer
 class layer{ 
-  public:
+public:
   virtual ~layer() = default; 
   virtual void forward(const std::vector<float> &layer_input_activations, layer_data &data) = 0;
   virtual void backwards(const std::vector<float> &layer_deriv_out, layer_data &data) = 0; 
@@ -64,9 +64,14 @@ class layer{
 };
 
 class linear : public layer{
-  public:
+public:
   void forward(const std::vector<float> &layer_input_activations, layer_data &data) override{
+  #if DEBUG
+    if(layer_input_activations.size() != data.layer_input_size){
+      CPPDL_FATAL("LAYER ACTIVATIONS NOT EQUAL TO DATA LAYER INPUT SIZE : ASSERTION FAILED");
+    }
     assert(layer_input_activations.size() == data.layer_input_size);
+  #endif  
     data.input = layer_input_activations; 
 
     for(size_t i = 0; i < data.layer_output_size; ++i){
@@ -78,43 +83,51 @@ class linear : public layer{
     }
   }
 
- void backwards(const std::vector<float> &layer_deriv_out, layer_data &data) override {
+  void backwards(const std::vector<float> &layer_deriv_out, layer_data &data) override {
+  #if DEBUG
+    if(layer_deriv_out.size() != data.layer_output_size){
+      CPPDL_FATAL("LAYER DERIVATIVE OUTPUT SIZE IS NOT EQUAL TO DATA LAYER OUTPUT SIZE : ASSERTION FAILED"); 
+    }
     assert(layer_deriv_out.size() == data.layer_output_size);
+  #endif
     std::fill(data.layer_deriv_in.begin(), data.layer_deriv_in.end(), 0.0f);
     std::fill(data.weight_grad.begin(), data.weight_grad.end(), 0.0f);
     std::fill(data.bias_grad.begin(), data.bias_grad.end(), 0.0f);
 
     for(size_t i = 0; i < data.layer_output_size; ++i){
-        for(size_t j = 0; j < data.layer_input_size; ++j){
-            data.layer_deriv_in[j] += data.weights[i * data.layer_input_size + j] * layer_deriv_out[i];
-        }
+      for(size_t j = 0; j < data.layer_input_size; ++j){
+        data.layer_deriv_in[j] += data.weights[i * data.layer_input_size + j] * layer_deriv_out[i];
+      }
     }
     for(size_t i = 0; i < data.layer_output_size; ++i){
-        data.bias_grad[i] = layer_deriv_out[i];
-        for(size_t j = 0; j < data.layer_input_size; ++j){
-            data.weight_grad[i * data.layer_input_size + j] =
-                layer_deriv_out[i] * data.input[j];
-        }
+      data.bias_grad[i] = layer_deriv_out[i];
+      for(size_t j = 0; j < data.layer_input_size; ++j){
+        data.weight_grad[i * data.layer_input_size + j] = layer_deriv_out[i] * data.input[j];
+      }
     }
     data.layer_deriv_out = layer_deriv_out;
-}
+  }
 
- void update(layer_data &data, float eta) override {
+  void update(layer_data &data, float eta) override {
     for(size_t i = 0; i < data.layer_output_size; ++i){
-        data.biases[i] -= eta * data.bias_grad[i];
-        for(size_t j = 0; j < data.layer_input_size; ++j){
-            data.weights[i * data.layer_input_size + j] -= 
-                eta * data.weight_grad[i * data.layer_input_size + j];
-        }
+      data.biases[i] -= eta * data.bias_grad[i];
+      for(size_t j = 0; j < data.layer_input_size; ++j){
+      data.weights[i * data.layer_input_size + j] -= eta * data.weight_grad[i * data.layer_input_size + j];
+      }
     }
-}
+  }
 
 };
 
-class RELU: public layer{
-  public:
+class relu: public layer{
+public:
   void forward(const std::vector<float> &layer_input_activations, layer_data &data)override{
+  #if DEBUG
+    if(layer_input_activations.size() != data.layer_input_size){
+      CPPDL_FATAL("LAYER INPUT ACTIVATIONS NOT EQUAL TO DATA LAYER INPUT SIZE : ASSERTION FAILED"); 
+    }
     assert(layer_input_activations.size() == data.layer_input_size); 
+  #endif 
     data.input = layer_input_activations;
     for(size_t i = 0; i < data.layer_output_size; ++i){
       data.output[i] = std::max(0.0f, layer_input_activations[i]);
@@ -122,7 +135,12 @@ class RELU: public layer{
   }
   
   void backwards(const std::vector<float> &layer_deriv_out, layer_data &data)override{
+  #if DEBUG 
+    if(layer_deriv_out.size() != data.layer_output_size){
+      CPPDL_FATAL("LAYER DERIVATIVE OUTPUT SIZE NOT EQUAL TO DATA LAYER OUTPUT SIZE : ASSERTION FAILED");
+    }
     assert(layer_deriv_out.size() == data.layer_output_size); 
+  #endif
     std::fill(data.layer_deriv_in.begin(), data.layer_deriv_in.end(), 0.0f);
     for(size_t i = 0; i < data.layer_output_size; ++i){
       float grad = (data.input[i] > 0.0f) ? 1.0f : 0.0f; 
@@ -132,12 +150,13 @@ class RELU: public layer{
   }
 };
 
-class SIGMOID : public layer{
-  public:
+class sigmoid : public layer{
+public:
   void forward(const std::vector<float> &layer_input_activations, layer_data &data)override{
     assert(layer_input_activations.size() == data.layer_input_size);     
-    data.output = Functions::Sigmoid(layer_input_activations); 
+    data.output = functions::sigmoid(layer_input_activations); 
   }
+
   void backwards(const std::vector<float> &layer_deriv_out, layer_data &data)override{
     assert(layer_deriv_out.size() == data.layer_output_size); 
     std::fill(data.layer_deriv_in.begin(), data.layer_deriv_in.end(), 0.0f); 
@@ -150,6 +169,7 @@ class SIGMOID : public layer{
   }
 };
 
+//Parent base for all derivations of loss
 class loss {
   public:
   virtual ~loss() = default; 
@@ -157,10 +177,15 @@ class loss {
   virtual void backwards(const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals, std::vector<float> &layer_deriv_out) = 0; 
 };
 
-class MSELOSS : public loss{
-  public:
+class mse_loss : public loss{
+public:
   float forward(const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals) override {
+  #if DEBUG
+    if(layer_preds.size() != layer_target_vals.size()){
+      CPPDL_FATAL("LAYER PREDICTIONS SIZE NOT EQUAL TO LAYER TARGET VALUES SIZE : ASSERTION FAILED"); 
+    }
     assert(layer_preds.size() == layer_target_vals.size());
+  #endif
     float loss = 0.0f; 
     for(size_t i = 0; i < layer_preds.size(); ++i){
       float diff = layer_preds[i] - layer_target_vals[i]; 
@@ -168,8 +193,14 @@ class MSELOSS : public loss{
     }
     return loss;
   }
+
   void backwards(const std::vector<float> &layer_preds,const std::vector<float> &layer_target_vals, std::vector<float> &layer_deriv_out) override{
-    assert(layer_preds.size() == layer_target_vals.size()); 
+  #if DEBUG
+    if(layer_preds.size() != layer_target_vals.size()){
+      CPPDL_FATAL("LAYER PREDICTIONS SIZE NOT EQUAL TO LAYER TARGET VALUES SIZE : ASSERTION FAILED"); 
+    }
+    assert(layer_preds.size() == layer_target_vals.size());
+  #endif
     layer_deriv_out.resize(layer_preds.size()); 
     for(size_t i = 0; i < layer_preds.size(); ++i){
       layer_deriv_out[i] = layer_preds[i] - layer_target_vals[i]; 
@@ -177,10 +208,15 @@ class MSELOSS : public loss{
   }
 };
 
-class CrossEntropyLoss : public loss{
-  public:
+class cross_entropy_loss : public loss{
+public:
   float forward(const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals) override{
+  #if DEBUG
+    if(layer_preds.size() != layer_target_vals.size()){
+      CPPDL_FATAL("LAYER PREDICTIONS SIZE NOT EQUAL TO LAYER TARGET VALUES SIZE : ASSERTION FAILED"); 
+    }
     assert(layer_preds.size() == layer_target_vals.size());
+  #endif
     float loss = 0.0f;
     float epsi = 1e-15; 
     for(size_t i = 0; i < layer_preds.size(); ++i){
@@ -189,8 +225,14 @@ class CrossEntropyLoss : public loss{
     }
     return loss; 
   }
+
   void backwards(const std::vector<float> &layer_preds,const std::vector<float> &layer_target_vals, std::vector<float> &layer_deriv_out) override{
-    assert(layer_preds.size() == layer_target_vals.size()); 
+  #if DEBUG
+    if(layer_preds.size() != layer_target_vals.size()){
+      CPPDL_FATAL("LAYER PREDICTIONS SIZE NOT EQUAL TO LAYER TARGET VALUES SIZE : ASSERTION FAILED"); 
+    }
+    assert(layer_preds.size() == layer_target_vals.size());
+  #endif
     layer_deriv_out.resize(layer_preds.size()); 
     for(size_t i = 0; i < layer_preds.size(); ++i){
       layer_deriv_out[i] = layer_preds[i] - layer_target_vals[i]; 
@@ -199,7 +241,7 @@ class CrossEntropyLoss : public loss{
 };
 
 class nn {
-  public:
+public:
   std::vector<layer_data> layer_data;
   std::vector<std::unique_ptr<layer>> layers; 
   std::unique_ptr<loss> layer_loss_function; 
@@ -209,22 +251,27 @@ class nn {
     layers.push_back(std::make_unique<linear>()); 
   }
 
-  void add_RELU(size_t input){
+  void add_relu(size_t input){
     layer_data.emplace_back(input,input); 
-    layers.push_back(std::make_unique<RELU>()); 
+    layers.push_back(std::make_unique<relu>()); 
   }
 
-  void add_SIGMOID(size_t input){
+  void add_sigmoid(size_t input){
     layer_data.emplace_back(input, input); 
-    layers.push_back(std::make_unique<SIGMOID>()); 
+    layers.push_back(std::make_unique<sigmoid>()); 
   }
 
-  void add_loss(std::unique_ptr<loss> lossIn){
-    layer_loss_function = std::move(lossIn); 
+  void add_loss(std::unique_ptr<loss> loss_in){
+    layer_loss_function = std::move(loss_in); 
   }
   
   std::vector<float> forward(const std::vector<float> &layer_input_vals){
+  #if DEBUG
+    if(layers.empty()){
+      CPPDL_FATA("LAYER VECTOR IS EMPTY : ASSERTION FAILED"); 
+    }
     assert(!layers.empty());
+  #endif  
     std::vector<float> current = layer_input_vals; 
     for(size_t i = 0; i < layers.size(); ++i){
       layers[i]->forward(current, layer_data[i]); 
@@ -242,18 +289,24 @@ class nn {
   }
 
   float get_loss(const std::vector<float> &layer_target_vals){
+  #if DEBUG
     if(!layer_loss_function){
-      std::cerr << "NO LOSS ATTACHED\n"; 
+      CPPDL_ERROR("NO LOSS ATTACHED : RETURNING\n"); 
+      assert(layer_loss_function);
       return 0.0f;
     }
+  #endif
     return layer_loss_function->forward(layer_data.back().output, layer_target_vals);
   }
 
   std::vector<float> get_grad(const std::vector<float> &layer_target_vals){
+  #if DEBUG
     if(!layer_loss_function){
-      std::cerr <<"NO LOSS ATTACHED\n"; 
+      CPPDL_ERROR("NO LOSS ATTACHED : RETURNING\n");   
+      assert(layer_loss_function);
       return {}; 
     }
+  #endif
     std::vector<float> layer_deriv_out; 
     layer_loss_function->backwards(layer_data.back().output, layer_target_vals, layer_deriv_out);
     return layer_deriv_out;
@@ -266,12 +319,12 @@ class nn {
   }
   
   void draw_load_bar(int x){
-   float prog = (float)x / 2500; 
-   float bw = 90;
-   float pos = bw * prog;
-   for(size_t i = 0; i < bw; ++i){
-    if(i < pos) std::cout << "\033[35;106m \033[m"; 
-    else std::cout << " "; 
+    float prog = (float)x / 2500; 
+    float bw = 90;
+    float pos = bw * prog;
+    for(size_t i = 0; i < bw; ++i){
+      if(i < pos) std::cout << "\033[35;106m \033[m"; 
+      else std::cout << " "; 
   }
   std::cout<<"] " << prog * 100 << "%\r" << std::flush;
 }

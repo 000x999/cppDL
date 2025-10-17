@@ -1,0 +1,212 @@
+{
+  "main": {
+    "id": "04b1d721fa50d03e",
+    "type": "split",
+    "children": [
+      {
+        "id": "429e4db2995c0f08",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d28662ab99475ddb",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "core/engine/memory_core/alloc_list_hpp.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "alloc_list_hpp"
+            }
+          },
+          {
+            "id": "f74957f6dc60850e",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "repos_to_read_and_learn.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "repos_to_read_and_learn"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "26790cba24667411",
+    "type": "split",
+    "children": [
+      {
+        "id": "ce987ebfbb3bdf35",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "87a18a5e8b010431",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "5b3e08db7e16973c",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": true,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "b0a7b4c1fe6645f8",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "519847546f0f57e4",
+    "type": "split",
+    "children": [
+      {
+        "id": "42b7ad73b0f7af1e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "187f006b8487d53b",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "BPE Tokenizer Documentation.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for BPE Tokenizer Documentation"
+            }
+          },
+          {
+            "id": "a7bdc3c571764527",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "BPE Tokenizer.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from BPE Tokenizer"
+            }
+          },
+          {
+            "id": "799baa98c8c106f7",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "5da8c8ac9dfd333f",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "BPE Tokenizer.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of BPE Tokenizer"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "obsidian-excalidraw-plugin:New drawing": false
+    }
+  },
+  "active": "f74957f6dc60850e",
+  "lastOpenFiles": [
+    "core/engine/memory_core/alloc_list_hpp.md",
+    "repos_to_read_and_learn.md",
+    "core/engine/platform_core/platform_base_documentation.md",
+    "core/engine/thread_core/thread_mutex_documentation.md",
+    "core/include/tokenizer_core/bpe_tokenizer_documentation.md",
+    "core/engine/memory_core",
+    "core/engine/platform_core",
+    "core/engine/thread_core",
+    "core/engine",
+    "core/include/tokenizer_core",
+    "core/include",
+    "core",
+    "2025-06-15.md",
+    "Untitled 1.canvas",
+    "Excalidraw/Drawing 2025-06-15 03.56.32.excalidraw.md",
+    "Excalidraw",
+    "Untitled.canvas",
+    "Excalidraw/Drawing 2025-06-14 21.36.33.excalidraw.md",
+    "Untitled Diagram.svg",
+    "Untitled Diagram 1.svg",
+    "2025-06-14.md",
+    "darkmode.css.md"
+  ]
+}

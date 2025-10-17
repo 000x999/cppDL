@@ -1,0 +1,44 @@
+/* ===== Dark+ C++ Theme for Obsidian ===== */
+/* Apply to ALL code blocks (or use [data-language="cpp"] for C++ only) */
+.markdown-rendered pre,
+.markdown-source-view .HyperMD-codeblock {
+  /* Base Editor Styling */
+  background-color: #C0C0C0 !important;
+  color: #00000 !important;
+}
+
+/* ===== SYNTAX HIGHLIGHTING ===== */
+/* Keywords (control flow, types) */
+.cm-s-obsidian .cm-keyword    { color: #A42CB4 !important; } /* if, return, while */
+.cm-s-obsidian .cm-builtin    { color: #A42CB4 !important; } /* std, nullptr */
+.cm-s-obsidian .cm-type       { color: #A42CB4 !important; } /* std::string, int */
+.cm-s-obsidian .cm-def        { color: #A42CB4 !important; } /* std::string, int */
+
+/* Variables and Members */
+.cm-s-obsidian .cm-variable   { color: #000000 !important; } /* vocab_file, token */
+.cm-s-obsidian .cm-variable-2 { color: #000000 !important; } /* m_next_id */
+.cm-s-obsidian .cm-property   { color: #9cdcfe !important; } /* .is_open() */
+
+/* Strings and Numbers */
+.cm-s-obsidian .cm-string     { color: #282D76 !important; } /* "vocab_path" */
+.cm-s-obsidian .cm-number     { color: #A42CB4 !important; } /* 0, 1, 42 */
+
+/* Operators and Punctuation */
+.cm-s-obsidian .cm-operator   { color: #A42CB4 !important; } /* =, !, >> */
+.cm-s-obsidian .cm-bracket    { color: #A42CB4  !important; } /* <>, {}, () */
+
+/* Comments */
+.cm-s-obsidian .cm-comment    { color:#282D76 !important; } /* //, /* */
+
+/* ===== SPECIAL C++ CASES ===== */
+/* Namespace/Scope resolution */
+.cm-s-obsidian .cm-qualifier  { color: #4ec9b0 !important; } /* std:: */
+
+/* Preprocessor Directives */
+.cm-s-obsidian .cm-meta       { color: #569cd6 !important; } /* #include */
+
+/* ===== EDITOR ENHANCEMENTS ===== */
+/* Indent Guides */
+.cm-indent::before {
+  border-left: 1px solid rgba(255, 255, 255, 0.15) !important;
+}

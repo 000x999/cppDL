@@ -1,0 +1,9 @@
+{
+  "cssTheme": "RetroOS 98",
+  "theme": "moonstone",
+  "monospaceFontFamily": "Perfect DOS VGA 437 Win",
+  "baseFontSize": 16,
+  "enabledCssSnippets": [
+    "dark_mode"
+  ]
+}

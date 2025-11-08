@@ -1,6 +1,6 @@
-#include "../../core/include/functions_core/functions.h"
-#include "../../core/include/neural_core/neural_network.h"
-#include "../../core/include/tokenizer_core/tokenizer.h"
+#include "../../core/include/functions_core/functions.hpp"
+#include "../../core/include/neural_core/neural_network.hpp"
+#include "../../core/include/tokenizer_core/tokenizer.hpp"
 #include "../../core/include/logger_core/dual_output.hpp"
 #include <stdlib.h>
 #include <fstream>
@@ -31,8 +31,8 @@ void load_icon(){
 }
 
 void neural_network_test(){ 
-  size_t epochmax = 100;
-  size_t squeezemax = 1; 
+  size_t epochmax = 4000;
+  size_t squeezemax = 0; 
   auto start = nanos(); 
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -43,42 +43,47 @@ void neural_network_test(){
   }
   std::vector<float> targetVals = {1.0f};
   float eta = 0.000001; 
- 
   neural::nn net;
-  net.add_linear(inputVals.size(),1000); 
-  net.add_relu(1000);
-  net.add_linear(1000,100);
-  net.add_sigmoid(100);
-  net.add_linear(100,1);
+  net.add_linear(inputVals.size(),10000); 
+  net.add_relu(10000);
+  net.add_linear(10000,1000);
+  net.add_sigmoid(1000);
+  net.add_linear(1000,1);
   net.add_loss(std::make_unique<neural::mse_loss>());
   
   std::vector<float> out; 
   float loss; 
   
   for(size_t epoch = 0; epoch < epochmax; ++epoch){
-    for(size_t squeeze = 0; squeeze < squeezemax; ++squeeze){
-      out = net.forward(inputVals); 
-      loss = net.get_loss(targetVals);
-      auto derivOut  = net.get_grad(targetVals);
-      net.backwards(derivOut); 
-      net.update(eta);
-    }
-    if(epoch % 10 == 0){
-      printf("\033[47;30m | EPOCH = %i\033[m", (int)epoch);
-      printf("\033[47;30m | LOSS = %f\033[m", loss);  
-      printf("\033[47;30m | OUTPUT[0] = %f\033[m", out[0]);
-      printf("\033[47;30m | TARGET VAL = %i\033[m", (int)targetVals[0]);
-      std::cout<<" [ ";
-      net.draw_load_bar(epoch);
+    out = net.forward(inputVals); 
+    loss = net.get_loss(targetVals);
+    auto derivOut  = net.get_grad(targetVals);
+    net.backwards(derivOut); 
+    net.update(eta);
+    printf("\033[47;30m | EPOCH = %i\033[m", (int)epoch);
+    printf("\033[47;30m | LOSS = %f\033[m", loss);  
+    printf("\033[47;30m | OUTPUT = %f\033[m", out[0]);
+    printf("\033[47;30m | TARGET VAL = %i\033[m", (int)targetVals[0]);
+    std::cout<<" [ ";
+    net.draw_load_bar(epoch);
+    if(loss <= 0.0001){
+      break; 
     }
   }
   auto end = nanos(); 
   auto opttime = (end - start) * 1e-9;
-  std::cout<<"\n\n";
-  std::cout<< "||| Total training time: " << opttime << std::endl; 
-  std::cout<< "||| Total EPOCHS: " << epochmax <<std::endl; 
-  std::cout<< "||| Total SQUEEZE: " << squeezemax << std::endl;
-  std::cout<< "||| Training data size: " << inputVals.size() << " data points" <<std::endl; 
+  std::cout <<"\n\n";
+  std::cout << "Total training time: " << opttime  << '\n';
+  std::cout << "Total EPOCHS: "        << epochmax << '\n'; 
+  std::cout << "Learning rate: "       << eta      << '\n'; 
+  std::cout << "Training data size: " << inputVals.size() << " data points" << '\n';
+  std::cout << "Network size: " << '\n'; 
+  std::cout << "Linear  layer 1: " << inputVals.size() << " x " << 10000 << " neurons" << '\n';
+  std::cout << "ReLu    layer 1: " << 10000            <<  "                  neurons" << '\n';
+  std::cout << "Linear  layer 2: " << 10000            << " x " << 100   << " neurons" << '\n'; 
+  std::cout << "Sigmoid layer  : " << 100              << "                   neurons" << '\n'; 
+  std::cout << "Linear  layer 3: " << 100              << " x " << 1     << " neurons" << '\n';
+  std::cout << "Loss layer type: " << "MSE LOSS" << '\n'; 
   std::cout<<"\n";
 }
 

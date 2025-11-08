@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -std=c++17 -Wall  -g
+CXXFLAGS := -std=c++23 -Wall -g -Wchanges-meaning
 LDFLAGS := 
 SRC_DIR := test_bed/src
 BUILD_DIR := build

@@ -1,16 +1,18 @@
 #include "../../core/include/functions_core/functions.h"
 #include "../../core/include/neural_core/neural_network.h"
 #include "../../core/include/tokenizer_core/tokenizer.h"
+#include "../../core/include/logger_core/dual_output.hpp"
 #include <stdlib.h>
 #include <fstream>
+#include <streambuf>
 #include <chrono>
 #include <thread>
 #include <x86intrin.h>
 
 uint64_t nanos() {
-    struct timespec start;
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    return (uint64_t)start.tv_sec * 1000000000ULL + (uint64_t)start.tv_nsec;
+  struct timespec start;
+  clock_gettime(CLOCK_MONOTONIC, &start);
+  return (uint64_t)start.tv_sec * 1000000000ULL + (uint64_t)start.tv_nsec;
 }
 
 void load_icon(){
@@ -82,27 +84,27 @@ void neural_network_test(){
 
 void tokenizer_test(){
   bpe::bpe_tokenizer tokenizer;
-  std::string filePath = "src/TokenModels/DataSet.txt"; 
-  std::ifstream infile {filePath};
-  std::string trainingText {std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>()};
-  size_t numMerges = 1000;
-  std::cout << "Training BPE tokenizer with " << numMerges << " merges...\n";
-  tokenizer.train(trainingText, numMerges);
+  std::string file_path = "../../core/include/tokenizer_core/token_models/DataSet.txt"; 
+  std::ifstream in_file {file_path};
+  std::string training_text {std::istreambuf_iterator<char>(in_file), std::istreambuf_iterator<char>()};
+  size_t num_merges = 1000;
+  std::cout << "Training BPE tokenizer with " << num_merges << " merges...\n";
+  tokenizer.train(training_text, num_merges);
   std::string testText = "I am testing out a large training data set for the tokenizer, we will see if this works properly.";
-  std::vector<bpe::g_tokenid> encodedIds = tokenizer.encode(testText);
+  std::vector<bpe::g_token_id> encoded_ids = tokenizer.encode(testText);
   std::cout << "Encoded IDs for test text:\n";
-  int idCount = 0; 
-  for (const auto& id : encodedIds) {
+  int id_count = 0; 
+  for (const auto& id : encoded_ids) {
     std::cout << "Encoded ID: " << id << " -> '" << tokenizer.decode({id}) << "'\n";
-    idCount++;
-    if(idCount == 10){
+    id_count++;
+    if(id_count == 10){
       std::cout<<"The rest of the encoded ID's output here ...\n" << std::endl;
       break;
     }
   }
-  std::string decodedText = tokenizer.decode(encodedIds);
-  std::cout << "Decoded text: " << decodedText << std::endl;
-  if (decodedText == testText) {
+  std::string decoded_text = tokenizer.decode(encoded_ids);
+  std::cout << "Decoded text: " << decoded_text << std::endl;
+  if (decoded_text == testText) {
     std::cout << "***NOTE***: Encoding/decoding is lossless" << std::endl;
   } 
   else {
@@ -114,5 +116,13 @@ void tokenizer_test(){
 }
 
 int main(){
-  return 0;
+  //std::ofstream output_file_buffer("..\\..\\test_bed\\file_outputs\\output_stream.txt", std::ofstream::out);
+  //output_file_buffer.close();
+  //std::ofstream output_stream("..\\..\\test_bed\\file_outputs\\output_stream.txt");
+  //dual_output_stream dual_output(std::cout, output_stream);
+  //std::streambuf *console_output_buffer = std::cout.rdbuf();
+  //std::cout.rdbuf(dual_output.rdbuf()); 
+  neural_network_test();
+  //std::cout.rdbuf(console_output_buffer);
+  //tokenizer_test(); 
 }

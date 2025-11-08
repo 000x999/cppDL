@@ -14,27 +14,27 @@
 #include <stdexcept>
 
 namespace bpe{
-using g_tokenid = uint32_t;
-using g_tokenpair = std::pair<g_tokenid, g_tokenid>;
+using g_token_id = uint32_t;
+using g_token_pair = std::pair<g_token_id, g_token_id>;
 
 struct token_pair_hash {
-  size_t operator()(const g_tokenpair &pair) const {
-    return std::hash<g_tokenid>()(pair.first) ^ 
-    (std::hash<g_tokenid>()(pair.second) << 1);
+  size_t operator()(const g_token_pair &pair) const {
+    return std::hash<g_token_id>()(pair.first) ^ 
+    (std::hash<g_token_id>()(pair.second) << 1);
   }
 };
 
 class bpe_tokenizer {
 private:
-  std::unordered_map<std::string, g_tokenid> token_to_id;
-  std::unordered_map<g_tokenid, std::string> id_to_token;
-  g_tokenid m_nextId = 0;
-  const g_tokenid UNK_TOKEN = UINT32_MAX;
+  std::unordered_map<std::string, g_token_id> token_to_id;
+  std::unordered_map<g_token_id, std::string> id_to_token;
+  g_token_id m_next_id = 0;
+  const g_token_id UNK_TOKEN = UINT32_MAX;
 
   struct token_merge_rule {
-    g_tokenid first;
-    g_tokenid second;
-    g_tokenid merged;
+    g_token_id first;
+    g_token_id second;
+    g_token_id merged;
   };
 
 public:
@@ -56,22 +56,22 @@ public:
   void train(const std::string &text, size_t merges, double regularization = 0.0) {
     if (text.empty() || merges == 0) return;
 
-    std::vector<g_tokenid> tokens;
+    std::vector<g_token_id> tokens;
     for (auto &c : text) {
       tokens.push_back(token_to_id[std::string(1, c)]);
     }
 
     for (size_t merge = 0; merge < merges; ++merge) {
-      std::unordered_map<g_tokenpair, int, token_pair_hash> token_pair_count;
+      std::unordered_map<g_token_pair, int, token_pair_hash> token_pair_count;
       
       for (size_t i = 0; i < tokens.size() - 1; ++i) {
-        g_tokenpair pair = std::make_pair(tokens[i], tokens[i+1]);
+        g_token_pair pair = std::make_pair(tokens[i], tokens[i+1]);
         token_pair_count[pair]++;
       }
 
       if (token_pair_count.empty()) break;
 
-      using pair_count = std::pair<double, g_tokenpair>;
+      using pair_count = std::pair<double, g_token_pair>;
       std::priority_queue<pair_count> token_queue;
       
       for (const auto &[pair, count] : token_pair_count) {
@@ -90,11 +90,11 @@ public:
       auto [a, b] = best_token_pair;
       
       std::string merged = id_to_token[a] + id_to_token[b];
-      g_tokenid new_token_id = add_token(merged);
+      g_token_id new_token_id = add_token(merged);
       
       token_merge_history.push_back({a, b, new_token_id});
 
-      std::vector<g_tokenid> new_token;
+      std::vector<g_token_id> new_token;
       size_t i = 0;
       while (i < tokens.size()) {
         if (i < tokens.size() - 1 && tokens[i] == a && tokens[i+1] == b) {
@@ -113,10 +113,10 @@ public:
     std::cout << "Total merges learned: " << token_merge_history.size() << std::endl;
   }
 
-  std::vector<g_tokenid> encode(const std::string &text) const {
+  std::vector<g_token_id> encode(const std::string &text) const {
     if (text.empty()) return {};
 
-    std::vector<g_tokenid> tokens;
+    std::vector<g_token_id> tokens;
     for (auto &c : text) {
       std::string s(1, c);
       try {
@@ -128,7 +128,7 @@ public:
     }
 
     for (const auto &rule : token_merge_history) {
-      std::vector<g_tokenid> new_token;
+      std::vector<g_token_id> new_token;
       size_t i = 0;
           
       while (i < tokens.size()) {
@@ -147,7 +147,7 @@ public:
     return tokens;
   }
 
-  std::string decode(const std::vector<g_tokenid> &tokens) const {
+  std::string decode(const std::vector<g_token_id> &tokens) const {
     std::string result;
     for (auto &id : tokens) {
       try {
@@ -194,18 +194,18 @@ public:
       if (!token_vocabulary_file) return false;
       
       std::string token;
-      g_tokenid id;
+      g_token_id id;
       while (token_vocabulary_file >> token >> id) {
         token_to_id[token] = id;
         id_to_token[id] = token;
-        if (id >= m_nextId) m_nextId = id + 1;
+        if (id >= m_next_id) m_next_id = id + 1;
       }
       token_vocabulary_file.close();
       
       std::ifstream token_merge_file(token_merge_path);
       if (!token_merge_file) return false;
       
-      g_tokenid first, second, merged;
+      g_token_id first, second, merged;
       while (token_merge_file >> first >> second >> merged) {
         token_merge_history.push_back({first, second, merged});
       }
@@ -256,16 +256,16 @@ public:
   }
 
 private:
-  g_tokenid add_token(const std::string &token) {
+  g_token_id add_token(const std::string &token) {
     if (token_to_id.find(token) == token_to_id.end()) {
-      token_to_id[token] = m_nextId;
-      id_to_token[m_nextId] = token;
-      return m_nextId++;
+      token_to_id[token] = m_next_id;
+      id_to_token[m_next_id] = token;
+      return m_next_id++;
     }
     return token_to_id[token];
   }
 
-  g_tokenid get_token_id(const std::string &token) const {
+  g_token_id get_token_id(const std::string &token) const {
     try {
       return token_to_id.at(token);
     } 

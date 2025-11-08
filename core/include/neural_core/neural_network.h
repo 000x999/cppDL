@@ -33,7 +33,7 @@ public:
     :
     layer_input_size(input),
     layer_output_size(output),
-    weights(input*output),
+    weights(input * output),
     biases(output),
     input(input,0.0f),
     output(output,0.0f),
@@ -46,10 +46,10 @@ public:
     std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
     for (auto &w : weights) {
-        w = dist(gen);
+      w = dist(gen);
     }
     for (auto &b : biases) {
-        b = dist(gen);
+      b = dist(gen);
     } 
   }
 };
@@ -265,6 +265,17 @@ public:
     layer_loss_function = std::move(loss_in); 
   }
   
+  static void zero_grad(neural::nn &net_in){
+    for(size_t index = 0; index < net_in.layers.size(); ++index){
+      for(size_t i = 0; i < net_in.layer_data[index].weight_grad.size(); ++i){
+        net_in.layer_data[index].weight_grad[i] = 0; 
+      }
+      for(size_t i = 0; i < net_in.layer_data[index].bias_grad.size(); ++i){
+        net_in.layer_data[index].bias_grad[i] = 0; 
+      }
+    } 
+  }
+
   std::vector<float> forward(const std::vector<float> &layer_input_vals){
   #if DEBUG
     if(layers.empty()){
@@ -318,6 +329,35 @@ public:
     }
   }
   
+  static void draw_stats(nn &net_in){
+    for(size_t index = 0; index < net_in.layers.size(); ++index){
+      for(size_t squeeze = 0; squeeze < net_in.layer_data[index].weights.size(); ++squeeze){
+        std::cout << "LAYER [ " << index << " ] WEIGHTS:     "   << net_in.layer_data[index].weights[squeeze]         << std::endl;
+      }
+      for(size_t squeeze = 0; squeeze < net_in.layer_data[index].input.size(); ++squeeze){
+        std::cout << "LAYER [ " << index << " ] INPUT:       "   << net_in.layer_data[index].input[index]             << std::endl;     
+      }
+      for(size_t squeeze = 0; squeeze < net_in.layer_data[index].layer_deriv_in.size(); ++squeeze){
+        std::cout << "LAYER [ " << index << " ] DERIV_IN:    "   << net_in.layer_data[index].layer_deriv_in[squeeze]  << std::endl;     
+      }
+      for(size_t squeeze = 0; squeeze < net_in.layer_data[index].output.size(); ++squeeze){
+        std::cout << "LAYER [ " << index << " ] OUTPUT:      "   << net_in.layer_data[index].output[index]            << std::endl;     
+      }
+      for(size_t squeeze = 0; squeeze < net_in.layer_data[index].layer_deriv_out.size(); ++squeeze){
+        std::cout << "LAYER [ " << index << " ] DERIV_OUT:   "   << net_in.layer_data[index].layer_deriv_out[squeeze] << std::endl;     
+      }
+      for(size_t squeeze = 0; squeeze < net_in.layer_data[index].weight_grad.size(); ++squeeze){
+        std::cout << "LAYER [ " << index << " ] WEIGHT_GRAD: "   << net_in.layer_data[index].weight_grad[squeeze]     << std::endl;     
+      }
+      for(size_t squeeze = 0; squeeze < net_in.layer_data[index].biases.size(); ++squeeze){
+        std::cout << "LAYER [ " << index << " ] BIASES:      "   << net_in.layer_data[index].biases[squeeze]          << std::endl;     
+      }
+      for(size_t squeeze = 0; squeeze < net_in.layer_data[index].bias_grad.size(); ++squeeze){
+        std::cout << "LAYER [ " << index << " ] BIAS_GRAD:   "   << net_in.layer_data[index].bias_grad[squeeze]       << std::endl;
+      }
+    } 
+  }
+    
   void draw_load_bar(int x){
     float prog = (float)x / 2500; 
     float bw = 90;
@@ -325,9 +365,9 @@ public:
     for(size_t i = 0; i < bw; ++i){
       if(i < pos) std::cout << "\033[35;106m \033[m"; 
       else std::cout << " "; 
+    }
+    std::cout<<"] " << prog * 100 << "%\r" << std::flush;
   }
-  std::cout<<"] " << prog * 100 << "%\r" << std::flush;
-}
 
 };
 };

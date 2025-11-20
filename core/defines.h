@@ -14,6 +14,13 @@
   extern "C" int omp_get_max_threads();
 #endif
 
+#ifdef USE_BLAS
+  #include "../core/include/CRUSHBLAS_MODULE/core/defines.h"
+  #include "../core/include/CRUSHBLAS_MODULE/core/include/matrix_core/matrix.hpp"
+  #include "../core/include/CRUSHBLAS_MODULE/core/include/logger_core/logger.hpp" 
+  #include "../core/include/CRUSHBLAS_MODULE/core/BLAS/level3/level3.hpp"
+#endif 
+
 #ifdef DEBUG  
 #define DEBUG_THREADS() do {                                \
      _Pragma("omp parallel")                                \
@@ -32,8 +39,6 @@
   #elif defines(__linux__) || defined(__gnu_linux__)
     #define CRUSH_PLATFORM_LINUX 1
   #endif 
-
-#define CRUSH_API
 
 #ifdef CPPDL_EXPORT
   #ifdef _MSC_VER

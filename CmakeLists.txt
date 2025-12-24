@@ -9,6 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(USE_AVX256 "Enable AVX2/FMA etc." ON)
+option(DEBUG "Enable DEBUG" OFF)
+option(USE_BLAS "Enable CRUSHBLAS acceleration" ON)
 option(USE_VULKAN "Enable Vulkan support" OFF)
 option(USE_OPENGL "Enable OpenGL support" OFF)
 option(USE_BLAS   "Enable BLAS support" OFF)
@@ -24,11 +26,13 @@ else()
 endif()
 
 set(SRC_DIRS
-    test_bed/src
-    core/impl/neural_core_impl
-    core/impl/tokenizer_core_impl
-    core/include/CRUSHBLAS_MODULE/core/impl/blas_impl/level3
-    core/include/CRUSHBLAS_MODULE/core/impl/core_impl/matrix_impl
+  test_bed/src
+  core/impl/neural_core_impl
+  core/impl/neural_memory_impl
+  core/impl/tokenizer_core_impl
+  core/impl/tensor_core_impl
+  core/impl/attention_core_impl
+  core/include/CRUSHBLAS_MODULE/core/impl/blas_impl/level3
 )
 
 set(SRCS "")
@@ -50,12 +54,12 @@ endif()
 
 if(USE_AVX256)
     target_compile_definitions(cppDL PRIVATE USE_AVX256=1)
-
     if(MSVC)
         target_compile_options(cppDL PRIVATE /O2 /arch:AVX2)
     else()
         target_compile_options(cppDL PRIVATE
             -Ofast
+            -O3
             -march=native
             -mavx2
             -O3
@@ -74,15 +78,14 @@ endif()
 
 if(USE_BLAS)
     target_compile_definitions(cppDL PRIVATE USE_BLAS=1)
-
     if(MSVC)
         target_compile_options(cppDL PRIVATE /O2 /arch:AVX2)
     else()
         target_compile_options(cppDL PRIVATE
             -Ofast
+            -O3
             -march=native
             -mavx2
-            -O3
             -mfma
             -mavx
         )
@@ -95,7 +98,6 @@ if(USE_BLAS)
 else()
     target_compile_definitions(cppDL PRIVATE USE_BLAS=0)
 endif()
-
 
 if(USE_VULKAN)
     target_compile_definitions(cppDL PRIVATE USE_VULKAN=1)

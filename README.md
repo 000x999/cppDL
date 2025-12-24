@@ -1,5 +1,5 @@
 # cppDL
-- Extensive Deep Learning/Machine Learning library written entirely in C++ STL and VULKAN. 
+- Extensive Deep Learning Inference library written in c++ from scratch
 - Uses my custom BLAS/Encryption/Compression library CRUSHBLAS.
 <br><br>
 ## **CURRENT FEATURES**:

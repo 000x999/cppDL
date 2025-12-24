@@ -6,7 +6,7 @@
 #include "allocator_base.hpp"
 #include "../../defines.h" 
 #include "data_structures/linked_list.hpp"
-#include "../../include/logger_core/logger.h"
+#include "../../include/logger_core/logger.hpp"
 
 class alloc_list : public allocator_base{
 public: 
@@ -16,11 +16,11 @@ public:
   };
 
 private: 
-  struct list_header {std::size_t alloc_list_block_size;}; 
-  struct alloc_header{std::size_t header_size; std::size_t header_padding;};
-  using  alloc_list_node = linked_list<list_header>::list_node;
-  void   *m_alloc_ptr    = nullptr; 
-  alloc_policy m_alloc_policy; 
+  struct                   list_header     {std::size_t alloc_list_block_size;}; 
+  struct                   alloc_header    {std::size_t header_size; std::size_t header_padding;};
+  using                    alloc_list_node = linked_list<list_header>::list_node;
+  void                    *m_alloc_ptr     = nullptr; 
+  alloc_policy             m_alloc_policy; 
   linked_list<list_header> m_alloc_list;
 
 public:

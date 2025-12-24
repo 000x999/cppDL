@@ -10,11 +10,11 @@
 #include <algorithm> 
 #include <cstdlib> 
 #include <random>
-#include "../../defines.h"
-#include "../tensor_core/tensor.hpp"
-#include "../logger_core/logger.hpp"
-#include "../../../core/include/CRUSHBLAS_MODULE/core/blas/level3/level3.hpp"
-#include "../neural_memory/nn_memory.hpp"
+#include "cppdl_defines.h"
+#include "tensor_core/tensor.hpp"
+#include "logger_core/logger.hpp"
+#include "CRUSHBLAS_MODULE/core/blas/level3/level3.hpp"
+#include "neural_memory/nn_memory.hpp"
 
 namespace neural{
 

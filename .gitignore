@@ -1,4 +1,5 @@
 core/include/tokenizer_core/token_models
+core/include/CRUSHBLAS_MODULE
 test_bed/file_outputs
 build
 testing

@@ -10,7 +10,7 @@
 #include <cassert> 
 #include <stdexcept> 
 #include <initializer_list>
-#include "../../include/logger_core/logger.hpp"
+#include "logger_core/logger.hpp"
 
 namespace tens{
 constexpr size_t max_dims = 4;

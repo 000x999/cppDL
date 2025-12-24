@@ -1,4 +1,4 @@
-#include "../../include/neural_core/neural_network.hpp"
+#include "neural_core/neural_network.hpp"
 
 neural::linear::linear(size_t input, size_t output){
   weight_data.input_features  = input; 

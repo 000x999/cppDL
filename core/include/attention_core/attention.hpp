@@ -4,10 +4,10 @@
 #include <algorithm>
 #include <math.h>
 
-#include "../../defines.h"
-#include "../tensor_core/tensor.hpp"
-#include "../neural_memory/nn_memory.hpp"
-#include "../CRUSHBLAS_MODULE/core/BLAS/level3/level3.hpp"
+#include "cppdl_defines.h"
+#include "tensor_core/tensor.hpp"
+#include "neural_memory/nn_memory.hpp"
+#include "CRUSHBLAS_MODULE/core/BLAS/level3/level3.hpp"
 namespace atten{
 
 struct atten_weights{

@@ -1,4 +1,4 @@
-#include "../../include/tokenizer_core/tokenizer.hpp"
+#include "tokenizer_core/tokenizer.hpp"
 
 namespace{
 struct token_node{

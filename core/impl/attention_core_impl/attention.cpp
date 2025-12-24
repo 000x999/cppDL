@@ -1,4 +1,4 @@
-#include "../../include/attention_core/attention.hpp"
+#include "attention_core/attention.hpp"
 
 atten::attention::attention(size_t embedded_dim, size_t num_heads) 
 : 

@@ -1,4 +1,5 @@
-#include "../../include/tensor_core/tensor.hpp"
+#include "include/tensor_core/tensor.hpp"
+
 size_t tens::tensor_shape::numel() const{
   if(ndim == 0){
       return 0; 

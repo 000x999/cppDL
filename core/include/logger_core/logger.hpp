@@ -1,6 +1,6 @@
 #ifndef LOGGER_H
 #define LOGGER_H
-#include "../../defines.h"
+#include "cppdl_defines.h"
 
 #define CPPDL_LOG_WARN_ENABLED  1
 #define CPPDL_LOG_INFO_ENABLED  1

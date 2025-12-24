@@ -1,4 +1,4 @@
-#include "../../include/neural_memory/nn_memory.hpp"
+#include "neural_memory/nn_memory.hpp"
 
 size_t memory::neural_arena::align_forward(size_t ptr_address){
  if(ptr_address % nn_align == 0){

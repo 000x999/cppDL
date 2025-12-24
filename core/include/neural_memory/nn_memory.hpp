@@ -4,7 +4,7 @@
 #include <memory> 
 #include <iostream>
 #include <new>
-#include "../../defines.h"
+#include "cppdl_defines.h"
 
 namespace memory{
 class neural_arena{

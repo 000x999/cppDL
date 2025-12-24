@@ -4,7 +4,6 @@
 #include "../../core/include/logger_core/dual_output.hpp"
 #include "../../core/include/tensor_core/tensor.hpp"
 #include "../../core/include/attention_core/attention.hpp"
-#include "../../core/utils/dashboard.hpp"
 #include <stdlib.h>
 #include <chrono>
 #include <fstream>

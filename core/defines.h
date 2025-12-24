@@ -16,8 +16,6 @@
 
 #ifdef USE_BLAS
   #include "../core/include/CRUSHBLAS_MODULE/core/defines.h"
-  #include "../core/include/CRUSHBLAS_MODULE/core/include/matrix_core/matrix.hpp"
-  #include "../core/include/CRUSHBLAS_MODULE/core/include/logger_core/logger.hpp" 
   #include "../core/include/CRUSHBLAS_MODULE/core/BLAS/level3/level3.hpp"
 #endif 
 

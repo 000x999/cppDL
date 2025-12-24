@@ -1,7 +1,7 @@
 #ifndef LINEARALLOC_HPP
 #define LINEARALLOC_HPP 
 #include "../../defines.h"
-#include "../../include/logger_core/logger.h"
+#include "../../include/logger_core/logger.hpp"
 #include "allocator_base.hpp"
 #include <stdlib.h> 
 #include <algorithm>

@@ -2,10 +2,13 @@
 #include "../../core/include/neural_core/neural_network.hpp"
 #include "../../core/include/tokenizer_core/tokenizer.hpp"
 #include "../../core/include/logger_core/dual_output.hpp"
+#include "../../core/include/tensor_core/tensor.hpp"
+#include "../../core/include/attention_core/attention.hpp"
 #include "../../core/utils/dashboard.hpp"
 #include <stdlib.h>
 #include <chrono>
 #include <fstream>
+#include <cfloat>
 #include <streambuf>
 #include <chrono>
 #include <thread>
@@ -13,429 +16,50 @@
 #include <limits> 
 
 void save_ppm(const std::string& name, const float* data, int width, int height) {
-    if (!data) return;
-    std::string filename = name + ".ppm";
-    std::ofstream f(filename);
-    if (!f.is_open()) {
-        std::cerr << "Error opening file for visualization: " << filename << "\n";
-        return;
+  if (!data) return;
+  std::string filename = name + ".ppm";
+  std::ofstream f(filename);
+  if (!f.is_open()) {
+    std::cerr << "Error opening file for visualization: " << filename << "\n";
+    return;
+  }
+  
+  f << "P3\n" << width << " " << height << "\n255\n";
+  
+  float min_v = 1e9, max_v = -1e9;
+  for(int i=0; i< width * height; ++i) {
+      if(data[i] < min_v) min_v = data[i];
+      if(data[i] > max_v) max_v = data[i];
+  }
+  
+  for(int i=0; i< width * height; ++i) {
+    float t = (data[i] - min_v) / (max_v - min_v + 1e-8f);
+      
+    int r, g, b;
+      
+    if (t < 0.5f) {
+      float local_t = t * 2.0f;
+      r = 0;
+      g = (int)(local_t * 255.0f);
+      b = (int)((1.0f - local_t) * 255.0f);
+    }else{
+      float local_t = (t - 0.5f) * 2.0f;
+      r = (int)(local_t * 255.0f);
+      g = (int)((1.0f - local_t) * 255.0f);
+      b = 0;
     }
-    
-    f << "P3\n" << width << " " << height << "\n255\n";
-    
-    // Find Min/Max for normalization
-    float min_v = 1e9, max_v = -1e9;
-    for(int i=0; i<width*height; ++i) {
-        if(data[i] < min_v) min_v = data[i];
-        if(data[i] > max_v) max_v = data[i];
-    }
-    
-    // Write pixels
-    for(int i=0; i<width*height; ++i) {
-        // Normalize to 0..1
-        float t = (data[i] - min_v) / (max_v - min_v + 1e-8f);
-        
-        // Heatmap Color Map (Blue -> Green -> Red)
-        int r, g, b;
-        
-        if (t < 0.5f) {
-            // Blue (0,0,255) -> Green (0,255,0)
-            float local_t = t * 2.0f;
-            r = 0;
-            g = (int)(local_t * 255.0f);
-            b = (int)((1.0f - local_t) * 255.0f);
-        } else {
-            // Green (0,255,0) -> Red (255,0,0)
-            float local_t = (t - 0.5f) * 2.0f;
-            r = (int)(local_t * 255.0f);
-            g = (int)((1.0f - local_t) * 255.0f);
-            b = 0;
-        }
-        
-        f << r << " " << g << " " << b << " ";
-        if((i+1)%width == 0) f << "\n";
-    }
-    f.close();
-    std::cout << "Saved colored visualization: " << filename << "\n";
+      
+    f << r << " " << g << " " << b << " ";
+    if((i+1) % width == 0) f << "\n";
+  }
+  f.close();
+  std::cout << "Saved colored visualization: " << filename << "\n";
 }
-
-
 
 uint64_t nanos() {
   struct timespec start;
   clock_gettime(CLOCK_MONOTONIC, &start);
   return (uint64_t)start.tv_sec * 1000000000ULL + (uint64_t)start.tv_nsec;
-}
-
-void neural_network_test(){ 
-  init_console_utf8();
-  ansi_hide_cursor();
-  ansi_clear_screen();
-
-  size_t epochmax   = 1000;
-  size_t squeezemax = 0; 
-  auto start = nanos(); 
-
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<float> dist(-50.0f, 100.0f);
-
-  std::vector<float> inputVals;
-  inputVals.reserve(10000);
-  for(size_t i = 0; i < 10000; ++i) {
-    inputVals.emplace_back(dist(gen));
-  }
-
-  std::vector<float> targetVals = {1.0f};
-  float eta = 0.00001f; 
-
-  neural::nn net;
-  net.add_linear (inputVals.size(),10000); 
-  net.add_relu   (10000);
-  net.add_linear (10000,1000);
-  net.add_sigmoid(1000);
-  net.add_linear (1000,1);
-  net.add_loss   (std::make_unique<neural::mse_loss>());
-
-  std::vector<float> out; 
-  float loss = 0.0f; 
-
-  std::vector<float> loss_hist;
-  loss_hist.reserve(epochmax);
-
-  const size_t input_dim   = inputVals.size();
-  const size_t hidden1_dim = 10000;
-  const size_t hidden2_dim = 1000;
-  const size_t output_dim  = 1;
-
-  const int term_width = 120;  
-
-  const int train_w    = 78;
-  const int train_h    = 13;
-  const int net_w      = 75;
-  const int net_h      = 9;
-  const int loss_w     = term_width - 4;
-  const int loss_h     = 7;
-
-  const int train_top  = 2;
-  const int train_left = 2;
-  const int net_top    = 2;
-  const int net_left   = train_left + train_w + 2;
-  const int loss_top   = train_top + train_h + 1;
-  const int loss_left  = 2;
-
-  ansi_move(1, 2);
-  fg256(45); ansi_bold();
-  std::cout << " cppDL single-sample training ";
-  ansi_reset();
-
-  draw_box(train_top, train_left, train_w, train_h, "Training");
-  draw_box(net_top,   net_left,   net_w,   net_h,   "Network");
-  draw_box(loss_top,  loss_left,  loss_w,  loss_h,  "Loss history");
-
-  ansi_move(net_top + 2, net_left + 3);
-  fg256(15); ansi_bold(); std::cout << "Input dim "; ansi_reset();
-  std::cout << ": " << input_dim << "          ";
-
-  ansi_move(net_top + 3, net_left + 3);
-  fg256(15); ansi_bold(); std::cout << "Hidden1   "; ansi_reset();
-  std::cout << ": " << hidden1_dim << "         ";
-
-  ansi_move(net_top + 4, net_left + 3);
-  fg256(15); ansi_bold(); std::cout << "Hidden2   "; ansi_reset();
-  std::cout << ": " << hidden2_dim << "         ";
-
-  ansi_move(net_top + 5, net_left + 3);
-  fg256(15); ansi_bold(); std::cout << "Output dim"; ansi_reset();
-  std::cout << ": " << output_dim << "          ";
-
-  ansi_move(net_top + 7, net_left + 3);
-  ansi_dim();
-  std::cout << "Architecture: Linear -> ReLU -> Linear -> Sigmoid -> Linear";
-  ansi_reset();
-
-  ansi_move(loss_top + 1, loss_left + 3);
-  fg256(15); ansi_bold(); std::cout << "Last losses"; ansi_reset();
-
-  for(size_t epoch = 0; epoch < epochmax; ++epoch){
-    out            = net.forward(inputVals); 
-    loss           = net.get_loss(targetVals);
-    auto derivOut  = net.get_grad(targetVals);
-    net.backwards(derivOut); 
-    net.update(eta);
-
-    loss_hist.push_back(loss);
-    if (loss_hist.size() > 200) {
-      loss_hist.erase(loss_hist.begin());  
-    }
-
-    double elapsed_s = (nanos() - start) * 1e-9;
-    double prog      = double(epoch + 1) / double(epochmax);
-
-    ansi_move(train_top + 2, train_left + 3);
-    fg256(15); ansi_bold(); std::cout << "Epoch"; ansi_reset();
-    std::cout << ": " << std::setw(5) << epoch << " / " << std::setw(5) << (epochmax - 1) << "       ";
-
-    ansi_move(train_top + 3, train_left + 3);
-    fg256(15); ansi_bold(); std::cout << "Time "; ansi_reset();
-    std::cout << ": ";
-    fg256(220);
-    std::cout << std::fixed << std::setprecision(2)
-              << std::setw(8) << elapsed_s << " s   ";
-    ansi_reset();
-
-    ansi_move(train_top + 4, train_left + 3);
-    fg256(15); ansi_bold(); std::cout << "Loss "; ansi_reset();
-    std::cout << ": ";
-    fg256(207);
-    std::cout << std::fixed << std::setprecision(6)
-              << std::setw(12) << loss << "   ";
-    ansi_reset();
-
-    ansi_move(train_top + 5, train_left + 3);
-    fg256(15); ansi_bold(); std::cout << "Output"; ansi_reset();
-    std::cout << ": ";
-    fg256(82);
-    std::cout << std::fixed << std::setprecision(6)
-              << std::setw(12) << (out.empty() ? 0.0f : out[0]) << "   ";
-    ansi_reset();
-
-    ansi_move(train_top + 6, train_left + 3);
-    fg256(15); ansi_bold(); std::cout << "Target"; ansi_reset();
-    std::cout << ": ";
-    fg256(82);
-    std::cout << std::fixed << std::setprecision(6)
-              << std::setw(12) << targetVals[0] << "   ";
-    ansi_reset();
-
-    ansi_move(train_top + 7, train_left + 3);
-    fg256(15); ansi_bold(); std::cout << "LR   "; ansi_reset();
-    std::cout << ": ";
-    fg256(33);
-    std::cout << std::fixed << std::setprecision(8)
-              << std::setw(14) << eta << "   ";
-    ansi_reset();
-
-    ansi_move(train_top + 8, train_left + 3);
-    ansi_dim(); std::cout << "Epoch progress:"; ansi_reset();
-    draw_bar(train_top + 8, train_left + 20, train_w - 24, prog);
-
-    draw_loss_sparkline(loss_top + 3, loss_left + 3, loss_w - 6, loss_hist);
-
-    ansi_move(loss_top + 5, loss_left + 3);
-    ansi_dim();
-    std::cout << "Loss type: MSE  |  squeeze_max: " << squeezemax << "      ";
-    ansi_reset();
-
-    std::cout.flush();
-  }
-
-  ansi_show_cursor();
-
-  auto end = nanos(); 
-  auto opttime = (end - start) * 1e-9;
-  std::cout <<"\n\n";
-  std::cout << "Total training time: " << opttime  << '\n';
-  std::cout << "Total EPOCHS: "        << epochmax << '\n'; 
-  std::cout << "Learning rate: "       << std::fixed << std::setprecision(8) << eta << '\n'; 
-  std::cout << "Training data size: "  << inputVals.size() << " data points" << '\n';
-  std::cout << "Network size: "        << '\n'; 
-  std::cout << "Linear  layer 1: " << inputVals.size() << " x " << 10000 << " neurons" << '\n';
-  std::cout << "ReLu    layer 1: " << 10000            <<  "                  neurons" << '\n';
-  std::cout << "Linear  layer 2: " << 10000            << " x " << 1000  << " neurons" << '\n'; 
-  std::cout << "Sigmoid layer  : " << 1000             << "                   neurons" << '\n'; 
-  std::cout << "Linear  layer 3: " << 1000             << " x " << 1     << " neurons" << '\n';
-  std::cout << "Loss layer type: MSE LOSS\n"; 
-  std::cout<<"\n";
-}
-
-void train_full_dataset_batched() {
-  const std::size_t num_samples = 100; 
-  const std::size_t input_dim   = 100; 
-  const std::size_t hidden1_dim = 250;
-  const std::size_t hidden2_dim = 250;
-  const std::size_t output_dim  = 1;    
-  const std::size_t batch_size  = 32;
-  const std::size_t num_epochs  = 1500;
-  const float       eta         = 0.00001f;
-
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<float> x_dist(-3.0f, 3.0f);
-
-  std::vector<float> dataset_X(num_samples * input_dim);
-  std::vector<float> dataset_Y(num_samples * output_dim);
-
-  for (std::size_t s = 0; s < num_samples; ++s) {
-    for (std::size_t f = 0; f < input_dim; ++f) {
-      dataset_X[s * input_dim + f] = x_dist(gen);
-    }
-    for (std::size_t o = 0; o < output_dim; ++o) {
-      dataset_Y[s * output_dim + o] = 1.0f;
-    }
-  }
-
-  neural::nn net;
-  net.add_linear_relu_fused    (input_dim  , hidden1_dim);
-  net.add_linear_relu_fused    (hidden1_dim, hidden2_dim);
-  net.add_linear_sigmoid_fused (hidden2_dim, output_dim);
-  net.add_loss                 (std::make_unique<neural::mse_loss>());
-
-  init_console_utf8();
-
-  TrainMetrics        metrics{};
-  TrainDashboardConfig cfg{};
-  cfg.num_samples   = (double)50000 * 50000;
-  cfg.input_dim     = 50000;
-  cfg.output_dim    = 10000;
-  cfg.batch_size    = batch_size;
-  cfg.num_epochs    = num_epochs;
-  cfg.learning_rate = eta;
-  cfg.loss_name     = "MSE";
-
-  std::vector<LayerRow> layer_rows = {
-      {"fc1", "Lin+ReLU",   "50000x50000",  (int)((50000 * 50000) / 10000ull), 0.0, 0.0},
-      {"fc2", "Lin+ReLU",   "50000x10000",   (int)((50000  * 10000) / 10000ull), 0.0, 0.0},
-      {"fc3", "Lin+Sigm",   "10000x1",     (int)((10000  * 1)   / 10000ull), 0.0, 0.0},
-  };
-
-  std::atomic<bool> running{true};
-
-  std::thread dash_thread(
-      dashboard_loop,
-      std::cref(metrics),
-      std::cref(cfg),
-      std::cref(layer_rows),
-      std::ref(running));
-
-  std::vector<float> input_batch;    
-  std::vector<float> target_batch;  
-  std::vector<float> out_batch;      
-  std::vector<float> grad_out_batch;   
-  std::vector<float> grad_input_batch;  
-
-  std::vector<std::size_t> indices(num_samples);
-  std::iota(indices.begin(), indices.end(), 0);
-
-  auto start_ns          = nanos();
-  std::size_t total_seen = 0;
-  double running_loss    = 0.0;
-  double running_count   = 0.0;
-
-  for (std::size_t epoch = 0; epoch < num_epochs; ++epoch) {
-    std::shuffle(indices.begin(), indices.end(), gen);
-
-    double epoch_loss_sum    = 0.0;
-    std::size_t epoch_samples = 0;
-
-    for (std::size_t batch_start = 0;
-         batch_start < num_samples;
-         batch_start += batch_size)
-    {
-      auto iter_start_ns = nanos();
-
-      std::size_t curr_bs = std::min(batch_size, num_samples - batch_start);
-
-      input_batch.resize(input_dim * curr_bs);
-      target_batch.resize(output_dim * curr_bs);
-
-      for (std::size_t b = 0; b < curr_bs; ++b) {
-        std::size_t s = indices[batch_start + b];
-
-        const float* x_src = &dataset_X[s * input_dim];
-        const float* y_src = &dataset_Y[s * output_dim];
-
-        for (std::size_t f = 0; f < input_dim; ++f) {
-          input_batch[f * curr_bs + b] = x_src[f];
-        }
-        for (std::size_t o = 0; o < output_dim; ++o) {
-          target_batch[o * curr_bs + b] = y_src[o];
-        }
-      }
-
-      out_batch.clear();
-      net.forward_batched(input_batch, curr_bs, out_batch);
-
-#if DEBUG
-      if (out_batch.size() != output_dim * curr_bs) {
-        CPPDL_FATAL("out_batch size mismatch in train_full_dataset_batched");
-      }
-#endif
-
-      float batch_loss = net.get_loss_batched(target_batch, curr_bs);
-      epoch_loss_sum   += static_cast<double>(batch_loss) * static_cast<double>(curr_bs);
-      epoch_samples    += curr_bs;
-
-      running_loss  += static_cast<double>(batch_loss) * static_cast<double>(curr_bs);
-      running_count += static_cast<double>(curr_bs);
-
-      total_seen    += curr_bs;
-
-      grad_out_batch = net.get_grad_batched(target_batch, curr_bs);
-
-      net.backwards_batched(grad_out_batch, curr_bs, grad_input_batch);
-
-      net.update(eta);
-
-      auto iter_end_ns = nanos();
-      double iter_s    = (iter_end_ns - iter_start_ns) * 1e-9;
-      double elapsed_s = (iter_end_ns - start_ns)      * 1e-9;
-
-      metrics.epoch          = static_cast<int>(epoch);
-      metrics.batch_size     = static_cast<int>(curr_bs);
-      metrics.loss           = batch_loss;
-      metrics.avg_loss       = (running_count > 0.0) ? (running_loss / running_count) : batch_loss;
-      metrics.train_time_s   = elapsed_s;
-
-      double sps = (elapsed_s > 0.0)
-                 ? static_cast<double>(total_seen) / elapsed_s
-                 : 0.0;
-      metrics.samples_per_sec = sps;
-
-      float first_out    = out_batch.empty()    ? 0.0f : out_batch[0];
-      float first_target = target_batch.empty() ? 0.0f : target_batch[0];
-
-      metrics.last_out    = first_out;
-      metrics.last_target = first_target;
-
-      double ops_per_sample =
-          2.0 * (double(input_dim)   * double(hidden1_dim) +
-                 double(hidden1_dim) * double(hidden2_dim) +
-                 double(hidden2_dim) * double(output_dim));
-      double total_ops = ops_per_sample * double(curr_bs);
-      double gflops    = (iter_s > 0.0) ? (total_ops / iter_s * 1e-9) : 0.0;
-
-      metrics.gemm_m      = static_cast<int>(input_dim);
-      metrics.gemm_n      = static_cast<int>(curr_bs);
-      metrics.gemm_k      = static_cast<int>(hidden1_dim);
-      metrics.gemm_gflops = gflops;
-
-      //printf("\033[47;30m | EPOCH = %3zu\033[m", epoch);
-      //printf("\033[47;30m | BATCH_LOSS = %f\033[m", batch_loss);
-      //printf("\033[47;30m | OUTPUT[0] = %f\033[m", first_out);
-      //printf("\033[47;30m | TARGET[0] = %f\033[m", first_target);
-      //std::cout << " [ ";
-      //net.draw_load_bar(static_cast<int>(epoch));
-    }
-
-    double epoch_loss = epoch_loss_sum / static_cast<double>(epoch_samples);
-    (void)epoch_loss;
-  }
-  auto end_ns = nanos();
-  double total_time = (end_ns - start_ns) * 1e-9;
-
-  running = false;
-  dash_thread.join();
-
-  std::cout << "\n\n";
-  std::cout << "Total training time: " << total_time   << " s\n";
-  std::cout << "Total EPOCHS: "        << num_epochs   << '\n';
-  std::cout << "Learning rate: "       << eta          << '\n';
-  std::cout << "Batch size: "          << batch_size   << " (last batch may be smaller)\n";
-  std::cout << "Num samples: "         << num_samples  << '\n';
-  std::cout << "Input dim: "           << input_dim    << '\n';
-  std::cout << "Output dim: "          << output_dim   << '\n';
-  std::cout << "Loss type: MSE\n";
 }
 
 void tokenizer_test(){
@@ -468,8 +92,126 @@ void tokenizer_test(){
   tokenizer.print_model_stats();
 }
 
+void inference_test(){
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<float> dist(-10.0f, 10.0f);
+
+  size_t layer_1_input  = 8192;
+  size_t layer_1_output = 4096;
+  size_t layer_2_input  = 4096; 
+  size_t layer_2_output = 2048;
+  size_t layer_3_input  = 2048; 
+  size_t layer_3_output = 1024;
+  size_t layer_4_input  = 1024;
+  size_t layer_4_output = 512;
+  size_t batch_size     = 32;
+  
+  neural::nn inf;
+  inf.add_linear(layer_1_input, layer_1_output);
+  inf.add_relu(); 
+  inf.add_linear(layer_2_input, layer_2_output);
+  inf.add_relu();
+  inf.add_linear(layer_3_input, layer_3_output);
+  inf.add_relu(); 
+  inf.add_linear(layer_4_input, layer_4_output);
+  inf.add_sigmoid();
+
+  size_t arena_size = inf.mem_reqs(); 
+  
+  neural::alloc_pool persistent_arena(arena_size * sizeof(float)); 
+  inf.init(persistent_arena);
+  
+  neural::alloc_pool temp_arena(arena_size * sizeof(float)); 
+  float *input_data = temp_arena.arena.nn_alloc<float>(batch_size * layer_1_input);
+
+  for(size_t i = 0; i < layer_1_input * batch_size; ++i){
+    input_data[i] = dist(gen); 
+  }
+
+  neural::neural_view input_tensor; 
+  input_tensor.tensor.tensor_data      = input_data; 
+  input_tensor.tensor.shape.ndim       = 2; 
+  input_tensor.tensor.shape.dims[0]    = batch_size; 
+  input_tensor.tensor.shape.dims[1]    = layer_1_input; 
+  input_tensor.tensor.shape.strides[0] = layer_1_input;
+  input_tensor.tensor.shape.strides[1] = 1;
+
+  save_ppm("inputdata", input_tensor.tensor.tensor_data, input_tensor.tensor.shape.dims[0], input_tensor.tensor.shape.dims[1]); 
+  save_ppm("allweights", inf.save_weights(), input_tensor.tensor.shape.dims[0], input_tensor.tensor.shape.dims[1]);
+  auto start = nanos();
+    neural::neural_view res_tensor = inf.forward(input_tensor, temp_arena);
+  auto end   = nanos();
+  std::cout << "forward time: " << (end - start) * 1e-6 << "ms\n"; 
+  save_ppm("infweights", res_tensor.tensor.tensor_data, res_tensor.tensor.shape.dims[0], res_tensor.tensor.shape.dims[1]); 
+
+  std::cout << "output shape [" << res_tensor.tensor.shape.dims[0] 
+            << "," << res_tensor.tensor.shape.dims[1] << "]\n"; 
+
+  std::cout << "output values: "; 
+  for(size_t i = 0; i < res_tensor.tensor.shape.dims[1]; ++i){
+    std::cout << res_tensor.tensor.tensor_data[i] << " "; 
+  }
+  std::cout << '\n'; 
+}
+
+void attention_test(){
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dist(-1.0f, 1.0f); 
+    
+    size_t embed_dim = 8192;
+    size_t num_heads = 1;
+    size_t head_dim  = embed_dim / num_heads; 
+    size_t seq_len   = 512;  
+    
+    atten::attention attn(embed_dim, num_heads);
+    
+    size_t weight_size = embed_dim * head_dim;
+    size_t total_weights = weight_size * 4;    
+    atten::atten_pool persistent_arena(total_weights * sizeof(float)); 
+    attn.init(persistent_arena); 
+    
+    atten::atten_pool temp_arena(seq_len * embed_dim * 100 * sizeof(float)); 
+    
+    float *input_data = temp_arena.arena.nn_alloc<float>(seq_len * embed_dim); 
+    for(size_t i = 0; i < seq_len * embed_dim; ++i){
+        input_data[i] = dist(gen); 
+    }
+    
+    float *wq_data = temp_arena.arena.nn_alloc<float>(weight_size); 
+    float *wk_data = temp_arena.arena.nn_alloc<float>(weight_size);
+    float *wv_data = temp_arena.arena.nn_alloc<float>(weight_size);
+    float *wo_data = temp_arena.arena.nn_alloc<float>(weight_size);
+    
+    for(size_t i = 0; i < weight_size; ++i){
+      wq_data[i] = dist(gen); 
+      wk_data[i] = dist(gen); 
+      wv_data[i] = dist(gen); 
+      wo_data[i] = dist(gen); 
+    }
+    
+    tens::tensor input_tensor; 
+    input_tensor.tensor_data      = input_data;
+    input_tensor.shape.ndim       = 2; 
+    input_tensor.shape.dims[0]    = seq_len;  
+    input_tensor.shape.dims[1]    = embed_dim;  
+    input_tensor.shape.strides[0] = embed_dim; 
+    input_tensor.shape.strides[1] = 1;
+     
+    save_ppm("inputdata", input_tensor.tensor_data, input_tensor.shape.dims[0], input_tensor.shape.dims[1]); 
+    attn.load_weights(wq_data, wk_data, wv_data, wo_data);
+    auto start = nanos();  
+    auto output_tensor = attn.forward(input_tensor, temp_arena); 
+    auto end   = nanos();
+    std::cout << "forward time: " << (end - start) * 1e-6 << "ms\n";
+    
+    std::cout << "Output shape: [" << output_tensor.shape.dims[0] 
+              << ", " << output_tensor.shape.dims[1] << "]" << std::endl;
+    save_ppm("attenweights", output_tensor.tensor_data, output_tensor.shape.dims[0], output_tensor.shape.dims[1]);
+}
+
 int main(){
-  train_full_dataset_batched();
-  //neural_network_test();
-  //tokenizer_test(); 
+  //inference_test(); 
+  attention_test(); 
 }

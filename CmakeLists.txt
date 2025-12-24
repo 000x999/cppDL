@@ -25,12 +25,13 @@ else()
 endif()
 
 set(SRC_DIRS
-    test_bed/src
-    core/impl/neural_core_impl
-    core/impl/tokenizer_core_impl
-    core/utils/dashboard.hpp
-    core/include/CRUSHBLAS_MODULE/core/impl/blas_impl/level3
-    core/include/CRUSHBLAS_MODULE/core/impl/core_impl/matrix_impl
+  test_bed/src
+  core/impl/neural_core_impl
+  core/impl/neural_memory_impl
+  core/impl/tokenizer_core_impl
+  core/impl/tensor_core_impl
+  core/impl/attention_core_impl
+  core/include/CRUSHBLAS_MODULE/core/impl/blas_impl/level3
 )
 
 set(SRCS "")

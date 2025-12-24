@@ -6,153 +6,79 @@
 #include <utility>
 #include <cmath>
 #include <immintrin.h>
-#include "../../../core/include/CRUSHBLAS_MODULE/core/blas/level3/level3.hpp"
 #include <string>           
 #include <algorithm> 
 #include <cstdlib> 
 #include <random>
-#include "../functions_core/functions.hpp"
-#include "../logger_core/logger.hpp"
 #include "../../defines.h"
+#include "../tensor_core/tensor.hpp"
+#include "../logger_core/logger.hpp"
+#include "../../../core/include/CRUSHBLAS_MODULE/core/blas/level3/level3.hpp"
+#include "../neural_memory/nn_memory.hpp"
 
 namespace neural{
 
-class layer_data{
-public:
-  size_t                layer_input_size; 
-  size_t                layer_output_size;
-  std::vector<float>    weights; 
-  std::vector<float>    biases;
-  
-  std::vector<float>    input; 
-  std::vector<float>    output;
-  
-  std::vector<float>    layer_deriv_in; 
-  std::vector<float>    layer_deriv_out; 
+struct alloc_pool{
+  memory::neural_arena arena;
+  explicit alloc_pool(size_t arena_size) : arena(arena_size) {}
+}; 
 
-  std::vector<float>    weight_grad;
-  std::vector<float>    bias_grad;
-                        layer_data
-                        (size_t input, size_t output);
-  std::vector<uint16_t> weights_fp16;
-};
+struct neural_view{
+  tens::tensor tensor; 
+}; 
+
+struct neural_weights{
+  neural_view weights; 
+  neural_view biases; 
+
+  size_t input_features; 
+  size_t output_features; 
+}; 
 
 //Parent base for all derivations of layer
 class layer{ 
 public:
-
-  virtual      ~layer            () = default; 
-  virtual void forward           (const std::vector<float> &layer_input_activations, layer_data &data                                                          ) = 0;
-  virtual void forward_batched   (const std::vector<float> &input_batch            , size_t batch_size, layer_data &data, std::vector<float> &output_batch     ) = 0; 
-  virtual void backwards         (const std::vector<float> &layer_deriv_out        , layer_data &data                                                          ) = 0; 
-  virtual void backwards_batched (const std::vector<float> &grad_output_batch      , size_t batch_size, layer_data &data, std::vector<float> &grad_input_batch ) = 0; 
-  virtual void update            (layer_data &data, float eta                                                                                                  ) {}; 
+  virtual                 ~layer            () = default; 
+  virtual void            init              ( alloc_pool  &persistent_arena               ) = 0; 
+  virtual neural_view     forward           ( neural_view &input_view, alloc_pool &arena  ) = 0; 
+  virtual void            backwards         ( neural_view &grad_view , alloc_pool &arena  ) {} ;
+  virtual neural_weights* get_weights       () { return nullptr; }
 };
 
 class linear : public layer{
+private: 
+  neural_weights weight_data; 
 public:
-
-  void forward           (const std::vector<float> &layer_input_activations, layer_data &data                                                                  ) override; 
-  void forward_batched   (const std::vector<float> &input_batch            , size_t batch_size, layer_data &data, std::vector<float> &output_batch             ) override;
-  void backwards         (const std::vector<float> &layer_deriv_out        , layer_data &data                                                                  ) override;
-  void backwards_batched (const std::vector<float> &grad_output_batch      , size_t batch_size, layer_data &data, std::vector<float> &grad_input_batch         ) override; 
-  void update            (layer_data &data                                 , float eta                                                                         ) override;
-};
-
-class linear_relu_fused : public layer{
-public:
-
-  void forward           (const std::vector<float> &layer_input_activations, layer_data &data                                                                  ) override;
-  void forward_batched   (const std::vector<float> &input_batch            , size_t batch_size, layer_data &data, std::vector<float> &output_batch             ) override;
-  void backwards         (const std::vector<float> &layer_deriv_out        , layer_data &data                                                                  ) override;
-  void backwards_batched (const std::vector<float> &grad_output_batch      , size_t batch_size, layer_data &data, std::vector<float> &grad_input_batch         ) override;
-  void update            (layer_data &data                                 , float eta                                                                         ) override;
-};
-  
-class linear_sigmoid_fused : public layer{
-public:
-
-  void forward           (const std::vector<float> &layer_input_activations, layer_data &data                                                                  ) override;
-  void forward_batched   (const std::vector<float> &input_batch            , size_t batch_size, layer_data &data, std::vector<float> &output_batch             ) override;
-  void backwards         (const std::vector<float> &layer_deriv_out        , layer_data &data                                                                  ) override;
-  void backwards_batched (const std::vector<float> &grad_output_batch      , size_t batch_size, layer_data &data, std::vector<float> &grad_input_batch         ) override;
-  void update            (layer_data &data                                 , float eta                                                                         ) override;
+                  linear      ( size_t input, size_t output                 ); 
+  void            init        ( alloc_pool  &persistent_arena               ) override;
+  neural_view     forward     ( neural_view &input_view, alloc_pool &arena  ) override; 
+  neural_weights* get_weights ()                                              override { return &weight_data; }
 };
 
 class relu: public layer{
 public:
-
-  void forward           (const std::vector<float> &layer_input_activations, layer_data &data                                                                  ) override;
-  void forward_batched   (const std::vector<float> &input_batch            , size_t batch_size, layer_data &data, std::vector<float> &output_batch             ) override; 
-  void backwards         (const std::vector<float> &layer_deriv_out        , layer_data &data                                                                  ) override; 
-  void backwards_batched (const std::vector<float> &grad_output_batch      , size_t batch_size, layer_data &data, std::vector<float> &grad_input_batch         ) override;
+  void        init    ( alloc_pool  &persistent_arena               ) override;
+  neural_view forward ( neural_view &input_view, alloc_pool &arena  ) override; 
 };
 
 class sigmoid : public layer{
 public:
-
-  void forward           (const std::vector<float> &layer_input_activations, layer_data &data                                                                  ) override; 
-  void forward_batched   (const std::vector<float> &input_batch            , size_t batch_size, layer_data &data, std::vector<float> &output_batch             ) override;
-  void backwards         (const std::vector<float> &layer_deriv_out        , layer_data &data                                                                  ) override;
-  void backwards_batched (const std::vector<float> &grad_output_batch      , size_t batch_size, layer_data &data, std::vector<float> &grad_input_batch         ) override;  
-};
-
-//Parent base for all derivations of loss
-class loss {
-  public:
-
-  virtual       ~loss             () = default; 
-  virtual float forward           (const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals                                                                        ) = 0;
-  virtual float forward_batched   (const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals, size_t num_outputs, size_t batch_size                                 ) = 0; 
-  virtual void  backwards         (const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals, std::vector<float> &layer_deriv_out                                   ) = 0;
-  virtual void  backwards_batched (const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals, size_t num_outputs, size_t batch_size, std::vector<float> &grad_preds ) = 0; 
-};
-
-class mse_loss : public loss{
-public:
-
-  float forward           (const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals                                                                                ) override;
-  float forward_batched   (const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals, size_t num_outputs, size_t batch_size                                         ) override;
-  void  backwards         (const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals, std::vector<float> &layer_deriv_out                                           ) override;
-  void  backwards_batched (const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals, size_t num_outputs, size_t batch_size, std::vector<float> &grad_preds         ) override;
-};
-
-class cross_entropy_loss_logits : public loss{
-public:
-
-  float forward           (const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals                                                                                ) override;
-  float forward_batched   (const std::vector<float> &logits_data, const std::vector<float> &layer_target_vals, size_t num_classes, size_t batch_size                                         ) override;
-  void  backwards         (const std::vector<float> &layer_preds, const std::vector<float> &layer_target_vals, std::vector<float> &layer_deriv_out                                           ) override;
-  void  backwards_batched (const std::vector<float> &logits_data, const std::vector<float> &layer_target_vals, size_t num_classes, size_t batch_size, std::vector<float> &grad_logits        ) override;
+  void        init    ( alloc_pool  &persistent_arena               ) override;
+  neural_view forward ( neural_view &input_view, alloc_pool &arena  ) override; 
 };
  
 class nn {
 public:
-
-  std::vector<layer_data>             data_layer;
   std::vector<std::unique_ptr<layer>> layers; 
-  std::unique_ptr<loss>               layer_loss_function; 
   
-  void               sync_weights_fp32_fp16   (layer_data &data); 
-  void               add_linear               (size_t input, size_t output);
-  void               add_linear_relu_fused    (size_t input_size, size_t output_size); 
-  void               add_linear_sigmoid_fused (size_t input_size, size_t output_size); 
-  void               add_relu                 (size_t input);
-  void               add_sigmoid              (size_t input);
-  void               add_loss                 (std::unique_ptr<loss> loss_in); 
-  static void        zero_grad                (neural::nn &net_in);
-  std::vector<float> forward                  (const std::vector<float> &layer_input_vals);
-  std::vector<float> forward_batched          (const std::vector<float> &input_batch, size_t batch_size, std::vector<float> &output_batch);
-  void               backwards                (const std::vector<float> &layer_target_vals);
-  void               backwards_batched        (const std::vector<float> &grad_output_batch, size_t batch_size, std::vector<float> &grad_input_batch);
-  float              get_loss                 (const std::vector<float> &layer_target_vals);
-  float              get_loss_batched         (const std::vector<float> &target_batch, size_t batch_size); 
-  std::vector<float> get_grad                 (const std::vector<float> &layer_target_vals);
-  std::vector<float> get_grad_batched         (const std::vector<float> &target_batch, size_t batch_size); 
-  void               update                   (float eta);
-  void               draw_load_bar            (int x);
+  void               add_linear               ( size_t input, size_t output                                     );
+  void               add_relu                 (); 
+  void               add_sigmoid              ();
+  neural_view        forward                  ( const neural_view &layer_input_tensor, alloc_pool &arena        );
+  float             *save_weights             (); 
+  void               init                     ( alloc_pool        &persistent_arena                             ); 
+  size_t             mem_reqs                 (); 
   static uint64_t    nanos                    ();
-
 };
 };
 #endif 

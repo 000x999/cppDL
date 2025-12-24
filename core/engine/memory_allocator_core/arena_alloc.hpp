@@ -3,7 +3,7 @@
 #include "allocator_base.hpp"
 #include "data_structures/stacked_list.hpp"
 #include "../../defines.h"
-#include "../../include/logger_core/logger.h"
+#include "../../include/logger_core/logger.hpp"
 #include <algorithm>
 
 class arena_alloc : public allocator_base{

@@ -168,7 +168,7 @@ neural::neural_view neural::sigmoid::forward(neural_view &input_view, alloc_pool
   //float *output_ptr      = arena.arena.nn_alloc<float>(batch_size * input_features);
   size_t total_size = batch_size * output_features; 
   for(size_t i = 0; i < total_size; ++i){
-    data_ptr[i] = (1 / (1 + std::expf(-data_ptr[i])));
+    data_ptr[i] = (1 / (1 + std::exp(-data_ptr[i])));
   }
  
   //output_ptr                          = data_ptr;

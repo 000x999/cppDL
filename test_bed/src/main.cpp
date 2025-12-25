@@ -170,7 +170,7 @@ void attention_test(){
     atten::atten_pool persistent_arena(total_weights * sizeof(float)); 
     attn.init(persistent_arena); 
     
-    atten::atten_pool temp_arena(seq_len * embed_dim * 125 * sizeof(float)); 
+    atten::atten_pool temp_arena(seq_len * embed_dim * 200 * sizeof(float)); 
     
     float *input_data = temp_arena.arena.nn_alloc<float>(seq_len * embed_dim); 
     for(size_t i = 0; i < seq_len * embed_dim; ++i){

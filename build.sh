@@ -9,8 +9,8 @@ echo "========= BUILDING CPPDL ========="
 # Arg4: BLAS flag
 # Arg5: BUILD DEBUG
 
-CONFIG_PRESET="${1:-mingw-debug}"
-BUILD_PRESET="${2:-mingw-debug-build}"
+CONFIG_PRESET="${1:-linux-release}"
+BUILD_PRESET="${2:-linux-release-build}"
 AVX_FLAG="${3:-ON}"
 BLAS_FLAG="${4:-ON}"
 BUILD_DEBUG="${5:-ON}"

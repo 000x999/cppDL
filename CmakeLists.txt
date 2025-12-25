@@ -1,113 +1,88 @@
 cmake_minimum_required(VERSION 3.20)
-
-project(cppDL
-    LANGUAGES CXX
-)
+project(cppDL LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(USE_AVX256 "Enable AVX2/FMA etc." ON)
-option(DEBUG "Enable DEBUG" OFF)
-option(USE_BLAS "Enable CRUSHBLAS acceleration" ON)
-option(USE_VULKAN "Enable Vulkan support" OFF)
-option(USE_OPENGL "Enable OpenGL support" OFF)
-option(USE_BLAS   "Enable BLAS support" OFF)
-
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-if(MSVC)
-    add_compile_options(/W4)
-else()
-    add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
+option(USE_AVX256   "Enable AVX2/FMA etc." ON)
+option(DEBUG_CPPDL  "Enable DEBUG macro" OFF)
+option(USE_VULKAN   "Enable Vulkan support" OFF)
+option(USE_OPENGL   "Enable OpenGL support" OFF)
 
-set(SRC_DIRS
-  test_bed/src
-  core/impl/neural_core_impl
-  core/impl/neural_memory_impl
-  core/impl/tokenizer_core_impl
-  core/impl/tensor_core_impl
-  core/impl/attention_core_impl
-  core/include/CRUSHBLAS_MODULE/core/impl/blas_impl/level3
+find_package(OpenMP)
+
+file(GLOB_RECURSE CPPDL_IMPL_SOURCES CONFIGURE_DEPENDS
+  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/neural_core_impl/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/neural_memory_impl/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/tokenizer_core_impl/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/tensor_core_impl/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/attention_core_impl/*.cpp
 )
 
-set(SRCS "")
-foreach(dir IN LISTS SRC_DIRS)
-    file(GLOB SRCS_IN_DIR "${dir}/*.cpp")
-    list(APPEND SRCS ${SRCS_IN_DIR})
-endforeach()
+file(GLOB_RECURSE CPPDL_TEST_SOURCES CONFIGURE_DEPENDS
+  ${CMAKE_CURRENT_SOURCE_DIR}/test_bed/src/*.cpp
+)
 
-add_executable(cppDL ${SRCS})
+set(CRUSHBLAS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/core/include/CRUSHBLAS_MODULE)
+file(GLOB_RECURSE CRUSHBLAS_SOURCES CONFIGURE_DEPENDS
+  ${CRUSHBLAS_ROOT}/core/impl/*.cpp
+  ${CRUSHBLAS_ROOT}/core/impl/*.cc
+  ${CRUSHBLAS_ROOT}/core/impl/*.cxx
+)
+
+add_executable(cppDL
+  ${CPPDL_TEST_SOURCES}
+  ${CPPDL_IMPL_SOURCES}
+  ${CRUSHBLAS_SOURCES}
+)
+
+target_include_directories(cppDL PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/core
+  ${CMAKE_CURRENT_SOURCE_DIR}/core/include
+  ${CRUSHBLAS_ROOT}/core
+  ${CRUSHBLAS_ROOT}/core/include
+  ${CRUSHBLAS_ROOT}/core/impl
+  ${CRUSHBLAS_ROOT}/core/BLAS
+)
+
+target_compile_definitions(cppDL PRIVATE
+  USE_AVX256=$<BOOL:${USE_AVX256}>
+  USE_VULKAN=$<BOOL:${USE_VULKAN}>
+  USE_OPENGL=$<BOOL:${USE_OPENGL}>
+  DEBUG=$<BOOL:${DEBUG_CPPDL}>
+)
+
+if(MSVC)
+  target_compile_options(cppDL PRIVATE /W4 /O2)
+  if(USE_AVX256)
+    target_compile_options(cppDL PRIVATE /arch:AVX2)
+  endif()
+else()
+  target_compile_options(cppDL PRIVATE
+    -Wall -Wextra -Wpedantic
+    -O3 -march=native
+  )
+  if(USE_AVX256)
+    target_compile_options(cppDL PRIVATE -mavx2 -mfma -mavx)
+  endif()
+endif()
+
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(cppDL PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 if(WIN32)
-    add_custom_target(run
-        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/run.bat"
-        DEPENDS cppDL
-        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-        COMMENT "Building and running cppDL via run.bat"
-    )
+  add_custom_target(run
+    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/run.bat"
+    DEPENDS cppDL
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMENT "Building and running cppDL via run.bat"
+  )
 endif()
-
-if(USE_AVX256)
-    target_compile_definitions(cppDL PRIVATE USE_AVX256=1)
-    if(MSVC)
-        target_compile_options(cppDL PRIVATE /O2 /arch:AVX2)
-    else()
-        target_compile_options(cppDL PRIVATE
-            -Ofast
-            -O3
-            -march=native
-            -mavx2
-            -O3
-            -mfma
-            -mavx
-        )
-    endif()
-
-    find_package(OpenMP)
-    if(OpenMP_CXX_FOUND)
-        target_link_libraries(cppDL PRIVATE OpenMP::OpenMP_CXX)
-    endif()
-else()
-    target_compile_definitions(cppDL PRIVATE USE_AVX256=0)
-endif()
-
-if(USE_BLAS)
-    target_compile_definitions(cppDL PRIVATE USE_BLAS=1)
-    if(MSVC)
-        target_compile_options(cppDL PRIVATE /O2 /arch:AVX2)
-    else()
-        target_compile_options(cppDL PRIVATE
-            -Ofast
-            -O3
-            -march=native
-            -mavx2
-            -mfma
-            -mavx
-        )
-    endif()
-
-    find_package(OpenMP)
-    if(OpenMP_CXX_FOUND)
-        target_link_libraries(cppDL PRIVATE OpenMP::OpenMP_CXX)
-    endif()
-else()
-    target_compile_definitions(cppDL PRIVATE USE_BLAS=0)
-endif()
-
-if(USE_VULKAN)
-    target_compile_definitions(cppDL PRIVATE USE_VULKAN=1)
-else()
-    target_compile_definitions(cppDL PRIVATE USE_VULKAN=0)
-endif()
-
-if(USE_OPENGL)
-    target_compile_definitions(cppDL PRIVATE USE_OPENGL=1)
-else()
-    target_compile_definitions(cppDL PRIVATE USE_OPENGL=0)
-endif()
-

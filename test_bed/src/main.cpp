@@ -1,9 +1,8 @@
-#include "../../core/include/functions_core/functions.hpp"
-#include "../../core/include/neural_core/neural_network.hpp"
-#include "../../core/include/tokenizer_core/tokenizer.hpp"
-#include "../../core/include/logger_core/dual_output.hpp"
-#include "../../core/include/tensor_core/tensor.hpp"
-#include "../../core/include/attention_core/attention.hpp"
+#include "neural_core/neural_network.hpp"
+#include "tokenizer_core/tokenizer.hpp"
+#include "logger_core/dual_output.hpp"
+#include "tensor_core/tensor.hpp"
+#include "attention_core/attention.hpp"
 #include <stdlib.h>
 #include <chrono>
 #include <fstream>
@@ -198,7 +197,7 @@ void attention_test(){
     input_tensor.shape.strides[0] = embed_dim; 
     input_tensor.shape.strides[1] = 1;
      
-    save_ppm("inputdata", input_tensor.tensor_data, input_tensor.shape.dims[0], input_tensor.shape.dims[1]); 
+    //save_ppm("inputdata", input_tensor.tensor_data, input_tensor.shape.dims[0], input_tensor.shape.dims[1]); 
     attn.load_weights(wq_data, wk_data, wv_data, wo_data);
     auto start = nanos();  
     auto output_tensor = attn.forward(input_tensor, temp_arena); 

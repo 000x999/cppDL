@@ -14,11 +14,6 @@
   extern "C" int omp_get_max_threads();
 #endif
 
-#if USE_BLAS
-  #include "CRUSHBLAS_MODULE/core/defines.h"
-  #include "CRUSHBLAS_MODULE/core/BLAS/level3/level3.hpp"
-#endif 
-
 #ifdef DEBUG  
 #define DEBUG_THREADS() do {                                \
      _Pragma("omp parallel")                                \

@@ -95,15 +95,15 @@ void inference_test(){
   std::mt19937 gen(rd());
   std::uniform_real_distribution<float> dist(-10.0f, 10.0f);
 
-  size_t layer_1_input  = 8192;
-  size_t layer_1_output = 4096;
-  size_t layer_2_input  = 4096; 
-  size_t layer_2_output = 2048;
-  size_t layer_3_input  = 2048; 
-  size_t layer_3_output = 1024;
-  size_t layer_4_input  = 1024;
-  size_t layer_4_output = 512;
-  size_t batch_size     = 32;
+  size_t layer_1_input  = 8192 * 2;
+  size_t layer_1_output = 4096 * 2;
+  size_t layer_2_input  = 4096 * 2; 
+  size_t layer_2_output = 2048 * 2;
+  size_t layer_3_input  = 2048 * 2; 
+  size_t layer_3_output = 1024 * 2;
+  size_t layer_4_input  = 1024 * 2;
+  size_t layer_4_output = 512  * 2;
+  size_t batch_size     = 32   * 2;
   
   neural::nn inf;
   inf.add_linear(layer_1_input, layer_1_output);
@@ -126,7 +126,8 @@ void inference_test(){
   for(size_t i = 0; i < layer_1_input * batch_size; ++i){
     input_data[i] = dist(gen); 
   }
-
+  
+  std::cout << "network shape: " << '\n' << "first layer: " << layer_1_input << " x " << layer_1_output << '\n'; 
   neural::neural_view input_tensor; 
   input_tensor.tensor.tensor_data      = input_data; 
   input_tensor.tensor.shape.ndim       = 2; 

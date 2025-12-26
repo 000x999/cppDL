@@ -81,6 +81,7 @@ neural::neural_view neural::linear::forward(neural_view &input_view, alloc_pool 
     }
 */
     for(; j + 15 < output_features; j += 16){
+      std::cout << "using avx512" << '\n'; 
       __m512 row_vec  = _mm512_loadu_ps ( &row_ptr[j]          );
       __m512 bias_vec = _mm512_loadu_ps ( &bias_ptr[j]         );
       __m512 add_vec  = _mm512_add_ps  ( row_vec, bias_vec    );
@@ -126,6 +127,7 @@ neural::neural_view neural::relu::forward(neural_view &input_view, alloc_pool &a
   size_t i          = 0; 
   size_t total_size = output_features * batch_size;  
   for(; i + 15 < total_size; i += 16){
+      std::cout << "using avx512" << '\n';
     __m512 data_vec = _mm512_loadu_ps(&data_ptr[i]); 
     __m512 max_vec  = _mm512_max_ps(zero_vec, data_vec); 
     _mm512_storeu_ps(&data_ptr[i], max_vec); 

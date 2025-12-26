@@ -210,6 +210,6 @@ void attention_test(){
 }
 
 int main(){
-  //inference_test(); 
-  attention_test(); 
+  inference_test(); 
+  //attention_test(); 
 }

@@ -72,14 +72,21 @@ neural::neural_view neural::linear::forward(neural_view &input_view, alloc_pool 
   for(size_t i = 0; i < batch_size; ++i){
     float *row_ptr = output_ptr + ( i * output_features );
     size_t j = 0; 
-
+/*
     for(; j + 7 < output_features; j += 8){
       __m256 row_vec  = _mm256_loadu_ps ( &row_ptr[j]          );
       __m256 bias_vec = _mm256_loadu_ps ( &bias_ptr[j]         );
       __m256 add_vec  = _mm256_add_ps  ( row_vec, bias_vec    );
       _mm256_storeu_ps                  ( &row_ptr[j], add_vec ); 
     }
-    
+*/
+    for(; j + 15 < output_features; j += 16){
+      __m512 row_vec  = _mm512_loadu_ps ( &row_ptr[j]          );
+      __m512 bias_vec = _mm512_loadu_ps ( &bias_ptr[j]         );
+      __m512 add_vec  = _mm512_add_ps  ( row_vec, bias_vec    );
+      _mm512_storeu_ps                  ( &row_ptr[j], add_vec ); 
+    }
+
     for(; j < output_features; ++j){
       row_ptr[j] += bias_ptr[j];
     }
@@ -105,7 +112,7 @@ neural::neural_view neural::relu::forward(neural_view &input_view, alloc_pool &a
 
   /*Not sure if they need their own arenas right now, seems useless though*/
   //float *output_ptr      = arena.arena.nn_alloc<float>(batch_size * input_features);
-  
+/*  
   __m256 zero_vec   = _mm256_setzero_ps(); 
   size_t i          = 0; 
   size_t total_size = output_features * batch_size;  
@@ -114,6 +121,15 @@ neural::neural_view neural::relu::forward(neural_view &input_view, alloc_pool &a
     __m256 max_vec  = _mm256_max_ps(zero_vec, data_vec); 
     _mm256_storeu_ps(&data_ptr[i], max_vec); 
   }
+*/
+   __m512 zero_vec   = _mm512_setzero_ps(); 
+  size_t i          = 0; 
+  size_t total_size = output_features * batch_size;  
+  for(; i + 15 < total_size; i += 16){
+    __m512 data_vec = _mm512_loadu_ps(&data_ptr[i]); 
+    __m512 max_vec  = _mm512_max_ps(zero_vec, data_vec); 
+    _mm512_storeu_ps(&data_ptr[i], max_vec); 
+  } 
   for(; i < total_size; ++i){
     data_ptr[i] = std::max(0.0f, data_ptr[i]);   
   }

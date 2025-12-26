@@ -70,7 +70,12 @@ else()
     -O3 -march=native
   )
   if(USE_AVX256)
-    target_compile_options(cppDL PRIVATE -mavx2 -mfma -mavx)
+    target_compile_options(cppDL PRIVATE 
+      -mavx2 -mfma -mavx
+      -mavx512f -mavx512vl -mavx512bw -mavx512dq -mavx512cd
+      -mavx512vbmi -mavx512vbmi2 -mavx512vnni -mavx512bitalg
+      -mavx512vpopcntdq -mavx512ifma -mavx512bf16
+    )
   endif()
 endif()
 

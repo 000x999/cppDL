@@ -14,6 +14,7 @@
 #include <limits> 
 
 void save_ppm(const std::string& name, const float* data, int width, int height) {
+/*  
   if (!data) return;
   std::string filename = name + ".ppm";
   std::ofstream f(filename);
@@ -52,6 +53,38 @@ void save_ppm(const std::string& name, const float* data, int width, int height)
   }
   f.close();
   std::cout << "Saved colored visualization: " << filename << "\n";
+*/
+if (!data) return;
+  std::string filename = name + ".ppm";
+  std::ofstream f(filename);
+  if (!f.is_open()) {
+    std::cerr << "Error opening file for visualization: " << filename << "\n";
+    return;
+  }
+  
+  f << "P3\n" << width << " " << height << "\n255\n";
+  
+  float min_v = 1e9, max_v = -1e9;
+  for(int i=0; i< width * height; ++i) {
+      if(data[i] < min_v) min_v = data[i];
+      if(data[i] > max_v) max_v = data[i];
+  }
+  
+  for(int i=0; i< width * height; ++i) {
+    // Normalize data to 0.0 - 1.0 range
+    float t = (data[i] - min_v) / (max_v - min_v + 1e-8f);
+      
+    // Convert to integer 0-255
+    int intensity = (int)(t * 255.0f);
+    
+    // For grayscale, R = G = B = intensity
+    // 0 is black, 255 is white
+    f << intensity << " " << intensity << " " << intensity << " ";
+    
+    if((i+1) % width == 0) f << "\n";
+  }
+  f.close();
+  std::cout << "Saved grayscale visualization: " << filename << "\n";
 }
 
 uint64_t nanos() {

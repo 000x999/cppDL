@@ -57,7 +57,7 @@ void tokenizer_test(){
   std::ifstream in_file {file_path};
   std::string training_text {std::istreambuf_iterator<char>(in_file), std::istreambuf_iterator<char>()};
   if(!in_file){std::cout << "FNF" << '\n';}
-  size_t num_merges = 10000000000;
+  size_t num_merges = 10000;
   std::cout << "Training BPE tokenizer with " << num_merges << " merges...\n";
   tokenizer.train(training_text, num_merges);
   std::string testText = "I am testing out a large training data set for the tokenizer, we will see if this works properly.";

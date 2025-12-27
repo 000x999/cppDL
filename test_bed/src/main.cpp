@@ -69,7 +69,7 @@ void tokenizer_test(){
     id_count++;
   }
   std::string decoded_text = tokenizer.decode(encoded_ids);
-  std::cout << "Decoded text: " << decoded_text << std::endl;
+ // std::cout << "Decoded text: " << decoded_text << std::endl;
   if (decoded_text == testText) {
     std::cout << "***NOTE***: Encoding/decoding is lossless" << std::endl;
   } 

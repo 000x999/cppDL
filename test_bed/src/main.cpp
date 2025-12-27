@@ -53,7 +53,7 @@ uint64_t nanos() {
 
 void tokenizer_test(){
   bpe::bpe_tokenizer tokenizer;
-  std::string file_path = "core/include/tokenizer_core/token_models/data_set.txt"; 
+  std::string file_path = "tokenizer_core/token_models/data_set.txt"; 
   std::ifstream in_file {file_path};
   std::string training_text {std::istreambuf_iterator<char>(in_file), std::istreambuf_iterator<char>()};
   if(!in_file){std::cout << "FNF" << '\n';}
@@ -76,7 +76,7 @@ void tokenizer_test(){
   else {
     std::cout << "***WARNING***: Encoding/decoding is not lossless" << std::endl;
   }
-  tokenizer.save_model("core/include/tokenizer_core/token_models/vocab.txt", "core/include/tokenizer_core/token_models/bpe_merges.txt");
+  tokenizer.save_model("tokenizer_core/token_models/vocab.txt", "tokenizer_core/token_models/bpe_merges.txt");
   std::cout << "Model saved to files" << std::endl;
   tokenizer.print_model_stats();
 }

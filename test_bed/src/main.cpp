@@ -202,6 +202,7 @@ void attention_test(){
 }
 
 int main(){
+  tokenizer_test(); 
   //inference_test(); 
   //attention_test(); 
 }

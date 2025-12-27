@@ -53,7 +53,7 @@ uint64_t nanos() {
 
 void tokenizer_test(){
   bpe::bpe_tokenizer tokenizer;
-  std::string file_path = "core/include/tokenizer_core/token_models/DataSet.txt"; 
+  std::string file_path = "core/include/tokenizer_core/token_models/data_set.txt"; 
   std::ifstream in_file {file_path};
   std::string training_text {std::istreambuf_iterator<char>(in_file), std::istreambuf_iterator<char>()};
   if(!in_file){std::cout << "FNF" << '\n';}
@@ -203,5 +203,5 @@ void attention_test(){
 
 int main(){
   //inference_test(); 
-  attention_test(); 
+  //attention_test(); 
 }

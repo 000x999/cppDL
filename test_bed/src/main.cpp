@@ -33,9 +33,9 @@ if (!data) return;
   for(int i=0; i< width * height; ++i) {
     float t = (data[i] - min_v) / (max_v - min_v + 1e-8f);
       
-    // for color 
-    int intensity = (int)((1.0f - t) * 255.0f);
-    //int intensity = (int)(t * 255.0f);
+    // for black = high, white = low  
+    //int intensity = (int)((1.0f - t) * 255.0f);
+    int intensity = (int)(t * 255.0f);
     
     f << intensity << " " << intensity << " " << intensity << " ";
     

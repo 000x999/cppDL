@@ -159,10 +159,10 @@ void attention_test(){
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> dist(-1.0f, 1.0f); 
     
-    size_t embed_dim = 8192;
+    size_t embed_dim = 256;
     size_t num_heads = 1;
     size_t head_dim  = embed_dim / num_heads; 
-    size_t seq_len   = 512;  
+    size_t seq_len   = 32;  
     
     atten::attention attn(embed_dim, num_heads);
     
@@ -211,6 +211,6 @@ void attention_test(){
 }
 
 int main(){
-  inference_test(); 
-  //attention_test(); 
+  //inference_test(); 
+  attention_test(); 
 }

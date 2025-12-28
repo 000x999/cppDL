@@ -290,7 +290,7 @@ void multi_head_attention_test(){
   std::cout << "Has NaN: " << (has_nan ? "YES (BAD!)" : "No") << std::endl;
   std::cout << "Has Inf: " << (has_inf ? "YES (BAD!)" : "No") << std::endl;
 
-  std::cout << "\n=== Sample Output Values (first 10) ===" << std::endl;
+  std::cout << "\n=== Sample Output Values ===" << std::endl;
   for (size_t i = 0; i < 10 && i < count; ++i) {
       std::cout << output_tensor.tensor_data[i] << " ";
   }
@@ -301,9 +301,61 @@ void multi_head_attention_test(){
   std::cout << "\n=== Test Complete ===" << std::endl;
 }
 
+void gemm_test(){
+  std::cout << "=== AVX512 GEMM TEST ===" <<'\n'; 
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<float> dist(-1.0f, 1.0f); 
+  atten::atten_pool temp_arena((16384 * 16384) * sizeof(float));
+
+  float *data_ptr_a = temp_arena.arena.nn_alloc<float>(16384 * 16384); 
+  float *data_ptr_b = temp_arena.arena.nn_alloc<float>(16384 * 16384);
+  float *data_ptr_c = temp_arena.arena.nn_alloc<float>(16384 * 16384);
+
+  for(size_t i = 0; i < 16384 * 16384; ++i){
+    data_ptr_a[i] = dist(gen);
+    data_ptr_b[i] = dist(gen); 
+  }
+
+  level3::mat_ops_view A {
+    .row_view = 16384, 
+    .col_view = 16384, 
+    .leading_dimension = 16384,
+    .data_view = data_ptr_a
+  };
+  
+  level3::mat_ops_view B {
+    .row_view = 16384, 
+    .col_view = 16384, 
+    .leading_dimension = 16384,
+    .data_view = data_ptr_b
+  };
+
+  level3::mat_ops_view C {
+    .row_view = 16384, 
+    .col_view = 16384, 
+    .leading_dimension = 16384, 
+    .data_view = data_ptr_c 
+  };
+
+  double totalOps = 2.0 * double(16384) * double(16384) * double(16384);
+  double gflopFactor = 1.0e-9;
+  std::cout<< totalOps * 1e-9 << " GFLOP" << std::endl; 
+
+  auto start = nanos(); 
+  level3::blas::crush_gemm(level3::transpose_gemm::no_transpose,level3::transpose_gemm::no_transpose, A, B, 1.0f, 0.0f, C);
+  auto end = nanos();
+  
+  double optTime = (end - start) * 1e-9;
+  double optGflops = (totalOps * gflopFactor) / optTime;
+  std::cout << "AVX512 MatMul: " << optTime
+            << "s, GFLOP/S = " << optGflops << "\n";
+}
+
 int main(){
   //tokenizer_test(); 
   //inference_test(); 
   //attention_test(); 
-  multi_head_attention_test(); 
+  //multi_head_attention_test(); 
+  gemm_test(); 
 }

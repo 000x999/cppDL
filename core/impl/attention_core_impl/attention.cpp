@@ -158,6 +158,13 @@ tens::tensor atten::attention::forward(tens::tensor &input_tensor, atten_pool &a
   return output_tensor; 
 } 
 
+atten::multi_head_attention::multi_head_attention(size_t embedded_dim, size_t num_heads) 
+: 
+  embedded_dim(embedded_dim), 
+  num_heads(num_heads) 
+{}
+
+
 void atten::multi_head_attention::init(atten_pool &persistent_arena){
   size_t weight_size = embedded_dim * embedded_dim; 
 

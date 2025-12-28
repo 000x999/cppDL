@@ -221,7 +221,7 @@ void multi_head_attention_test(){
 
   size_t weight_size = embed_dim * embed_dim;
   size_t total_weights = weight_size * 4;    
-  atten::atten_pool persistent_arena(total_weights * sizeof(float)); 
+  atten::atten_pool persistent_arena(total_weights * sizeof(float) + 4096); 
   attn.init(persistent_arena); 
 
   atten::atten_pool temp_arena(seq_len * embed_dim * 200 * sizeof(float)); 

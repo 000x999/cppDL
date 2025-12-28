@@ -60,9 +60,8 @@ private:
 public: 
   multi_head_attention      (size_t       embedded_dim, size_t num_heads        ); 
   void         init         (atten_pool   &persistent_arena                     ); 
-  void         load_weights (float *w_q,  float *w_k, float*w_o                 ); 
+  void         load_weights (float *w_q,  float *w_k, float *w_v, float*w_o     ); 
   tens::tensor forward      (tens::tensor &input_tensor, atten_pool &alloc_pool ); 
-  tens::tensor concat       (tens::tensor *output, atten_pool &alloc_pool       ); 
 };
 
 };//namespace  

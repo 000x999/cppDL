@@ -146,63 +146,122 @@ void inference_test(){
 }
 
 void attention_test(){
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dist(-1.0f, 1.0f); 
-    
-    size_t embed_dim = 32;
-    size_t num_heads = 1;
-    size_t head_dim  = embed_dim / num_heads; 
-    size_t seq_len   = 4;  
-    
-    atten::attention attn(embed_dim, num_heads);
-    
-    size_t weight_size = embed_dim * head_dim;
-    size_t total_weights = weight_size * 4;    
-    atten::atten_pool persistent_arena(total_weights * sizeof(float) * 50); 
-    attn.init(persistent_arena); 
-    
-    atten::atten_pool temp_arena(seq_len * embed_dim * 200 * sizeof(float)); 
-    
-    float *input_data = temp_arena.arena.nn_alloc<float>(seq_len * embed_dim); 
-    for(size_t i = 0; i < seq_len * embed_dim; ++i){
-        input_data[i] = dist(gen); 
-    }
-    
-    float *wq_data = temp_arena.arena.nn_alloc<float>(weight_size); 
-    float *wk_data = temp_arena.arena.nn_alloc<float>(weight_size);
-    float *wv_data = temp_arena.arena.nn_alloc<float>(weight_size);
-    float *wo_data = temp_arena.arena.nn_alloc<float>(weight_size);
-    
-    for(size_t i = 0; i < weight_size; ++i){
-      wq_data[i] = dist(gen); 
-      wk_data[i] = dist(gen); 
-      wv_data[i] = dist(gen); 
-      wo_data[i] = dist(gen); 
-    }
-    
-    tens::tensor input_tensor; 
-    input_tensor.tensor_data      = input_data;
-    input_tensor.shape.ndim       = 2; 
-    input_tensor.shape.dims[0]    = seq_len;  
-    input_tensor.shape.dims[1]    = embed_dim;  
-    input_tensor.shape.strides[0] = embed_dim; 
-    input_tensor.shape.strides[1] = 1;
-     
-    //save_ppm("inputdata", input_tensor.tensor_data, input_tensor.shape.dims[0], input_tensor.shape.dims[1]); 
-    attn.load_weights(wq_data, wk_data, wv_data, wo_data);
-    auto start = nanos();  
-    auto output_tensor = attn.forward(input_tensor, temp_arena); 
-    auto end   = nanos();
-    std::cout << "forward time: " << (end - start) * 1e-6 << "ms\n";
-    
-    std::cout << "Output shape: [" << output_tensor.shape.dims[0] 
-              << ", " << output_tensor.shape.dims[1] << "]" << std::endl;
-    save_ppm("attenweights", output_tensor.tensor_data, output_tensor.shape.dims[0], output_tensor.shape.dims[1]);
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<float> dist(-1.0f, 1.0f); 
+  
+  size_t embed_dim = 32;
+  size_t num_heads = 1;
+  size_t head_dim  = embed_dim / num_heads; 
+  size_t seq_len   = 4;  
+  
+  atten::attention attn(embed_dim, num_heads);
+  
+  size_t weight_size = embed_dim * head_dim;
+  size_t total_weights = weight_size * 4;    
+  atten::atten_pool persistent_arena(total_weights * sizeof(float) * 50); 
+  attn.init(persistent_arena); 
+  
+  atten::atten_pool temp_arena(seq_len * embed_dim * 200 * sizeof(float)); 
+  
+  float *input_data = temp_arena.arena.nn_alloc<float>(seq_len * embed_dim); 
+  for(size_t i = 0; i < seq_len * embed_dim; ++i){
+      input_data[i] = dist(gen); 
+  }
+  
+  float *wq_data = temp_arena.arena.nn_alloc<float>(weight_size); 
+  float *wk_data = temp_arena.arena.nn_alloc<float>(weight_size);
+  float *wv_data = temp_arena.arena.nn_alloc<float>(weight_size);
+  float *wo_data = temp_arena.arena.nn_alloc<float>(weight_size);
+  
+  for(size_t i = 0; i < weight_size; ++i){
+    wq_data[i] = dist(gen); 
+    wk_data[i] = dist(gen); 
+    wv_data[i] = dist(gen); 
+    wo_data[i] = dist(gen); 
+  }
+  
+  tens::tensor input_tensor; 
+  input_tensor.tensor_data      = input_data;
+  input_tensor.shape.ndim       = 2; 
+  input_tensor.shape.dims[0]    = seq_len;  
+  input_tensor.shape.dims[1]    = embed_dim;  
+  input_tensor.shape.strides[0] = embed_dim; 
+  input_tensor.shape.strides[1] = 1;
+   
+  //save_ppm("inputdata", input_tensor.tensor_data, input_tensor.shape.dims[0], input_tensor.shape.dims[1]); 
+  attn.load_weights(wq_data, wk_data, wv_data, wo_data);
+  auto start = nanos();  
+  auto output_tensor = attn.forward(input_tensor, temp_arena); 
+  auto end   = nanos();
+  std::cout << "forward time: " << (end - start) * 1e-6 << "ms\n";
+  
+  std::cout << "Output shape: [" << output_tensor.shape.dims[0] 
+            << ", " << output_tensor.shape.dims[1] << "]" << std::endl;
+  save_ppm("attenweights", output_tensor.tensor_data, output_tensor.shape.dims[0], output_tensor.shape.dims[1]);
 }
+
+void multi_head_attention_test(){
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<float> dist(-1.0f, 1.0f); 
+  
+  size_t embed_dim = 32;
+  size_t num_heads = 1;
+  size_t head_dim  = embed_dim / num_heads; 
+  size_t seq_len   = 4;  
+  
+  atten::multi_head_attention attn(embed_dim, num_heads);
+  
+  size_t weight_size = embed_dim * head_dim;
+  size_t total_weights = weight_size * 4;    
+  atten::atten_pool persistent_arena(total_weights * sizeof(float) * 50); 
+  attn.init(persistent_arena); 
+  
+  atten::atten_pool temp_arena(seq_len * embed_dim * 200 * sizeof(float)); 
+  
+  float *input_data = temp_arena.arena.nn_alloc<float>(seq_len * embed_dim); 
+  for(size_t i = 0; i < seq_len * embed_dim; ++i){
+      input_data[i] = dist(gen); 
+  }
+  
+  float *wq_data = temp_arena.arena.nn_alloc<float>(weight_size); 
+  float *wk_data = temp_arena.arena.nn_alloc<float>(weight_size);
+  float *wv_data = temp_arena.arena.nn_alloc<float>(weight_size);
+  float *wo_data = temp_arena.arena.nn_alloc<float>(weight_size);
+  
+  for(size_t i = 0; i < weight_size; ++i){
+    wq_data[i] = dist(gen); 
+    wk_data[i] = dist(gen); 
+    wv_data[i] = dist(gen); 
+    wo_data[i] = dist(gen); 
+  }
+  
+  tens::tensor input_tensor; 
+  input_tensor.tensor_data      = input_data;
+  input_tensor.shape.ndim       = 2; 
+  input_tensor.shape.dims[0]    = seq_len;  
+  input_tensor.shape.dims[1]    = embed_dim;  
+  input_tensor.shape.strides[0] = embed_dim; 
+  input_tensor.shape.strides[1] = 1;
+   
+  //save_ppm("inputdata", input_tensor.tensor_data, input_tensor.shape.dims[0], input_tensor.shape.dims[1]); 
+  attn.load_weights(wq_data, wk_data, wv_data, wo_data);
+  auto start = nanos();  
+  auto output_tensor = attn.forward(input_tensor, temp_arena); 
+  auto end   = nanos();
+  std::cout << "forward time: " << (end - start) * 1e-6 << "ms\n";
+  
+  std::cout << "Output shape: [" << output_tensor.shape.dims[0] 
+            << ", " << output_tensor.shape.dims[1] << "]" << std::endl;
+  save_ppm("attenweights", output_tensor.tensor_data, output_tensor.shape.dims[0], output_tensor.shape.dims[1]);
+}
+
+
 
 int main(){
   //tokenizer_test(); 
-  inference_test(); 
+  //inference_test(); 
   //attention_test(); 
+  multi_head_attention_test(); 
 }

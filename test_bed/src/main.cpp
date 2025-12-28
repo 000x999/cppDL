@@ -301,49 +301,49 @@ void multi_head_attention_test(){
   std::cout << "\n=== Test Complete ===" << std::endl;
 }
 
-void gemm_test(){
+void gemm_test(float A){
   std::cout << "=== AVX512 GEMM TEST ===" <<'\n'; 
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_real_distribution<float> dist(-1.0f, 1.0f); 
-  atten::atten_pool temp_arena(3 * (16384 * 16384) * sizeof(float) + 4096);
+  atten::atten_pool temp_arena(3 * (A * A) * sizeof(float) + 4096);
 
-  float *data_ptr_a = temp_arena.arena.nn_alloc<float>(16384 * 16384); 
-  float *data_ptr_b = temp_arena.arena.nn_alloc<float>(16384 * 16384);
-  float *data_ptr_c = temp_arena.arena.nn_alloc<float>(16384 * 16384);
+  float *data_ptr_a = temp_arena.arena.nn_alloc<float>(A * A); 
+  float *data_ptr_b = temp_arena.arena.nn_alloc<float>(A * A);
+  float *data_ptr_c = temp_arena.arena.nn_alloc<float>(A * A);
 
-  for(size_t i = 0; i < 16384 * 16384; ++i){
+  for(size_t i = 0; i < A * A; ++i){
     data_ptr_a[i] = dist(gen);
     data_ptr_b[i] = dist(gen); 
   }
 
-  level3::mat_ops_view A {
-    .row_view = 16384, 
-    .col_view = 16384, 
-    .leading_dimension = 16384,
+  level3::mat_ops_view mat_a {
+    .row_view = (size_t)A, 
+    .col_view = (size_t)A, 
+    .leading_dimension = (size_t)A,
     .data_view = data_ptr_a
   };
   
-  level3::mat_ops_view B {
-    .row_view = 16384, 
-    .col_view = 16384, 
-    .leading_dimension = 16384,
+  level3::mat_ops_view mat_b {
+    .row_view = (size_t)A, 
+    .col_view = (size_t)A, 
+    .leading_dimension = (size_t)A,
     .data_view = data_ptr_b
   };
 
   level3::mat_ops_view C {
-    .row_view = 16384, 
-    .col_view = 16384, 
-    .leading_dimension = 16384, 
+    .row_view = (size_t)A, 
+    .col_view = (size_t)A, 
+    .leading_dimension = (size_t)A, 
     .data_view = data_ptr_c 
   };
 
-  double totalOps = 2.0 * double(16384) * double(16384) * double(16384);
+  double totalOps = 2.0 * double(A) * double(A) * double(A);
   double gflopFactor = 1.0e-9;
   std::cout<< totalOps * 1e-9 << " GFLOP" << std::endl; 
 
   auto start = nanos(); 
-  level3::blas::crush_gemm(level3::transpose_gemm::no_transpose,level3::transpose_gemm::no_transpose, A, B, 1.0f, 0.0f, C);
+  level3::blas::crush_gemm(level3::transpose_gemm::no_transpose,level3::transpose_gemm::no_transpose, mat_a, mat_b, 1.0f, 0.0f, C);
   auto end = nanos();
   
   double optTime = (end - start) * 1e-9;
@@ -357,5 +357,5 @@ int main(){
   //inference_test(); 
   //attention_test(); 
   //multi_head_attention_test(); 
-  gemm_test(); 
+  gemm_test(4096); 
 }

@@ -302,7 +302,7 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
 
     level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::transpose, q_head, k_head, 1.0f, 0.0f, scores_head);
 
-    float scale = 1.0f / std::sqrtf((float)head_dim);
+    float scale = 1.0f / std::sqrt((float)head_dim);
     for(size_t i = 0; i < sequence_length * sequence_length; ++i){
       scores_head.data_view[i] *= scale;
     }

@@ -206,10 +206,10 @@ void multi_head_attention_test(){
   std::mt19937 gen(rd());
   std::uniform_real_distribution<float> dist(-1.0f, 1.0f); 
   
-  size_t embed_dim = 32;
-  size_t num_heads = 1;
+  size_t embed_dim = 8192;
+  size_t num_heads = 8;
   size_t head_dim  = embed_dim / num_heads; 
-  size_t seq_len   = 4;  
+  size_t seq_len   = 512;  
   
   atten::multi_head_attention attn(embed_dim, num_heads);
   

@@ -306,7 +306,7 @@ void gemm_test(){
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_real_distribution<float> dist(-1.0f, 1.0f); 
-  atten::atten_pool temp_arena((16384 * 16384) * sizeof(float) + 4096);
+  atten::atten_pool temp_arena((8192 * 8192) * sizeof(float) + 4096);
 
   float *data_ptr_a = temp_arena.arena.nn_alloc<float>(16384 * 16384); 
   float *data_ptr_b = temp_arena.arena.nn_alloc<float>(16384 * 16384);

@@ -40,7 +40,18 @@ public:
   float* begin     ();
   float* end       (); 
   void   randn     (); 
-}; 
+};
+
+class ops{
+public:
+  static tens::tensor add   (tens::tensor &left_tensor , tens::tensor &right_tensor);
+  static tens::tensor sub   (tens::tensor &left_tensor , tens::tensor &right_tensor); 
+  static tens::tensor mul   (tens::tensor &left_tensor , tens::tensor &right_tensor); 
+  static tens::tensor scale (tens::tensor &input_tensor, size_t scale              ); 
+  static tens::tensor sum   (tens::tensor &input_tensor                            );
+  static tens::tensor mean  (tens::tensor &input_tensor                            ); 
+  static tens::tensor max   (tens::tensor &input_tensor                            ); 
+};
 }; 
 
 #endif 

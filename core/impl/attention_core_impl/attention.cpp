@@ -351,8 +351,3 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
 
   return output_tensor; 
 }
-
-
-
-
-

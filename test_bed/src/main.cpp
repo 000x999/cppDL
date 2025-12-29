@@ -354,8 +354,8 @@ void gemm_test(float A){
 
 int main(){
   //tokenizer_test(); 
-  //inference_test(); 
+  inference_test(); 
   //attention_test(); 
   //multi_head_attention_test(); 
-  gemm_test(4096); 
+  //gemm_test(4096); 
 }

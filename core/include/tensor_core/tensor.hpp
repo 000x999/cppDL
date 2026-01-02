@@ -9,6 +9,7 @@
 #include <random>
 #include <cassert> 
 #include <stdexcept> 
+#include <limits>
 #include <initializer_list>
 #include "logger_core/logger.hpp"
 
@@ -44,13 +45,15 @@ public:
 
 class ops{
 public:
-  static tens::tensor add   (tens::tensor &left_tensor , tens::tensor &right_tensor);
-  static tens::tensor sub   (tens::tensor &left_tensor , tens::tensor &right_tensor); 
-  static tens::tensor mul   (tens::tensor &left_tensor , tens::tensor &right_tensor); 
-  static tens::tensor scale (tens::tensor &input_tensor, size_t scale              ); 
-  static tens::tensor sum   (tens::tensor &input_tensor                            );
-  static tens::tensor mean  (tens::tensor &input_tensor                            ); 
-  static tens::tensor max   (tens::tensor &input_tensor                            ); 
+  static tens::tensor add   (const tens::tensor &left_tensor , const tens::tensor &right_tensor       );
+  static tens::tensor sub   (const tens::tensor &left_tensor , const tens::tensor &right_tensor       ); 
+  static tens::tensor mul   (const tens::tensor &left_tensor , const tens::tensor &right_tensor       ); 
+  static tens::tensor div   (const tens::tensor &left_tensor , const tens::tensor &right_tensor       );
+  static tens::tensor scale (const tens::tensor &input_tensor, size_t scale                           ); 
+  static tens::tensor sum   (const tens::tensor &input_tensor, size_t axis = -1, bool keep_dim = false); 
+  static tens::tensor mean  (const tens::tensor &input_tensor, size_t axis = -1, bool keep_dim = false); 
+  static tens::tensor max   (const tens::tensor &input_tensor, size_t axis = -1, bool keep_dim = false); 
+  static tens::tensor min   (const tens::tensor &input_tensor, size_t axis = -1, bool keep_dim = false);
 };
 }; 
 

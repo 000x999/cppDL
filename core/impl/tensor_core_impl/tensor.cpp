@@ -112,20 +112,56 @@ void tens::tensor::randn(){
   }
 }
 
+__m512 tens::ops::fast_exp(__m512 input_vec){
+  __m512  t; 
+  __m512  f; 
+  __m512  p; 
+  __m512  r;
+  __m512i i;
+  __m512i j;
+
+  const __m512 l2e = _mm512_set1_ps (1.442695041f);
+  const __m512 l2h = _mm512_set1_ps (-6.93145752e-1f);
+  const __m512 l2l = _mm512_set1_ps (-1.42860677e-6f);
+  const __m512 c0 =  _mm512_set1_ps (0.041944388f);
+  const __m512 c1 =  _mm512_set1_ps (0.168006673f);
+  const __m512 c2 =  _mm512_set1_ps (0.499999940f);
+  const __m512 c3 =  _mm512_set1_ps (0.999956906f);
+  const __m512 c4 =  _mm512_set1_ps (0.999999642f);
+
+  t = _mm512_mul_ps (input_vec, l2e);     
+  r = _mm512_roundscale_ps (t, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); 
+
+  f = _mm512_fmadd_ps (r, l2h, input_vec); 
+  f = _mm512_fmadd_ps (r, l2l, f);
+
+  i = _mm512_cvtps_epi32(t);     
+
+  p = c0;                       
+  p = _mm512_fmadd_ps (p, f, c1);
+  p = _mm512_fmadd_ps (p, f, c2);
+  p = _mm512_fmadd_ps (p, f, c3);
+  p = _mm512_fmadd_ps (p, f, c4);
+
+  j = _mm512_slli_epi32 (i, 23);
+  r = _mm512_castsi512_ps (_mm512_add_epi32 (j, _mm512_castps_si512 (p)));
+
+  return r;
+}
+
 tens::tensor tens::ops::add(const tens::tensor &left_tensor, const tens::tensor &right_tensor){
   if(left_tensor.shape.numel() != right_tensor.shape.numel()){
     CPPDL_FATAL("tens::ops::add(&left_tensor, &right_tensor) :: cannot add two un-equal sized tensors"); 
     printf("File: %s :: Line: %d", __FILE__, __LINE__);
     throw std::runtime_error(":: ABORTING ::");
   }else{
-    tens::tensor output_tensor; 
-    output_tensor.shape.ndim       = left_tensor.shape.ndim;
-    output_tensor.shape.dims[0]    = left_tensor.shape.dims[0]; 
-    output_tensor.shape.dims[1]    = left_tensor.shape.dims[1];
-    output_tensor.shape.strides[0] = left_tensor.shape.strides[0]; 
-    output_tensor.shape.strides[1] = left_tensor.shape.strides[1];
-    std::memset(output_tensor.tensor_data, 0.0f, output_tensor.shape.numel() * sizeof(float));
-    
+  tens::tensor output_tensor; 
+    output_tensor.shape.ndim         = left_tensor.shape.ndim;
+    for(size_t i = 0; i < (size_t)left_tensor.shape.ndim; ++i){
+      output_tensor.shape.dims[i]    = left_tensor.shape.dims[i]; 
+      output_tensor.shape.strides[i] = left_tensor.shape.strides[i];
+    }
+
     size_t tensor_size = left_tensor.shape.numel(); 
     size_t i           = 0; 
     float *left_data   = left_tensor.tensor_data; 
@@ -145,19 +181,50 @@ tens::tensor tens::ops::add(const tens::tensor &left_tensor, const tens::tensor 
   }
 }
 
+tens::tensor tens::ops::add(const tens::tensor &left_tensor, float scalar){
+  if(left_tensor.shape.numel() <= 0){
+    CPPDL_FATAL("tens::ops::add(&left_tensor, &right_tensor) :: cannot add a scalar to a 0 sized tensor"); 
+    printf("File: %s :: Line: %d", __FILE__, __LINE__);
+    throw std::runtime_error(":: ABORTING ::");
+  }else{
+   tens::tensor output_tensor; 
+    output_tensor.shape.ndim         = left_tensor.shape.ndim;
+    for(size_t i = 0; i < (size_t)left_tensor.shape.ndim; ++i){
+      output_tensor.shape.dims[i]    = left_tensor.shape.dims[i]; 
+      output_tensor.shape.strides[i] = left_tensor.shape.strides[i];
+    }
+
+    __m512 scalar_vec  = _mm512_set1_ps(scalar);    
+    
+    size_t tensor_size = left_tensor.shape.numel(); 
+    size_t i           = 0; 
+    float *left_data   = left_tensor.tensor_data; 
+    float *out_data    = output_tensor.tensor_data; 
+    
+    for(; i + 15 < tensor_size; i += 16){
+      __m512 left_vec  = _mm512_loadu_ps (&left_data[i]);
+      __m512 add_vec   = _mm512_add_ps   (left_vec, scalar_vec); 
+      _mm512_storeu_ps                   (&out_data[i], add_vec);
+    }
+    for(; i < tensor_size; ++i){
+      output_tensor.tensor_data[i] = left_tensor.tensor_data[i] + scalar;
+    }
+    return output_tensor;
+  }
+}
+
 tens::tensor tens::ops::sub(const tens::tensor &left_tensor, const tens::tensor &right_tensor){
   if(left_tensor.shape.numel() != right_tensor.shape.numel()){
     CPPDL_FATAL("tens::ops::sub(&left_tensor, &right_tensor) :: cannot sub two un-equal sized tensors"); 
     printf("File: %s :: Line: %d", __FILE__, __LINE__);
     throw std::runtime_error(":: ABORTING ::");
   }else{
-    tens::tensor output_tensor; 
-    output_tensor.shape.ndim       = left_tensor.shape.ndim;
-    output_tensor.shape.dims[0]    = left_tensor.shape.dims[0]; 
-    output_tensor.shape.dims[1]    = left_tensor.shape.dims[1];
-    output_tensor.shape.strides[0] = left_tensor.shape.strides[0]; 
-    output_tensor.shape.strides[1] = left_tensor.shape.strides[1];
-    std::memset(output_tensor.tensor_data, 0.0f, output_tensor.shape.numel() * sizeof(float));
+   tens::tensor output_tensor; 
+    output_tensor.shape.ndim         = left_tensor.shape.ndim;
+    for(size_t i = 0; i < (size_t)left_tensor.shape.ndim; ++i){
+      output_tensor.shape.dims[i]    = left_tensor.shape.dims[i]; 
+      output_tensor.shape.strides[i] = left_tensor.shape.strides[i];
+    } 
     
     size_t tensor_size = left_tensor.shape.numel(); 
     size_t i           = 0; 
@@ -184,13 +251,12 @@ tens::tensor tens::ops::mul(const tens::tensor &left_tensor, const tens::tensor 
     printf("File: %s :: Line: %d", __FILE__, __LINE__);
     throw std::runtime_error(":: ABORTING ::");
   }else{
-    tens::tensor output_tensor; 
-    output_tensor.shape.ndim       = left_tensor.shape.ndim;
-    output_tensor.shape.dims[0]    = left_tensor.shape.dims[0]; 
-    output_tensor.shape.dims[1]    = left_tensor.shape.dims[1];
-    output_tensor.shape.strides[0] = left_tensor.shape.strides[0]; 
-    output_tensor.shape.strides[1] = left_tensor.shape.strides[1];
-    std::memset(output_tensor.tensor_data, 0.0f, output_tensor.shape.numel() * sizeof(float));
+   tens::tensor output_tensor; 
+    output_tensor.shape.ndim         = left_tensor.shape.ndim;
+    for(size_t i = 0; i < (size_t)left_tensor.shape.ndim; ++i){
+      output_tensor.shape.dims[i]    = left_tensor.shape.dims[i]; 
+      output_tensor.shape.strides[i] = left_tensor.shape.strides[i];
+    } 
     
     size_t tensor_size = left_tensor.shape.numel(); 
     size_t i           = 0; 
@@ -217,13 +283,12 @@ tens::tensor tens::ops::div(const tens::tensor &left_tensor, const tens::tensor 
     printf("File: %s :: Line: %d", __FILE__, __LINE__);
     throw std::runtime_error(":: ABORTING ::");
   }else{
-    tens::tensor output_tensor; 
-    output_tensor.shape.ndim       = left_tensor.shape.ndim;
-    output_tensor.shape.dims[0]    = left_tensor.shape.dims[0]; 
-    output_tensor.shape.dims[1]    = left_tensor.shape.dims[1];
-    output_tensor.shape.strides[0] = left_tensor.shape.strides[0]; 
-    output_tensor.shape.strides[1] = left_tensor.shape.strides[1];
-    std::memset(output_tensor.tensor_data, 0.0f, output_tensor.shape.numel() * sizeof(float));
+   tens::tensor output_tensor; 
+    output_tensor.shape.ndim         = left_tensor.shape.ndim;
+    for(size_t i = 0; i < (size_t)left_tensor.shape.ndim; ++i){
+      output_tensor.shape.dims[i]    = left_tensor.shape.dims[i]; 
+      output_tensor.shape.strides[i] = left_tensor.shape.strides[i];
+    } 
     
     size_t tensor_size = left_tensor.shape.numel(); 
     size_t i           = 0; 
@@ -244,19 +309,18 @@ tens::tensor tens::ops::div(const tens::tensor &left_tensor, const tens::tensor 
   }
 }
 
-tens::tensor tens::ops::scale(const tens::tensor &input_tensor, size_t scale){
+tens::tensor tens::ops::scale(const tens::tensor &input_tensor, float scale){
   if(input_tensor.shape.numel() <= 0){
     CPPDL_FATAL("tens::ops::scale(&input_tensor, scale) :: cannot scale a 0 sized tensor :: returning original tensor and continuing"); 
     printf("File: %s :: Line: %d", __FILE__, __LINE__);
     return input_tensor; 
   }else{
     tens::tensor output_tensor; 
-    output_tensor.shape.ndim       = input_tensor.shape.ndim;
-    output_tensor.shape.dims[0]    = input_tensor.shape.dims[0]; 
-    output_tensor.shape.dims[1]    = input_tensor.shape.dims[1];
-    output_tensor.shape.strides[0] = input_tensor.shape.strides[0]; 
-    output_tensor.shape.strides[1] = input_tensor.shape.strides[1];
-    std::memset(output_tensor.tensor_data, 0.0f, output_tensor.shape.numel() * sizeof(float));
+    output_tensor.shape.ndim         = input_tensor.shape.ndim;
+    for(size_t i = 0; i < (size_t)input_tensor.shape.ndim; ++i){
+      output_tensor.shape.dims[i]    = input_tensor.shape.dims[i]; 
+      output_tensor.shape.strides[i] = input_tensor.shape.strides[i];
+    } 
     
     size_t tensor_size = input_tensor.shape.numel(); 
     size_t i           = 0; 
@@ -274,6 +338,91 @@ tens::tensor tens::ops::scale(const tens::tensor &input_tensor, size_t scale){
     }
     return output_tensor;
   }
+}
+
+tens::tensor tens::ops::root(const tens::tensor &input_tensor){
+  assert(input_tensor.shape.numel() > 0 
+         && "tens::ops::root(&input_tensor, scale) :: cannot get root of elems from a 0 sized tensor" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         ); 
+  tens::tensor output_tensor; 
+  output_tensor.shape.ndim         = input_tensor.shape.ndim;
+  for(size_t i = 0; i < (size_t)input_tensor.shape.ndim; ++i){
+    output_tensor.shape.dims[i]    = input_tensor.shape.dims[i]; 
+    output_tensor.shape.strides[i] = input_tensor.shape.strides[i];
+  } 
+
+  size_t tensor_size = input_tensor.shape.numel(); 
+  size_t i = 0; 
+  for(; i + 15 < tensor_size; i += 16){
+    __m512 input_vec = _mm512_loadu_ps(&input_tensor.tensor_data[i]);
+    __m512 root_vec  = _mm512_sqrt_ps(input_vec); 
+    _mm512_storeu_ps(&output_tensor.tensor_data[i], root_vec); 
+  }
+  for(; i < tensor_size; ++i){
+    output_tensor.tensor_data[i] = std::sqrt(input_tensor.tensor_data[i]);
+  }
+  return output_tensor; 
+}
+
+tens::tensor tens::ops::tanh(const tens::tensor &input_tensor){
+  assert(input_tensor.shape.numel() > 0 
+         && "tens::ops::root(&input_tensor, scale) :: cannot get root of elems from a 0 sized tensor" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         ); 
+  tens::tensor output_tensor; 
+  output_tensor.shape.ndim         = input_tensor.shape.ndim;
+  for(size_t i = 0; i < (size_t)input_tensor.shape.ndim; ++i){
+    output_tensor.shape.dims[i]    = input_tensor.shape.dims[i]; 
+    output_tensor.shape.strides[i] = input_tensor.shape.strides[i];
+  } 
+  
+  size_t tensor_size = input_tensor.shape.numel();
+  __m512 neg_vec     = _mm512_set1_ps(-1.0f); 
+  size_t i = 0; 
+  for(; i + 15 < tensor_size; i += 16){
+    __m512 pos_input_vec = _mm512_loadu_ps     (&input_tensor.tensor_data[i]);
+    __m512 neg_input_vec = _mm512_mul_ps       (pos_input_vec, neg_vec); 
+    __m512 pos_exp_vec   = tens::ops::fast_exp (pos_input_vec);
+    __m512 neg_exp_vec   = tens::ops::fast_exp (neg_input_vec);
+    __m512 top_diff      = _mm512_sub_ps       (pos_exp_vec, neg_exp_vec); 
+    __m512 bot_add       = _mm512_add_ps       (pos_exp_vec, neg_exp_vec); 
+    __m512 div_vec       = _mm512_div_ps       (top_diff, bot_add); 
+    _mm512_storeu_ps(&output_tensor.tensor_data[i], div_vec); 
+  }
+  for(; i < tensor_size; ++i){
+    output_tensor.tensor_data[i] = std::tanh(input_tensor.tensor_data[i]); 
+  }
+  return output_tensor; 
+}
+
+tens::tensor tens::ops::var(const tens::tensor &input_tensor, size_t axis, bool keep_dim){
+  assert(input_tensor.shape.numel() > 0 
+         && "tens::ops::var(&input_tensor, scale) :: cannot get root of elems from a 0 sized tensor" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         ); 
+  assert(axis > 0 
+         && "tens::ops::var(&input_tensor, axis, keep_dim) :: selected axis does not exist :: cannot sum over axis less than 0 or 0" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         );     
+  assert(axis <= (size_t) input_tensor.shape.ndim 
+           && "tens::ops::var(&input_tensor, axis, keep_dim) :: selected axis does not exist :: axis is greater than the tensors total dimension shape" 
+           && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+           ); 
+   tens::tensor output_tensor; 
+  output_tensor.shape.ndim         = input_tensor.shape.ndim;
+  for(size_t i = 0; i < (size_t)input_tensor.shape.ndim; ++i){
+    output_tensor.shape.dims[i]    = input_tensor.shape.dims[i]; 
+    output_tensor.shape.strides[i] = input_tensor.shape.strides[i];
+  }
+  output_tensor.tensor_data        = input_tensor.tensor_data; 
+  
+  auto mean_tens  = tens::ops::mean (output_tensor, axis, true);
+  auto diff_tens  = tens::ops::sub  (input_tensor , mean_tens);
+  auto mul_tens   = tens::ops::mul  (diff_tens    , diff_tens);
+  auto final_tens = tens::ops::mean (mul_tens     , axis, keep_dim); 
+  
+  return final_tens; 
 }
 
 tens::tensor tens::ops::sum(const tens::tensor &input_tensor, size_t axis, bool keep_dim){
@@ -543,4 +692,85 @@ tens::tensor tens::ops::min(const tens::tensor &input_tensor, size_t axis, bool 
     }
   }
   return output_tensor;
+}
+
+tens::tensor tens::ops::exp(const tens::tensor &input_tensor){
+  assert(input_tensor.shape.numel() > 0 
+         && "tens::ops::exp(&input_tensor) :: cannot cannot apply exp to a 0 sized tensor" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         ); 
+  tens::tensor output_tensor; 
+  output_tensor.shape.ndim         = input_tensor.shape.ndim;
+  for(size_t i = 0; i < (size_t)input_tensor.shape.ndim; ++i){
+    output_tensor.shape.dims[i]    = input_tensor.shape.dims[i]; 
+    output_tensor.shape.strides[i] = input_tensor.shape.strides[i];
+  }
+
+  size_t i = 0; 
+  for(; i + 15 < input_tensor.shape.numel(); i += 16){
+    __m512 input_vec = _mm512_loadu_ps(&input_tensor.tensor_data[i]); 
+    __m512 exp_vec   = tens::ops::fast_exp(input_vec);
+    _mm512_storeu_ps(&output_tensor.tensor_data[i], exp_vec); 
+  }
+  for(; i < input_tensor.shape.numel(); ++i){
+    output_tensor.tensor_data[i] = std::exp(input_tensor.tensor_data[i]); 
+  }
+  return output_tensor; 
+}
+
+tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, size_t axis, float epsilon, float gamma, float beta){
+  assert(input_tensor.shape.numel() > 0 
+         && "tens::ops::layer_norm(&input_tensor, scale) :: cannot get root of elems from a 0 sized tensor" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         ); 
+  assert(axis > 0 
+         && "tens::ops::layer_norm(&input_tensor, axis, keep_dim) :: selected axis does not exist :: cannot sum over axis less than 0 or 0" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         );     
+  assert(axis <= (size_t) input_tensor.shape.ndim 
+           && "tens::ops::layer_norm(&input_tensor, axis, keep_dim) :: selected axis does not exist :: axis is greater than the tensors total dimension shape" 
+           && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+           );
+
+  auto diff_tens  = tens::ops::sub(input_tensor, tens::ops::mean(input_tensor, axis, true));
+  auto comp_tens  = tens::ops::root(tens::ops::add(tens::ops::var(input_tensor, axis, true), epsilon));
+  auto div_tens   = tens::ops::div(diff_tens, comp_tens); 
+  auto gamma_tens = tens::ops::scale(div_tens, gamma); 
+  auto final_tens = tens::ops::add(gamma_tens, beta);
+
+  return final_tens; 
+}
+
+tens::tensor tens::ops::gelu(const tens::tensor &input_tensor){
+  assert(input_tensor.shape.numel() > 0 
+         && "tens::ops::gelu(&input_tensor, scale) :: cannot apply gelu() to a 0 sized tensor" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         ); 
+
+  auto half_tens            = tens::ops::scale (input_tensor, 0.5f);
+  auto squared_tens         = tens::ops::mul   (input_tensor, input_tensor); 
+  auto cubed_tens           = tens::ops::mul   (squared_tens, input_tensor); 
+  auto scaled_cubed_tens    = tens::ops::scale (cubed_tens, 0.044715f); 
+  auto complete_tens        = tens::ops::add   (scaled_cubed_tens, input_tensor);
+  auto scaled_complete_tens = tens::ops::scale (complete_tens, std::sqrt((2.0f / std::numbers::pi)));
+  auto tanh_tens            = tens::ops::tanh  (scaled_complete_tens);
+  auto shifted_tanh_tens    = tens::ops::add   (tanh_tens, 1.0f);
+  auto final_tens           = tens::ops::mul   (half_tens, shifted_tanh_tens); 
+
+  return final_tens; 
+}
+
+tens::tensor tens::ops::softmax(const tens::tensor &input_tensor, size_t axis){
+  assert(input_tensor.shape.numel() > 0 
+         && "tens::ops::gelu(&input_tensor, scale) :: cannot apply gelu() to a 0 sized tensor" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         ); 
+
+  auto max_tens      = tens::ops::max(input_tensor, axis, true);
+  auto max_diff_tens = tens::ops::sub(input_tensor, max_tens);
+  auto exp_tens      = tens::ops::exp(max_diff_tens);
+  auto sum_tens      = tens::ops::sum(exp_tens, axis, true);
+  auto final_tens    = tens::ops::div(exp_tens, sum_tens);
+
+  return final_tens; 
 }

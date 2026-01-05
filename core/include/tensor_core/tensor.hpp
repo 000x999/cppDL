@@ -49,6 +49,11 @@ public:
   void   randn     (); 
 };
 
+class positional_encoders{
+public:
+  static tens::tensor sine_encoder(size_t sequence_length, size_t embed_dim, tensor_pool &pool); 
+};
+
 class ops{
 public: 
   static __m512       fast_exp   (__m512 input_vec                                                                             ); 

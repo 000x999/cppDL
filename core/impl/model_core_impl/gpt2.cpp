@@ -251,7 +251,17 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_proj.bias", i);
     tens::tensor proj_bias = load_tensor(&sf, name, alloc);
+   
+    if (i == 0) {
+      std::printf("[DEBUG] c_attn.weight shape: [%zu, %zu]\n", 
+                qkv_weight.shape.dims[0], qkv_weight.shape.dims[1]);
     
+      std::printf("[DEBUG] c_attn.weight[0][0]: %.6f\n", qkv_weight.tensor_data[0]);
+      std::printf("[DEBUG] c_attn.weight[0][768]: %.6f\n", qkv_weight.tensor_data[768]);
+      std::printf("[DEBUG] c_attn.weight[0][1536]: %.6f\n", qkv_weight.tensor_data[1536]);
+    }
+
+
     float* w_q_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
     float* w_k_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
     float* w_v_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);

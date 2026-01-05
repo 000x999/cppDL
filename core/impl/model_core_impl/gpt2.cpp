@@ -30,10 +30,10 @@ tens::tensor load_tensor(safetensor::safetensor_file *sf, const char *name, memo
   return t;
 }
 
-tens::tensor matmul(const tens::tensor &a, const tens::tensor &b, tens::tensor_pool &pool, bool transpose_b) {
+tens::tensor matmul(const tens::tensor &a, const tens::tensor &b, tens::tensor_pool &pool){
   size_t M = a.shape.dims[0];
   size_t K = a.shape.dims[1];
-  size_t N = transpose_b ? b.shape.dims[0] : b.shape.dims[1];
+  size_t N = b.shape.dims[1]; 
   
   tens::tensor out;
   out.shape.ndim = 2;
@@ -68,7 +68,7 @@ tens::tensor matmul(const tens::tensor &a, const tens::tensor &b, tens::tensor_p
   
   level3::blas::crush_gemm(
     level3::transpose_gemm::no_transpose,
-    transpose_b ? level3::transpose_gemm::transpose : level3::transpose_gemm::no_transpose,
+    level3::transpose_gemm::no_transpose,
     view_a,
     view_b,
     1.0f,
@@ -82,8 +82,7 @@ tens::tensor matmul(const tens::tensor &a, const tens::tensor &b, tens::tensor_p
 tens::tensor linear(const tens::tensor &x, const tens::tensor &weight, const tens::tensor &bias, tens::tensor_pool &pool) {
   size_t seq_len = x.shape.dims[0];
   size_t in_features = x.shape.dims[1];
-  
-  size_t out_features = weight.shape.dims[0]; 
+  size_t out_features = weight.shape.dims[1]; 
   
   tens::tensor out;
   out.shape.ndim = 2;
@@ -118,7 +117,7 @@ tens::tensor linear(const tens::tensor &x, const tens::tensor &weight, const ten
   
   level3::blas::crush_gemm(
     level3::transpose_gemm::no_transpose,
-    level3::transpose_gemm::transpose,  
+    level3::transpose_gemm::no_transpose, 
     view_x,
     view_w,
     1.0f,
@@ -333,9 +332,47 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
     x = tens::ops::add(residual, x, pool);
   }
   x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
+ 
+  tens::tensor logits;
+  logits.shape.ndim = 2;
+  logits.shape.dims[0] = seq_len;
+  logits.shape.dims[1] = m->cfg.vocab_size;
+  logits.shape.strides[0] = m->cfg.vocab_size;
+  logits.shape.strides[1] = 1;
+  logits.tensor_data = pool.arena.nn_alloc<float>(seq_len * m->cfg.vocab_size);
   
-  tens::tensor wte_t  = m->wte.transpose();
-  tens::tensor logits = matmul(x, wte_t, pool, true);
+  std::memset(logits.tensor_data, 0, seq_len * m->cfg.vocab_size * sizeof(float));
+  
+  level3::mat_ops_view view_x {
+    .row_view = seq_len,
+    .col_view = embed_dim,
+    .leading_dimension = embed_dim,
+    .data_view = x.tensor_data
+  };
+  
+  level3::mat_ops_view view_wte {
+    .row_view = m->cfg.vocab_size,
+    .col_view = embed_dim,
+    .leading_dimension = embed_dim,
+    .data_view = m->wte.tensor_data
+  };
+  
+  level3::mat_ops_view view_logits {
+    .row_view = seq_len,
+    .col_view = m->cfg.vocab_size,
+    .leading_dimension = m->cfg.vocab_size,
+    .data_view = logits.tensor_data
+  };
+  
+  level3::blas::crush_gemm(
+    level3::transpose_gemm::no_transpose,
+    level3::transpose_gemm::transpose,
+    view_x,
+    view_wte,
+    1.0f,
+    0.0f,
+    view_logits
+  );
   
   return logits;
 }

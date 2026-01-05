@@ -3,6 +3,7 @@
 #include <cstring>
 #include <cmath>
 
+namespace gpt2{
 tens::tensor load_tensor(safetensor::safetensor_file *sf, const char *name, memory::neural_arena &alloc) {
   safetensor::tensor_entry* entry = safetensor::find_entry(sf, name);
   if (!entry) {
@@ -298,4 +299,5 @@ void free_model(model* m) {
     }
   }
   m->initialized = false;
+}
 }

@@ -141,38 +141,48 @@ bool safetensor::parse_header(const char* json, size_t json_len, safetensor::saf
 }
 
 bool safetensor::load_safetensor(const char* path, safetensor::safetensor_file* sf) {
-  FILE* f = std::fopen(path, "rb");
-  if (!f) return false;
-  
-  std::fseek(f, 0, SEEK_END);
-  sf->file_size = std::ftell(f);
-  std::fseek(f, 0, SEEK_SET);
-  
-  sf->file_data = (char*)std::malloc(sf->file_size);
-  if (!sf->file_data) {
+    FILE* f = std::fopen(path, "rb");
+    if (!f) {
+        std::printf("ERROR: Could not open file: %s\n", path);
+        return false;
+    }
+    
+    std::fseek(f, 0, SEEK_END);
+    sf->file_size = std::ftell(f);
+    std::fseek(f, 0, SEEK_SET);
+    
+    std::printf("DEBUG: File size: %zu bytes\n", sf->file_size);
+    
+    sf->file_data = (char*)std::malloc(sf->file_size);
+    if (!sf->file_data) {
+        std::fclose(f);
+        return false;
+    }
+    
+    if (std::fread(sf->file_data, 1, sf->file_size, f) != sf->file_size) {
+        std::free(sf->file_data);
+        std::fclose(f);
+        return false;
+    }
     std::fclose(f);
-    return false;
-  }
-  
-  if (std::fread(sf->file_data, 1, sf->file_size, f) != sf->file_size) {
-    std::free(sf->file_data);
-    std::fclose(f);
-    return false;
-  }
-  std::fclose(f);
-  
-  uint64_t header_size = 0;
-  std::memcpy(&header_size, sf->file_data, sizeof(uint64_t));
-  
-  const char* json_start = sf->file_data + 8;
-  if (!parse_header(json_start, header_size, sf)) {
-    std::free(sf->file_data);
-    return false;
-  }
-  
-  sf->tensor_data_start = sf->file_data + 8 + header_size;
-  
-  return true;
+    
+    uint64_t header_size = 0;
+    std::memcpy(&header_size, sf->file_data, sizeof(uint64_t));
+    
+    std::printf("DEBUG: Header size: %zu bytes\n", (size_t)header_size);
+    
+    const char* json_start = sf->file_data + 8;
+    std::printf("DEBUG: Header start (first 500 chars):\n%.500s\n\n", json_start);
+    
+    if (!parse_header(json_start, header_size, sf)) {
+        std::printf("ERROR: parse_header failed\n");
+        std::free(sf->file_data);
+        return false;
+    }
+    
+    sf->tensor_data_start = sf->file_data + 8 + header_size;
+    
+    return true;
 }
 
 void safetensor::free_safetensor(safetensor::safetensor_file* sf) {

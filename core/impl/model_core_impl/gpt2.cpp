@@ -266,7 +266,7 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     void* atten_mem = alloc.nn_alloc<char>(sizeof(atten::multi_head_attention));
     
     m->atten_pools[i] = new (pool_mem) atten::atten_pool(atten_arena_size);
-    m->attentions[i] = new (atten_mem) atten::multi_head_attention(embed_dim, m->cfg.num_heads);
+    m->attentions[i]  = new (atten_mem) atten::multi_head_attention(embed_dim, m->cfg.num_heads);
     m->attentions[i]->init(*m->atten_pools[i]);
     m->attentions[i]->load_weights(w_q_buf, w_k_buf, w_v_buf, w_o, b_q, b_k, b_v, b_o);
     
@@ -284,6 +284,11 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     b->ffn_proj_weight = load_tensor(&sf, name, alloc);
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.bias", i);
     b->ffn_proj_bias = load_tensor(&sf, name, alloc);
+
+    std::printf("[DEBUG] layer %zu ffn_fc_weight: [%zu, %zu]\n", 
+            i, b->ffn_fc_weight.shape.dims[0], b->ffn_fc_weight.shape.dims[1]);
+    std::printf("[DEBUG] layer %zu ffn_proj_weight: [%zu, %zu]\n", 
+            i, b->ffn_proj_weight.shape.dims[0], b->ffn_proj_weight.shape.dims[1]);
   }
   
   m->ln_f_weight = load_tensor(&sf, "ln_f.weight", alloc);

@@ -424,6 +424,23 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
     return logits;
 }
 
+int argmax(const tens::tensor& logits) {
+  size_t vocab_size = logits.shape.dims[1];
+  size_t seq_len = logits.shape.dims[0];
+  
+  float* last_row = logits.tensor_data + (seq_len - 1) * vocab_size;
+  
+  int max_idx = 0;
+  float max_val = last_row[0];
+  for (size_t i = 1; i < vocab_size; i++) {
+    if (last_row[i] > max_val) {
+      max_val = last_row[i];
+      max_idx = i;
+    }
+  }
+  return max_idx;
+}
+
 void free_model(model* m) {
   for (size_t i = 0; i < m->cfg.num_layers; i++) {
     if (m->attentions[i]) {

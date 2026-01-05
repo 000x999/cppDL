@@ -811,3 +811,28 @@ tens::tensor tens::ops::embedding(const tens::tensor &input_weights, const tens:
 
   return output_tensor; 
 }
+
+tens::tensor tens::positional_encoders::sine_encoder(size_t sequence_length, size_t embed_dim, tensor_pool &pool){
+  tens::tensor output_tensor; 
+  output_tensor.shape.ndim = 2; 
+  output_tensor.shape.dims[0] = sequence_length; 
+  output_tensor.shape.dims[1] = embed_dim; 
+  output_tensor.shape.strides[0] = embed_dim; 
+  output_tensor.shape.strides[1] = 1; 
+  output_tensor.tensor_data = pool.arena.nn_alloc<float>(sequence_length * embed_dim);
+
+  for(size_t pos = 0; pos < sequence_length; ++pos){
+    for(size_t i = 0; i < embed_dim; i += 2){
+      
+      float div_term    = std::pow(10000.0f, (float)i / (float)embed_dim);
+      float angle       = (float)pos / div_term; 
+      
+      size_t even_index = pos * embed_dim + 2 * i; 
+      size_t odd_index  = pos * embed_dim + 2 * i + 1;
+
+      output_tensor.tensor_data[even_index] = std::sin(angle); 
+      output_tensor.tensor_data[odd_index]  = std::cos(angle); 
+    }
+  }
+  return output_tensor; 
+}

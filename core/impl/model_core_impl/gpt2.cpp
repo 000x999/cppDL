@@ -414,7 +414,7 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
     
     level3::blas::crush_gemm(
         level3::transpose_gemm::no_transpose,
-        level3::transpose_gemm::no_transpose,
+        level3::transpose_gemm::transpose,
         view_x,
         view_wte,
         1.0f,
@@ -422,6 +422,12 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
         view_logits
     );
     
+    std::printf("[DEBUG] wte shape: [%zu, %zu]\n", m->wte.shape.dims[0], m->wte.shape.dims[1]);
+    std::printf("[DEBUG] x shape: [%zu, %zu]\n", x.shape.dims[0], x.shape.dims[1]);
+    std::printf("[DEBUG] wte[0][0]: %.6f\n", m->wte.tensor_data[0]);
+    std::printf("[DEBUG] wte[0][1]: %.6f\n", m->wte.tensor_data[1]);
+    std::printf("[DEBUG] x[0][0]: %.6f\n", x.tensor_data[0]);
+
     if (debug) {
         debug_tensor("logits", logits);
         

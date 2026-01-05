@@ -785,6 +785,15 @@ tens::tensor tens::ops::softmax(const tens::tensor &input_tensor, tensor_pool &p
 }
 
 tens::tensor tens::ops::embedding(const tens::tensor &input_weights, const tens::tensor &input_indices, tensor_pool &pool){
+  assert(input_weights.shape.numel() > 0 
+         && "tens::ops::embedding(&input_weights, &input_indices) :: cannot apply embeddings to a 0 sized tensor" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         ); 
+ assert(input_indices.shape.numel() > 0 
+         && "tens::ops::embedding(&input_weights, &input_indices) :: cannot apply embeddings to a 0 sized tensor" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         ); 
+
   size_t embed_dim  = input_weights.shape.dims[1];
   size_t num_indices = input_indices.shape.numel(); 
   
@@ -835,4 +844,50 @@ tens::tensor tens::positional_encoders::sine_encoder(size_t sequence_length, siz
     }
   }
   return output_tensor; 
+}
+
+tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, const tens::tensor &weight, const tens::tensor &bias, tensor_pool &pool, size_t axis, float epsilon) {
+  assert(input_tensor.shape.numel() > 0 
+         && "tens::ops::layer_norm(&input_tensor, &weight, &bias) :: cannot apply layer_norm to a 0 sized tensor" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         ); 
+  assert(weight.shape.numel() > 0 
+         && "tens::ops::layer_norm(&input_tensor, &weight, &bias) :: cannot apply layer_norm to a 0 sized tensor" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         ); 
+  assert(bias.shape.numel() > 0 
+         && "tens::ops::layer_norm(&input_tensor, &weight, &bias) :: cannot apply layer_norm to a 0 sized tensor" 
+         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
+         ); 
+
+  if (axis == (size_t)-1) {
+    axis = input_tensor.shape.ndim - 1;
+  }
+    
+  tens::tensor mean_t     = tens::ops::mean (input_tensor, pool, axis, true);
+  tens::tensor diff       = tens::ops::sub  (input_tensor, mean_t, pool);
+  tens::tensor diff_sq    = tens::ops::mul  (diff, diff, pool);
+  tens::tensor var_t      = tens::ops::mean (diff_sq, pool, axis, true);
+  tens::tensor var_eps    = tens::ops::add  (var_t, epsilon, pool);
+  tens::tensor std_t      = tens::ops::root (var_eps, pool);
+  tens::tensor normalized = tens::ops::div  (diff, std_t, pool);
+  tens::tensor output;
+  
+  output.shape       = input_tensor.shape;
+  output.tensor_data = pool.arena.nn_alloc<float>(input_tensor.shape.numel());
+ 
+  size_t outer_size  = 1;
+  size_t norm_size   = input_tensor.shape.dims[axis];
+  
+  for (size_t i = 0; i < axis; i++) {
+    outer_size *= input_tensor.shape.dims[i];
+  }
+  
+  for (size_t o = 0; o < outer_size; o++) {
+    for (size_t n = 0; n < norm_size; n++) {
+      size_t idx = o * norm_size + n;
+      output.tensor_data[idx] = normalized.tensor_data[idx] * weight.tensor_data[n] + bias.tensor_data[n];
+    }
+  }
+  return output;
 }

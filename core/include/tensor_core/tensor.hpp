@@ -71,7 +71,8 @@ public:
   static tens::tensor mean       (const tens::tensor &input_tensor , tensor_pool &pool, size_t axis = -1, bool keep_dim = false); 
   static tens::tensor max        (const tens::tensor &input_tensor , tensor_pool &pool, size_t axis = -1, bool keep_dim = false); 
   static tens::tensor min        (const tens::tensor &input_tensor , tensor_pool &pool, size_t axis = -1, bool keep_dim = false);
-  static tens::tensor layer_norm (const tens::tensor &input_tensor , tensor_pool &pool, size_t axis = -1, float epsilon = 1e-5, float gamma = 0.0f, float beta = 1.0f); 
+  static tens::tensor layer_norm (const tens::tensor &input_tensor , tensor_pool &pool, size_t axis = -1, float epsilon = 1e-5, float gamma = 0.0f, float beta = 1.0f);
+  static tens::tensor layer_norm (const tens::tensor &input_tensor , const tens::tensor &weight, const tens::tensor &bias, tensor_pool &pool, size_t axis = -1, float epsilon = 1e-5);
   static tens::tensor gelu       (const tens::tensor &input_tensor , tensor_pool &pool                                         );
   static tens::tensor softmax    (const tens::tensor &input_tensor , tensor_pool &pool, size_t axis = -1                       ); 
   static tens::tensor embedding  (const tens::tensor &input_weights, const tens::tensor &input_indices, tensor_pool &pool      ); 

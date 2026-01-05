@@ -271,17 +271,17 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
     
     tens::tensor residual = x;
     
-    x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, embed_dim - 1, m->cfg.layer_norm_eps);
+    x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim- 1, m->cfg.layer_norm_eps);
     x = m->attentions[i]->forward(x, *m->atten_pools[i]);
     x = tens::ops::add(residual, x, pool);
     residual = x;
-    x = tens::ops::layer_norm(x, b->ln2_weight, b->ln2_bias, pool, embed_dim - 1, m->cfg.layer_norm_eps);
+    x = tens::ops::layer_norm(x, b->ln2_weight, b->ln2_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
     x = linear(x, b->ffn_fc_weight, b->ffn_fc_bias, pool);
     x = tens::ops::gelu(x, pool);
     x = linear(x, b->ffn_proj_weight, b->ffn_proj_bias, pool);
     x = tens::ops::add(residual, x, pool);
   }
-  x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, embed_dim - 1, m->cfg.layer_norm_eps);
+  x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
   
   tens::tensor wte_t = m->wte.transpose();
   tens::tensor logits = matmul(x, wte_t, pool);

@@ -23,6 +23,8 @@ file(GLOB_RECURSE CPPDL_IMPL_SOURCES CONFIGURE_DEPENDS
   ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/tokenizer_core_impl/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/tensor_core_impl/*.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/attention_core_impl/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/model_core_impl/*.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/safetensor_core_impl/*.cpp
 )
 
 file(GLOB_RECURSE CPPDL_TEST_SOURCES CONFIGURE_DEPENDS

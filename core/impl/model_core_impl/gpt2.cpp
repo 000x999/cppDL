@@ -382,7 +382,6 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
     x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
     if (debug) debug_tensor("final_ln", x);
     
-    // Final projection
     tens::tensor logits;
     logits.shape.ndim = 2;
     logits.shape.dims[0] = seq_len;
@@ -415,7 +414,7 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
     
     level3::blas::crush_gemm(
         level3::transpose_gemm::no_transpose,
-        level3::transpose_gemm::transpose,
+        level3::transpose_gemm::no_transpose,
         view_x,
         view_wte,
         1.0f,
@@ -426,7 +425,6 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
     if (debug) {
         debug_tensor("logits", logits);
         
-        // Print top 5 logits
         std::printf("Top 5 logits: ");
         float* l = logits.tensor_data;
         for (int k = 0; k < 5; k++) {

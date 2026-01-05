@@ -386,7 +386,7 @@ void gemm_test(float A){
 }
 
 int main(int argc, char* argv[]){
-  const char* model_path = "../model.safetensors";
+  const char* model_path = "model.safetensors";
   
   if (argc > 1) {
       model_path = argv[1];

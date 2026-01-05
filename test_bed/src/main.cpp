@@ -3,6 +3,8 @@
 #include "logger_core/dual_output.hpp"
 #include "tensor_core/tensor.hpp"
 #include "attention_core/attention.hpp"
+#include "model_core/gpt2.hpp"
+#include "safetensor_core/safetensor_reader.h"
 #include <stdlib.h>
 #include <chrono>
 #include <fstream>
@@ -251,7 +253,7 @@ void multi_head_attention_test(){
   input_tensor.shape.strides[0] = embed_dim; 
   input_tensor.shape.strides[1] = 1;
 
-  attn.load_weights(wq_data, wk_data, wv_data, wo_data);
+  //attn.load_weights(wq_data, wk_data, wv_data, wo_data);
 
   auto start = nanos();  
   auto output_tensor = attn.forward(input_tensor, temp_arena); 
@@ -352,9 +354,80 @@ void gemm_test(float A){
             << "s, GFLOP/S = " << optGflops << "\n";
 }
 
-int main(){
+int main(int argc, char* argv[]){
+  const char* model_path = "model.safetensors";
+  if (argc > 1) {
+    model_path = argv[1];
+  }
+  
+  size_t model_arena_size = 1024ULL * 1024ULL * 600ULL;  
+  size_t temp_arena_size = 1024ULL * 1024ULL * 256ULL;  
+    
+  memory::neural_arena model_arena(model_arena_size);
+  tens::tensor_pool temp_pool(temp_arena_size);
+    
+  gpt2::model model;
+  gpt2::init_model(&model);
+    
+  if (!gpt2::load_model(&model, model_path, model_arena)) {
+    std::printf("Failed to load model from: %s\n", model_path);
+    return 1;
+  }
+    
+  size_t max_seq_len = 1024;
+  float* sequence = (float*)std::malloc(max_seq_len * sizeof(float));
+    
+  sequence[0] = 15496.0f;
+  size_t seq_len = 1;
+    
+  std::printf("\nStarting generation...\n");
+  std::printf("Input token: %d\n\n", (int)sequence[0]);
+  std::printf("Generated tokens: ");
+    
+  int max_new_tokens = 50;
+    
+  for (int i = 0; i < max_new_tokens; i++) {
+    tens::tensor input;
+    input.shape.ndim = 1;
+    input.shape.dims[0] = seq_len;
+    input.shape.strides[0] = 1;
+    input.tensor_data = sequence;
+    
+    tens::tensor logits = gpt2::forward(&model, input, temp_pool);
+    
+    int next_token = gpt2::argmax(logits);
+    std::printf("%d ", next_token);
+    std::fflush(stdout);
+    
+    if (seq_len < max_seq_len) {
+      sequence[seq_len] = (float)next_token;
+      seq_len++;
+    }else{
+      std::printf("\n[Max sequence length reached]\n");
+      break;
+    }
+    
+    if (next_token == 50256) {
+      std::printf("\n[EOS]\n");
+      break;
+    }
+    
+    temp_pool.arena.nn_reset();
+        
+    for (size_t layer = 0; layer < model.cfg.num_layers; layer++) {
+      if (model.atten_pools[layer]) {
+        model.atten_pools[layer]->arena.nn_reset();
+      }
+    }
+  }
+    
+  std::printf("\n\nGeneration complete. Sequence length: %zu\n", seq_len);
+  std::free(sequence);
+  gpt2::free_model(&model);
+  return 0;
+
   //tokenizer_test(); 
-  inference_test(); 
+  //inference_test(); 
   //attention_test(); 
   //multi_head_attention_test(); 
   //gemm_test(4096); 

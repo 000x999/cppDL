@@ -468,8 +468,8 @@ tens::tensor tens::ops::sum(const tens::tensor &input_tensor, tensor_pool &pool,
   }else{
     output_tensor.shape.ndim = input_tensor.shape.ndim - 1; 
     size_t j = 0; 
-    for(size_t i = 0; i < (size_t) input_tensor.shape.ndim; ++i){
-      if(i != axis){
+    for(int i = 0; i < input_tensor.shape.ndim; ++i){
+      if(i != (int)axis){
         output_tensor.shape.dims[j++] = input_tensor.shape.dims[i];  
       }
     }
@@ -477,7 +477,7 @@ tens::tensor tens::ops::sum(const tens::tensor &input_tensor, tensor_pool &pool,
 
   if(output_tensor.shape.ndim > 0){
     output_tensor.shape.strides[input_tensor.shape.ndim - 1] = 1;
-    for(size_t i = output_tensor.shape.ndim - 2; i >= 0; --i){
+    for(int i = output_tensor.shape.ndim - 2; i >= 0; --i){
       output_tensor.shape.strides[i] = output_tensor.shape.strides[i + 1] * output_tensor.shape.dims[i + 1]; 
     }
   }
@@ -536,8 +536,8 @@ tens::tensor tens::ops::mean(const tens::tensor &input_tensor, tensor_pool &pool
   }else{
     output_tensor.shape.ndim = input_tensor.shape.ndim - 1; 
     size_t j = 0; 
-    for(size_t i = 0; i < (size_t) input_tensor.shape.ndim; ++i){
-      if(i != axis){
+    for(int i = 0; i < input_tensor.shape.ndim; ++i){
+      if(i != (int)axis){
         output_tensor.shape.dims[j++] = input_tensor.shape.dims[i];  
       }
     }
@@ -545,7 +545,7 @@ tens::tensor tens::ops::mean(const tens::tensor &input_tensor, tensor_pool &pool
 
   if(output_tensor.shape.ndim > 0){
     output_tensor.shape.strides[input_tensor.shape.ndim - 1] = 1;
-    for(size_t i = output_tensor.shape.ndim - 2; i >= 0; --i){
+    for(int i = output_tensor.shape.ndim - 2; i >= 0; --i){
       output_tensor.shape.strides[i] = output_tensor.shape.strides[i + 1] * output_tensor.shape.dims[i + 1]; 
     }
   }
@@ -603,8 +603,8 @@ tens::tensor tens::ops::max(const tens::tensor &input_tensor, tensor_pool &pool,
   }else{
     output_tensor.shape.ndim = input_tensor.shape.ndim - 1; 
     size_t j = 0; 
-    for(size_t i = 0; i < (size_t) input_tensor.shape.ndim; ++i){
-      if(i != axis){
+    for(int i = 0; i < input_tensor.shape.ndim; ++i){
+      if(i != (int)axis){
         output_tensor.shape.dims[j++] = input_tensor.shape.dims[i];  
       }
     }
@@ -612,13 +612,13 @@ tens::tensor tens::ops::max(const tens::tensor &input_tensor, tensor_pool &pool,
 
   if(output_tensor.shape.ndim > 0){
     output_tensor.shape.strides[input_tensor.shape.ndim - 1] = 1;
-    for(size_t i = output_tensor.shape.ndim - 2; i >= 0; --i){
+    for(int i = output_tensor.shape.ndim - 2; i >= 0; --i){
       output_tensor.shape.strides[i] = output_tensor.shape.strides[i + 1] * output_tensor.shape.dims[i + 1]; 
     }
   }
   
   size_t output_numel = inner_size * outter_size;
-  output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());
+  output_tensor.tensor_data = pool.arena.nn_alloc<float>(inner_size * outter_size);
   
   for(size_t i = 0; i < outter_size; ++i){
     for(size_t j = 0; j < inner_size; ++j){
@@ -664,8 +664,8 @@ tens::tensor tens::ops::min(const tens::tensor &input_tensor, tensor_pool &pool,
   
   if(keep_dim){
     output_tensor.shape.ndim = input_tensor.shape.ndim;
-    for(size_t i = 0; i < (size_t) input_tensor.shape.ndim; ++i){
-      output_tensor.shape.dims[i] = (i == axis) ? 1 : input_tensor.shape.dims[i]; 
+    for(int i = 0; i < input_tensor.shape.ndim; ++i){
+      output_tensor.shape.dims[i] = (i == (int)axis) ? 1 : input_tensor.shape.dims[i]; 
     }
   }else{
     output_tensor.shape.ndim = input_tensor.shape.ndim - 1; 
@@ -679,13 +679,13 @@ tens::tensor tens::ops::min(const tens::tensor &input_tensor, tensor_pool &pool,
 
   if(output_tensor.shape.ndim > 0){
     output_tensor.shape.strides[input_tensor.shape.ndim - 1] = 1;
-    for(size_t i = output_tensor.shape.ndim - 2; i >= 0; --i){
+    for(int i = output_tensor.shape.ndim - 2; i >= 0; --i){
       output_tensor.shape.strides[i] = output_tensor.shape.strides[i + 1] * output_tensor.shape.dims[i + 1]; 
     }
   }
   
   size_t output_numel = inner_size * outter_size;
-  output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());
+  output_tensor.tensor_data = pool.arena.nn_alloc<float>(inner_size * outter_size);
   
   for(size_t i = 0; i < outter_size; ++i){
     for(size_t j = 0; j < inner_size; ++j){

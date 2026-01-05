@@ -366,27 +366,35 @@ tens::tensor tens::ops::root(const tens::tensor &input_tensor, tensor_pool &pool
 
 tens::tensor tens::ops::tanh(const tens::tensor &input_tensor, tensor_pool &pool){
   assert(input_tensor.shape.numel() > 0 
-         && "tens::ops::root(&input_tensor, scale) :: cannot get root of elems from a 0 sized tensor" 
+         && "tens::ops::tanh(&input_tensor) :: cannot apply tanh to a 0 sized tensor" 
          ); 
   tens::tensor output_tensor; 
-  output_tensor.shape.ndim         = input_tensor.shape.ndim;
+  output_tensor.shape.ndim = input_tensor.shape.ndim;
   for(size_t i = 0; i < (size_t)input_tensor.shape.ndim; ++i){
-    output_tensor.shape.dims[i]    = input_tensor.shape.dims[i]; 
+    output_tensor.shape.dims[i] = input_tensor.shape.dims[i]; 
     output_tensor.shape.strides[i] = input_tensor.shape.strides[i];
   } 
   output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());  
   
   size_t tensor_size = input_tensor.shape.numel();
-  __m512 neg_vec     = _mm512_set1_ps(-1.0f); 
+  
+  __m512 pos_clamp = _mm512_set1_ps(10.0f);
+  __m512 neg_clamp = _mm512_set1_ps(-10.0f);
+  __m512 neg_vec   = _mm512_set1_ps(-1.0f); 
+  
   size_t i = 0; 
   for(; i + 15 < tensor_size; i += 16){
-    __m512 pos_input_vec = _mm512_loadu_ps     (&input_tensor.tensor_data[i]);
-    __m512 neg_input_vec = _mm512_mul_ps       (pos_input_vec, neg_vec); 
-    __m512 pos_exp_vec   = tens::ops::fast_exp (pos_input_vec);
-    __m512 neg_exp_vec   = tens::ops::fast_exp (neg_input_vec);
-    __m512 top_diff      = _mm512_sub_ps       (pos_exp_vec, neg_exp_vec); 
-    __m512 bot_add       = _mm512_add_ps       (pos_exp_vec, neg_exp_vec); 
-    __m512 div_vec       = _mm512_div_ps       (top_diff, bot_add); 
+    __m512 input_vec = _mm512_loadu_ps(&input_tensor.tensor_data[i]);
+    
+    input_vec = _mm512_min_ps(input_vec, pos_clamp);
+    input_vec = _mm512_max_ps(input_vec, neg_clamp);
+    
+    __m512 neg_input_vec = _mm512_mul_ps(input_vec, neg_vec); 
+    __m512 pos_exp_vec   = tens::ops::fast_exp(input_vec);
+    __m512 neg_exp_vec   = tens::ops::fast_exp(neg_input_vec);
+    __m512 top_diff      = _mm512_sub_ps(pos_exp_vec, neg_exp_vec); 
+    __m512 bot_add       = _mm512_add_ps(pos_exp_vec, neg_exp_vec); 
+    __m512 div_vec       = _mm512_div_ps(top_diff, bot_add); 
     _mm512_storeu_ps(&output_tensor.tensor_data[i], div_vec); 
   }
   for(; i < tensor_size; ++i){

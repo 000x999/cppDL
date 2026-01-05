@@ -805,7 +805,7 @@ tens::tensor tens::ops::embedding(const tens::tensor &input_weights, const tens:
   output_tensor.shape.dims[output_tensor.shape.ndim - 1] = embed_dim;
 
   output_tensor.shape.strides[output_tensor.shape.ndim - 1] = 1;
-  for(int i = input_indices.shape.ndim - 2; i >= 0; --i){
+  for(int i = output_tensor.shape.ndim - 2; i >= 0; --i){
     output_tensor.shape.strides[i] = input_indices.shape.strides[i + 1] * input_indices.shape.dims[i + 1]; 
   }
   output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());

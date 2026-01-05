@@ -247,6 +247,10 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
 }
 
 tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &pool) {
+  std::printf("[DEBUG forward] tokens.shape.ndim = %d\n", tokens.shape.ndim);
+  std::printf("[DEBUG forward] tokens.shape.dims[0] = %zu\n", tokens.shape.dims[0]);
+  std::printf("[DEBUG forward] tokens.shape.numel() = %zu\n", tokens.shape.numel());
+  std::printf("[DEBUG forward] tokens.tensor_data = %p\n", (void*)tokens.tensor_data);
   size_t seq_len = tokens.shape.dims[0];
   size_t embed_dim = m->cfg.embed_dim;
   

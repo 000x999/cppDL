@@ -15,7 +15,12 @@ struct atten_weights{
   tens::tensor w_queries; 
   tens::tensor w_keys; 
   tens::tensor w_values; 
-  tens::tensor w_output; 
+  tens::tensor w_output;
+
+  tens::tensor b_queries;
+  tens::tensor b_keys;  
+  tens::tensor b_values; 
+  tens::tensor b_output;  
 
   size_t input_features; 
   size_t output_features; 
@@ -60,7 +65,7 @@ private:
 public: 
   multi_head_attention      (size_t       embedded_dim, size_t num_heads        ); 
   void         init         (atten_pool   &persistent_arena                     ); 
-  void         load_weights (float *w_q,  float *w_k, float *w_v, float*w_o     ); 
+  void         load_weights (float *w_q,  float *w_k, float *w_v, float*w_o, float *b_q, float *b_k, float *b_v, float *b_o); 
   tens::tensor forward      (tens::tensor &input_tensor, atten_pool &alloc_pool ); 
 };
 

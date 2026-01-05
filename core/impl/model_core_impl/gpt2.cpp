@@ -121,7 +121,22 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     std::printf("ERROR: failed to load safetensor file\n");
     return false;
   }
-  
+
+  std::printf("Loaded tensors:\n");
+  safetensor::print_entries(&sf);
+  std::printf("Num entries: %zu\n", sf.num_entries);
+
+  if (sf.num_entries == 0) {
+      std::printf("ERROR: No tensors parsed from file\n");
+      safetensor::free_safetensor(&sf);
+      return false;
+  }
+
+  std::printf("First tensor names:\n");
+  for (size_t i = 0; i < sf.num_entries && i < 5; i++) {
+      std::printf("  [%zu] %s\n", i, sf.entries[i].name);
+  }
+  std::printf("\n");
   std::printf("Loaded tensors:\n");
   safetensor::print_entries(&sf);
   std::printf("\n");

@@ -808,7 +808,7 @@ tens::tensor tens::ops::embedding(const tens::tensor &input_weights, const tens:
   for(int i = output_tensor.shape.ndim - 2; i >= 0; --i){
     output_tensor.shape.strides[i] = input_indices.shape.strides[i + 1] * input_indices.shape.dims[i + 1]; 
   }
-  output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());
+  output_tensor.tensor_data = pool.arena.nn_alloc<float>(num_indices * embed_dim);
  
   for(size_t i = 0; i < num_indices; ++i){
     int token_id = (int)input_indices.tensor_data[i];

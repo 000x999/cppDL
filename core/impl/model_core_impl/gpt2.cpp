@@ -30,51 +30,101 @@ tens::tensor load_tensor(safetensor::safetensor_file *sf, const char *name, memo
   return t;
 }
 
-tens::tensor matmul(const tens::tensor &a, const tens::tensor &b, tens::tensor_pool &pool) {
+tens::tensor matmul(const tens::tensor &a, const tens::tensor &b, tens::tensor_pool &pool, bool transpose_b) {
   size_t M = a.shape.dims[0];
   size_t K = a.shape.dims[1];
-  size_t N = b.shape.dims[1];
+  size_t N = transpose_b ? b.shape.dims[0] : b.shape.dims[1];
   
   tens::tensor out;
-  out.shape.ndim       = 2;
-  out.shape.dims[0]    = M;
-  out.shape.dims[1]    = N;
+  out.shape.ndim = 2;
+  out.shape.dims[0] = M;
+  out.shape.dims[1] = N;
   out.shape.strides[0] = N;
   out.shape.strides[1] = 1;
-  out.tensor_data      = pool.arena.nn_alloc<float>(M * N);
+  out.tensor_data = pool.arena.nn_alloc<float>(M * N);
   
   std::memset(out.tensor_data, 0, M * N * sizeof(float));
   
   level3::mat_ops_view view_a {
-    .row_view          = M,
-    .col_view          = K,
+    .row_view = M,
+    .col_view = K,
     .leading_dimension = a.shape.strides[0],
-    .data_view         = a.tensor_data
+    .data_view = a.tensor_data
   };
   
   level3::mat_ops_view view_b {
-    .row_view          = K,
-    .col_view          = N,
+    .row_view = b.shape.dims[0],
+    .col_view = b.shape.dims[1],
     .leading_dimension = b.shape.strides[0],
-    .data_view         = b.tensor_data
+    .data_view = b.tensor_data
   };
   
   level3::mat_ops_view view_out {
-    .row_view          = M,
-    .col_view          = N,
+    .row_view = M,
+    .col_view = N,
     .leading_dimension = N,
-    .data_view         = out.tensor_data
+    .data_view = out.tensor_data
   };
   
-  level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, view_a, view_b, 1.0f, 0.0f, view_out);
+  level3::blas::crush_gemm(
+    level3::transpose_gemm::no_transpose,
+    transpose_b ? level3::transpose_gemm::transpose : level3::transpose_gemm::no_transpose,
+    view_a,
+    view_b,
+    1.0f,
+    0.0f,
+    view_out
+  );
+  
   return out;
 }
 
 tens::tensor linear(const tens::tensor &x, const tens::tensor &weight, const tens::tensor &bias, tens::tensor_pool &pool) {
-  tens::tensor out = matmul(x, weight, pool);
+  size_t seq_len = x.shape.dims[0];
+  size_t in_features = x.shape.dims[1];
   
-  size_t seq_len = out.shape.dims[0];
-  size_t out_features = out.shape.dims[1];
+  size_t out_features = weight.shape.dims[0]; 
+  
+  tens::tensor out;
+  out.shape.ndim = 2;
+  out.shape.dims[0] = seq_len;
+  out.shape.dims[1] = out_features;
+  out.shape.strides[0] = out_features;
+  out.shape.strides[1] = 1;
+  out.tensor_data = pool.arena.nn_alloc<float>(seq_len * out_features);
+  
+  std::memset(out.tensor_data, 0, seq_len * out_features * sizeof(float));
+  
+  level3::mat_ops_view view_x {
+    .row_view = seq_len,
+    .col_view = in_features,
+    .leading_dimension = x.shape.strides[0],
+    .data_view = x.tensor_data
+  };
+  
+  level3::mat_ops_view view_w {
+    .row_view = weight.shape.dims[0],
+    .col_view = weight.shape.dims[1],
+    .leading_dimension = weight.shape.strides[0],
+    .data_view = weight.tensor_data
+  };
+  
+  level3::mat_ops_view view_out {
+    .row_view = seq_len,
+    .col_view = out_features,
+    .leading_dimension = out_features,
+    .data_view = out.tensor_data
+  };
+  
+  level3::blas::crush_gemm(
+    level3::transpose_gemm::no_transpose,
+    level3::transpose_gemm::transpose,  
+    view_x,
+    view_w,
+    1.0f,
+    0.0f,
+    view_out
+  );
   
   for (size_t i = 0; i < seq_len; i++) {
     for (size_t j = 0; j < out_features; j++) {
@@ -279,8 +329,8 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
   }
   x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
   
-  tens::tensor wte_t = m->wte.transpose();
-  tens::tensor logits = matmul(x, wte_t, pool);
+  tens::tensor wte_t  = m->wte.transpose();
+  tens::tensor logits = matmul(x, wte_t, pool, true);
   
   return logits;
 }

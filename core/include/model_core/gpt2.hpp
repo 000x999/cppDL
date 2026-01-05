@@ -45,5 +45,5 @@ bool         load_model (model* m,const char* path,memory::neural_arena& alloc  
 tens::tensor forward    (model* m,const tens::tensor& tokens,tens::tensor_pool& pool );
 int          argmax     (const tens::tensor& logits                                  );
 void         free_model (model* m                                                    );
-
+tens::tensor matmul     (const tens::tensor &a, const tens::tensor &b, tens::tensor_pool &pool, bool trasnpose_b = false);
 }  // namespace gpt2

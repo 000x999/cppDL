@@ -799,13 +799,13 @@ tens::tensor tens::ops::embedding(const tens::tensor &input_weights, const tens:
   tens::tensor output_tensor; 
   output_tensor.shape.ndim = input_indices.shape.ndim + 1;
 
-  for(size_t i = 0; i < (size_t) input_indices.shape.numel(); ++i){
+  for(int i = 0; i < input_indices.shape.ndim; ++i){
     output_tensor.shape.dims[i] = input_indices.shape.dims[i];   
   }
   output_tensor.shape.dims[output_tensor.shape.ndim - 1] = embed_dim;
 
   output_tensor.shape.strides[output_tensor.shape.ndim - 1] = 1;
-  for(size_t i = input_indices.shape.ndim - 2; i >= 0; --i){
+  for(int i = input_indices.shape.ndim - 2; i >= 0; --i){
     output_tensor.shape.strides[i] = input_indices.shape.strides[i + 1] * input_indices.shape.dims[i + 1]; 
   }
   output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());

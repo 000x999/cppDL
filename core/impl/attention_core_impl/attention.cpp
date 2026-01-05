@@ -166,40 +166,69 @@ atten::multi_head_attention::multi_head_attention(size_t embedded_dim, size_t nu
 
 
 void atten::multi_head_attention::init(atten_pool &persistent_arena){
-  size_t weight_size = embedded_dim * embedded_dim; 
-
-  float *ptr_q = persistent_arena.arena.nn_alloc<float>(weight_size); 
-  weights_data.w_queries.tensor_data   = ptr_q; 
-  weights_data.w_queries.shape.dims[0] = embedded_dim; 
-  weights_data.w_queries.shape.dims[1] = embedded_dim; 
-  weights_data.w_queries.shape.ndim    = 2;
-
- float *ptr_k = persistent_arena.arena.nn_alloc<float>(weight_size); 
-  weights_data.w_keys.tensor_data   = ptr_k; 
-  weights_data.w_keys.shape.dims[0] = embedded_dim; 
-  weights_data.w_keys.shape.dims[1] = embedded_dim;
-  weights_data.w_keys.shape.ndim    = 2;
-
- float *ptr_v = persistent_arena.arena.nn_alloc<float>(weight_size); 
-  weights_data.w_values.tensor_data   = ptr_v; 
-  weights_data.w_values.shape.dims[0] = embedded_dim; 
-  weights_data.w_values.shape.dims[1] = embedded_dim; 
-  weights_data.w_values.shape.ndim    = 2;
+  size_t weights_size = embedded_dim * embedded_dim; 
   
-  float *ptr_o = persistent_arena.arena.nn_alloc<float>(weight_size); 
-  weights_data.w_output.tensor_data   = ptr_o; 
-  weights_data.w_output.shape.dims[0] = embedded_dim; 
-  weights_data.w_output.shape.dims[1] = embedded_dim; 
-  weights_data.w_output.shape.ndim    = 2;
+  weights_data.w_queries.tensor_data = persistent_arena.arena.nn_alloc<float>(weights_size);
+  weights_data.w_queries.shape.ndim = 2;
+  weights_data.w_queries.shape.dims[0] = embedded_dim;
+  weights_data.w_queries.shape.dims[1] = embedded_dim;
+  weights_data.w_queries.shape.strides[0] = embedded_dim;
+  weights_data.w_queries.shape.strides[1] = 1;
+  
+  weights_data.w_keys.tensor_data = persistent_arena.arena.nn_alloc<float>(weights_size);
+  weights_data.w_keys.shape.ndim = 2;
+  weights_data.w_keys.shape.dims[0] = embedded_dim;
+  weights_data.w_keys.shape.dims[1] = embedded_dim;
+  weights_data.w_keys.shape.strides[0] = embedded_dim;
+  weights_data.w_keys.shape.strides[1] = 1;
+  
+  weights_data.w_values.tensor_data = persistent_arena.arena.nn_alloc<float>(weights_size);
+  weights_data.w_values.shape.ndim = 2;
+  weights_data.w_values.shape.dims[0] = embedded_dim;
+  weights_data.w_values.shape.dims[1] = embedded_dim;
+  weights_data.w_values.shape.strides[0] = embedded_dim;
+  weights_data.w_values.shape.strides[1] = 1;
+  
+  weights_data.w_output.tensor_data = persistent_arena.arena.nn_alloc<float>(weights_size);
+  weights_data.w_output.shape.ndim = 2;
+  weights_data.w_output.shape.dims[0] = embedded_dim;
+  weights_data.w_output.shape.dims[1] = embedded_dim;
+  weights_data.w_output.shape.strides[0] = embedded_dim;
+  weights_data.w_output.shape.strides[1] = 1;
+  
+  weights_data.b_queries.tensor_data = persistent_arena.arena.nn_alloc<float>(embedded_dim);
+  weights_data.b_queries.shape.ndim = 1;
+  weights_data.b_queries.shape.dims[0] = embedded_dim;
+  weights_data.b_queries.shape.strides[0] = 1;
+  
+  weights_data.b_keys.tensor_data = persistent_arena.arena.nn_alloc<float>(embedded_dim);
+  weights_data.b_keys.shape.ndim = 1;
+  weights_data.b_keys.shape.dims[0] = embedded_dim;
+  weights_data.b_keys.shape.strides[0] = 1;
+  
+  weights_data.b_values.tensor_data = persistent_arena.arena.nn_alloc<float>(embedded_dim);
+  weights_data.b_values.shape.ndim = 1;
+  weights_data.b_values.shape.dims[0] = embedded_dim;
+  weights_data.b_values.shape.strides[0] = 1;
+  
+  weights_data.b_output.tensor_data = persistent_arena.arena.nn_alloc<float>(embedded_dim);
+  weights_data.b_output.shape.ndim = 1;
+  weights_data.b_output.shape.dims[0] = embedded_dim;
+  weights_data.b_output.shape.strides[0] = 1;
 }
 
-void atten::multi_head_attention::load_weights(float *w_q, float *w_k, float *w_v, float *w_o){
+void atten::multi_head_attention::load_weights(float *w_q, float *w_k, float *w_v, float *w_o, float *b_q, float *b_k, float *b_v, float *b_o){
   size_t weights_size = embedded_dim * embedded_dim; 
   
   std::memcpy(weights_data.w_queries.tensor_data, w_q, weights_size * sizeof(float));
   std::memcpy(weights_data.w_values.tensor_data , w_v, weights_size * sizeof(float));
   std::memcpy(weights_data.w_keys.tensor_data   , w_k, weights_size * sizeof(float));
   std::memcpy(weights_data.w_output.tensor_data , w_o, weights_size * sizeof(float));
+
+  std::memcpy(weights_data.b_queries.tensor_data, b_q, embedded_dim * sizeof(float));
+  std::memcpy(weights_data.b_keys.tensor_data,    b_k, embedded_dim * sizeof(float));
+  std::memcpy(weights_data.b_values.tensor_data,  b_v, embedded_dim * sizeof(float));
+  std::memcpy(weights_data.b_output.tensor_data,  b_o, embedded_dim * sizeof(float));
 }
 
 
@@ -275,6 +304,14 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
   level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, input_view, wk_view, 1.0f, 0.0f, K);
   level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, input_view, wv_view, 1.0f, 0.0f, V);
 
+  for (size_t s = 0; s < sequence_length; s++){
+    for (size_t d = 0; d < embed_dim; d++){
+      Q.data_view[s * embed_dim + d] += weights_data.b_queries.tensor_data[d];
+      K.data_view[s * embed_dim + d] += weights_data.b_keys.tensor_data[d];
+      V.data_view[s * embed_dim + d] += weights_data.b_values.tensor_data[d];
+    }
+  }
+
   for(size_t head = 0; head < num_heads; ++head){
     size_t offset = head * head_dim; 
     
@@ -305,11 +342,24 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
       .leading_dimension = sequence_length, 
       .data_view         = output_ptr_scores + head * sequence_length * sequence_length
     };
-
+    
+    float scale = 1.0f / std::sqrt((float)head_dim);
 
     level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::transpose, q_head, k_head, 1.0f, 0.0f, scores_head);
+     
+    for (size_t i = 0; i < sequence_length; i++){
+      for (size_t j = 0; j < sequence_length; j++){
+        size_t idx = i * sequence_length + j;
+        
+        if (j > i) {
+          scores_head.data_view[idx] = -INFINITY;
+        } else {
+          scores_head.data_view[idx] *= scale;
+        }
 
-    float scale = 1.0f / std::sqrt((float)head_dim);
+      }
+    }
+
     for(size_t i = 0; i < sequence_length * sequence_length; ++i){
       scores_head.data_view[i] *= scale;
     }
@@ -340,6 +390,12 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
   };
 
   level3::blas::crush_gemm(level3::transpose_gemm::no_transpose,level3::transpose_gemm::no_transpose, atten_output_view, wo_view, 1.0f, 0.0f, final_view);
+  
+  for (size_t s = 0; s < sequence_length; s++) {
+    for (size_t d = 0; d < embed_dim; d++) {
+      final_view.data_view[s * embed_dim + d] += weights_data.b_output.tensor_data[d];
+    }
+  }
 
   tens::tensor output_tensor; 
   output_tensor.shape.dims[0]    = sequence_length; 

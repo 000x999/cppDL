@@ -233,6 +233,9 @@ void atten::multi_head_attention::load_weights(float *w_q, float *w_k, float *w_
 
 
 tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, atten_pool &alloc_pool){
+  static int attn_call = 0;
+  bool debug = (attn_call == 0);
+  attn_call++;
   size_t sequence_length = input_tensor.shape.dims[0]; 
   size_t embed_dim       = input_tensor.shape.dims[1]; 
   size_t head_dim        = embedded_dim / num_heads;
@@ -312,6 +315,24 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
     }
   }
 
+ if (debug) {
+  float q_min = Q.data_view[0], q_max = Q.data_view[0];
+  float k_min = K.data_view[0], k_max = K.data_view[0];
+  float v_min = V.data_view[0], v_max = V.data_view[0];
+  for (size_t i = 0; i < sequence_length * embed_dim; i++) {
+    if (Q.data_view[i] < q_min) q_min = Q.data_view[i];
+    if (Q.data_view[i] > q_max) q_max = Q.data_view[i];
+    if (K.data_view[i] < k_min) k_min = K.data_view[i];
+    if (K.data_view[i] > k_max) k_max = K.data_view[i];
+    if (V.data_view[i] < v_min) v_min = V.data_view[i];
+    if (V.data_view[i] > v_max) v_max = V.data_view[i];
+  }
+  std::printf("[ATTN] Q: min=%.4f max=%.4f\n", q_min, q_max);
+  std::printf("[ATTN] K: min=%.4f max=%.4f\n", k_min, k_max);
+  std::printf("[ATTN] V: min=%.4f max=%.4f\n", v_min, v_max);
+  }
+
+
   for(size_t head = 0; head < num_heads; ++head){
     size_t offset = head * head_dim; 
     
@@ -356,8 +377,16 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
         } else {
           scores_head.data_view[idx] *= scale;
         }
-
       }
+    }
+
+    if (debug) {
+      float s_min = output_ptr_scores[0], s_max = output_ptr_scores[0];
+      for (size_t i = 0; i < num_heads * sequence_length * sequence_length; i++) {
+        if (output_ptr_scores[i] < s_min) s_min = output_ptr_scores[i];
+        if (output_ptr_scores[i] > s_max) s_max = output_ptr_scores[i];
+      }
+      std::printf("[ATTN] scores after scale+mask: min=%.4f max=%.4f\n", s_min, s_max);
     }
 
     for(size_t i = 0; i < sequence_length * sequence_length; ++i){
@@ -395,6 +424,15 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
     for (size_t d = 0; d < embed_dim; d++) {
       final_view.data_view[s * embed_dim + d] += weights_data.b_output.tensor_data[d];
     }
+  }
+  
+  if (debug) {
+    float o_min = output_ptr_final[0], o_max = output_ptr_final[0];
+    for (size_t i = 0; i < sequence_length * embed_dim; i++) {
+      if (output_ptr_final[i] < o_min) o_min = output_ptr_final[i];
+      if (output_ptr_final[i] > o_max) o_max = output_ptr_final[i];
+    }
+    std::printf("[ATTN] output: min=%.4f max=%.4f\n", o_min, o_max);
   }
 
   tens::tensor output_tensor; 

@@ -1,4 +1,4 @@
-#include "model_core/gpt2.hpp"
+#include "model_core/gpt2.hpp"gpt2.cpp
 #include <cstdio>
 #include <cstring>
 #include <cmath>
@@ -338,30 +338,22 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
         tens::tensor residual = x;
         
         x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-        if (debug && i == 0) debug_tensor("ln1", x);
-        
         x = m->attentions[i]->forward(x, *m->atten_pools[i]);
-        if (debug && i == 0) debug_tensor("attn", x);
-        
         x = tens::ops::add(residual, x, pool);
-        if (debug && i == 0) debug_tensor("res1", x);
         
         residual = x;
         
         x = tens::ops::layer_norm(x, b->ln2_weight, b->ln2_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-        if (debug && i == 0) debug_tensor("ln2", x);
-        
         x = linear(x, b->ffn_fc_weight, b->ffn_fc_bias, pool);
-        if (debug && i == 0) debug_tensor("ffn_fc", x);
-        
         x = tens::ops::gelu(x, pool);
-        if (debug && i == 0) debug_tensor("gelu", x);
-        
         x = linear(x, b->ffn_proj_weight, b->ffn_proj_bias, pool);
-        if (debug && i == 0) debug_tensor("ffn_proj", x);
-        
         x = tens::ops::add(residual, x, pool);
-        if (debug && i == 0) debug_tensor("res2", x);
+        
+        if (debug) {
+            char buf[32];
+            std::snprintf(buf, sizeof(buf), "layer_%zu", i);
+            debug_tensor(buf, x);
+        }
     }
     
     x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
@@ -408,25 +400,28 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
         view_logits
     );
     
-    if (debug) debug_tensor("logits", logits);
+    if (debug) {
+        debug_tensor("logits", logits);
+        
+        // Print top 5 logits
+        std::printf("Top 5 logits: ");
+        float* l = logits.tensor_data;
+        for (int k = 0; k < 5; k++) {
+            int max_idx = 0;
+            float max_val = -1e30f;
+            for (size_t i = 0; i < m->cfg.vocab_size; i++) {
+                if (l[i] > max_val) {
+                    max_val = l[i];
+                    max_idx = i;
+                }
+            }
+            std::printf("%d(%.2f) ", max_idx, max_val);
+            l[max_idx] = -1e30f;  // mask out for next iteration
+        }
+        std::printf("\n");
+    }
     
     return logits;
-}
-int argmax(const tens::tensor& logits) {
-  size_t vocab_size = logits.shape.dims[1];
-  size_t seq_len = logits.shape.dims[0];
-  
-  float* last_row = logits.tensor_data + (seq_len - 1) * vocab_size;
-  
-  int max_idx = 0;
-  float max_val = last_row[0];
-  for (size_t i = 1; i < vocab_size; i++) {
-    if (last_row[i] > max_val) {
-      max_val = last_row[i];
-      max_idx = i;
-    }
-  }
-  return max_idx;
 }
 
 void free_model(model* m) {

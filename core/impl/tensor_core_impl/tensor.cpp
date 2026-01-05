@@ -151,7 +151,6 @@ __m512 tens::ops::fast_exp(__m512 input_vec){
 tens::tensor tens::ops::add(const tens::tensor &left_tensor, const tens::tensor &right_tensor, tensor_pool &pool){
   if(left_tensor.shape.numel() != right_tensor.shape.numel()){
     CPPDL_FATAL("tens::ops::add(&left_tensor, &right_tensor) :: cannot add two un-equal sized tensors"); 
-    printf("File: %s :: Line: %d", __FILE__, __LINE__);
     throw std::runtime_error(":: ABORTING ::");
   }else{
     tens::tensor output_tensor; 
@@ -184,7 +183,6 @@ tens::tensor tens::ops::add(const tens::tensor &left_tensor, const tens::tensor 
 tens::tensor tens::ops::add(const tens::tensor &left_tensor, float scalar, tensor_pool &pool){
   if(left_tensor.shape.numel() <= 0){
     CPPDL_FATAL("tens::ops::add(&left_tensor, &right_tensor) :: cannot add a scalar to a 0 sized tensor"); 
-    printf("File: %s :: Line: %d", __FILE__, __LINE__);
     throw std::runtime_error(":: ABORTING ::");
   }else{
     tens::tensor output_tensor; 
@@ -217,7 +215,6 @@ tens::tensor tens::ops::add(const tens::tensor &left_tensor, float scalar, tenso
 tens::tensor tens::ops::sub(const tens::tensor &left_tensor, const tens::tensor &right_tensor, tensor_pool &pool){
   if(left_tensor.shape.numel() != right_tensor.shape.numel()){
     CPPDL_FATAL("tens::ops::sub(&left_tensor, &right_tensor) :: cannot sub two un-equal sized tensors"); 
-    printf("File: %s :: Line: %d", __FILE__, __LINE__);
     throw std::runtime_error(":: ABORTING ::");
   }else{
     tens::tensor output_tensor; 
@@ -250,7 +247,6 @@ tens::tensor tens::ops::sub(const tens::tensor &left_tensor, const tens::tensor 
 tens::tensor tens::ops::mul(const tens::tensor &left_tensor, const tens::tensor &right_tensor, tensor_pool &pool){
   if(left_tensor.shape.numel() != right_tensor.shape.numel()){
     CPPDL_FATAL("tens::ops::mul(&left_tensor, &right_tensor) :: cannot mul two un-equal sized tensors"); 
-    printf("File: %s :: Line: %d", __FILE__, __LINE__);
     throw std::runtime_error(":: ABORTING ::");
   }else{
     tens::tensor output_tensor; 
@@ -283,7 +279,6 @@ tens::tensor tens::ops::mul(const tens::tensor &left_tensor, const tens::tensor 
 tens::tensor tens::ops::div(const tens::tensor &left_tensor, const tens::tensor &right_tensor, tensor_pool &pool){
   if(left_tensor.shape.numel() != right_tensor.shape.numel()){
     CPPDL_FATAL("tens::ops::div(&left_tensor, &right_tensor) :: cannot div two un-equal sized tensors"); 
-    printf("File: %s :: Line: %d", __FILE__, __LINE__);
     throw std::runtime_error(":: ABORTING ::");
   }else{
     tens::tensor output_tensor; 
@@ -316,7 +311,6 @@ tens::tensor tens::ops::div(const tens::tensor &left_tensor, const tens::tensor 
 tens::tensor tens::ops::scale(const tens::tensor &input_tensor, float scale, tensor_pool &pool){
   if(input_tensor.shape.numel() <= 0){
     CPPDL_FATAL("tens::ops::scale(&input_tensor, scale) :: cannot scale a 0 sized tensor :: returning original tensor and continuing"); 
-    printf("File: %s :: Line: %d", __FILE__, __LINE__);
     return input_tensor; 
   }else{
     tens::tensor output_tensor; 
@@ -348,7 +342,6 @@ tens::tensor tens::ops::scale(const tens::tensor &input_tensor, float scale, ten
 tens::tensor tens::ops::root(const tens::tensor &input_tensor, tensor_pool &pool){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::root(&input_tensor, scale) :: cannot get root of elems from a 0 sized tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
   tens::tensor output_tensor; 
   output_tensor.shape.ndim         = input_tensor.shape.ndim;
@@ -374,7 +367,6 @@ tens::tensor tens::ops::root(const tens::tensor &input_tensor, tensor_pool &pool
 tens::tensor tens::ops::tanh(const tens::tensor &input_tensor, tensor_pool &pool){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::root(&input_tensor, scale) :: cannot get root of elems from a 0 sized tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
   tens::tensor output_tensor; 
   output_tensor.shape.ndim         = input_tensor.shape.ndim;
@@ -406,15 +398,12 @@ tens::tensor tens::ops::tanh(const tens::tensor &input_tensor, tensor_pool &pool
 tens::tensor tens::ops::var(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis, bool keep_dim){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::var(&input_tensor, scale) :: cannot get root of elems from a 0 sized tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
   assert(axis > 0 
          && "tens::ops::var(&input_tensor, axis, keep_dim) :: selected axis does not exist :: cannot sum over axis less than 0 or 0" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          );     
   assert(axis <= (size_t) input_tensor.shape.ndim 
            && "tens::ops::var(&input_tensor, axis, keep_dim) :: selected axis does not exist :: axis is greater than the tensors total dimension shape" 
-           && printf("File: %s :: Line: %d", __FILE__, __LINE__)
            ); 
   tens::tensor output_tensor; 
   output_tensor.shape.ndim         = input_tensor.shape.ndim;
@@ -435,15 +424,12 @@ tens::tensor tens::ops::var(const tens::tensor &input_tensor, tensor_pool &pool,
 tens::tensor tens::ops::sum(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis, bool keep_dim){
   assert(input_tensor.shape.is_contiguous() 
          && "tens::ops::sum(&input_tensor, axis, keep_dim) :: cannot sum tensor over non-contiguous tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
   assert(axis > 0 
          && "tens::ops::sum(&input_tensor, axis, keep_dim) :: selected axis does not exist :: cannot sum over axis less than 0 or 0" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          );     
   assert(axis <= (size_t) input_tensor.shape.ndim 
            && "tens::ops::sum(&input_tensor, axis, keep_dim) :: selected axis does not exist :: axis is greater than the tensors total dimension shape" 
-           && printf("File: %s :: Line: %d", __FILE__, __LINE__)
            ); 
   
   size_t outter_size = 1; 
@@ -503,15 +489,12 @@ tens::tensor tens::ops::sum(const tens::tensor &input_tensor, tensor_pool &pool,
 tens::tensor tens::ops::mean(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis, bool keep_dim){
   assert(input_tensor.shape.is_contiguous() 
          && "tens::ops::sum(&input_tensor, axis, keep_dim) :: cannot sum tensor over non-contiguous tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
   assert(axis > 0 
          && "tens::ops::sum(&input_tensor, axis, keep_dim) :: selected axis does not exist :: cannot sum over axis less than 0 or 0" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          );     
   assert(axis <= (size_t) input_tensor.shape.ndim 
            && "tens::ops::sum(&input_tensor, axis, keep_dim) :: selected axis does not exist :: axis is greater than the tensors total dimension shape" 
-           && printf("File: %s :: Line: %d", __FILE__, __LINE__)
            ); 
   
   size_t outter_size = 1; 
@@ -570,15 +553,12 @@ tens::tensor tens::ops::mean(const tens::tensor &input_tensor, tensor_pool &pool
 tens::tensor tens::ops::max(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis, bool keep_dim){
   assert(input_tensor.shape.is_contiguous() 
          && "tens::ops::sum(&input_tensor, axis, keep_dim) :: cannot sum tensor over non-contiguous tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
   assert(axis > 0 
          && "tens::ops::sum(&input_tensor, axis, keep_dim) :: selected axis does not exist :: cannot sum over axis less than 0 or 0" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          );     
   assert(axis <= (size_t) input_tensor.shape.ndim 
            && "tens::ops::sum(&input_tensor, axis, keep_dim) :: selected axis does not exist :: axis is greater than the tensors total dimension shape" 
-           && printf("File: %s :: Line: %d", __FILE__, __LINE__)
            ); 
   
   size_t outter_size = 1; 
@@ -637,15 +617,12 @@ tens::tensor tens::ops::max(const tens::tensor &input_tensor, tensor_pool &pool,
 tens::tensor tens::ops::min(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis, bool keep_dim){
   assert(input_tensor.shape.is_contiguous() 
          && "tens::ops::sum(&input_tensor, axis, keep_dim) :: cannot sum tensor over non-contiguous tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
   assert(axis > 0 
          && "tens::ops::sum(&input_tensor, axis, keep_dim) :: selected axis does not exist :: cannot sum over axis less than 0 or 0" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          );     
   assert(axis <= (size_t) input_tensor.shape.ndim 
            && "tens::ops::sum(&input_tensor, axis, keep_dim) :: selected axis does not exist :: axis is greater than the tensors total dimension shape" 
-           && printf("File: %s :: Line: %d", __FILE__, __LINE__)
            ); 
   
   size_t outter_size = 1; 
@@ -704,7 +681,6 @@ tens::tensor tens::ops::min(const tens::tensor &input_tensor, tensor_pool &pool,
 tens::tensor tens::ops::exp(const tens::tensor &input_tensor, tensor_pool &pool){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::exp(&input_tensor) :: cannot cannot apply exp to a 0 sized tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
   tens::tensor output_tensor; 
   output_tensor.shape.ndim         = input_tensor.shape.ndim;
@@ -729,15 +705,12 @@ tens::tensor tens::ops::exp(const tens::tensor &input_tensor, tensor_pool &pool)
 tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis, float epsilon, float gamma, float beta){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::layer_norm(&input_tensor, scale) :: cannot get root of elems from a 0 sized tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
   assert(axis > 0 
          && "tens::ops::layer_norm(&input_tensor, axis, keep_dim) :: selected axis does not exist :: cannot sum over axis less than 0 or 0" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          );     
   assert(axis <= (size_t) input_tensor.shape.ndim 
            && "tens::ops::layer_norm(&input_tensor, axis, keep_dim) :: selected axis does not exist :: axis is greater than the tensors total dimension shape" 
-           && printf("File: %s :: Line: %d", __FILE__, __LINE__)
            );
 
   auto diff_tens  = tens::ops::sub   (input_tensor, tens::ops::mean(input_tensor, pool, axis, true) , pool);
@@ -752,7 +725,6 @@ tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, tensor_pool
 tens::tensor tens::ops::gelu(const tens::tensor &input_tensor, tensor_pool &pool){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::gelu(&input_tensor, scale) :: cannot apply gelu() to a 0 sized tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
 
   auto half_tens            = tens::ops::scale (input_tensor, 0.5f             , pool);
@@ -771,7 +743,6 @@ tens::tensor tens::ops::gelu(const tens::tensor &input_tensor, tensor_pool &pool
 tens::tensor tens::ops::softmax(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::gelu(&input_tensor, scale) :: cannot apply gelu() to a 0 sized tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
 
   auto max_tens      = tens::ops::max (input_tensor   , pool, axis, true);
@@ -786,11 +757,9 @@ tens::tensor tens::ops::softmax(const tens::tensor &input_tensor, tensor_pool &p
 tens::tensor tens::ops::embedding(const tens::tensor &input_weights, const tens::tensor &input_indices, tensor_pool &pool){
   assert(input_weights.shape.numel() > 0 
          && "tens::ops::embedding(&input_weights, &input_indices) :: cannot apply embeddings to a 0 sized tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
  assert(input_indices.shape.numel() > 0 
          && "tens::ops::embedding(&input_weights, &input_indices) :: cannot apply embeddings to a 0 sized tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
 
   size_t embed_dim  = input_weights.shape.dims[1];
@@ -848,15 +817,12 @@ tens::tensor tens::positional_encoders::sine_encoder(size_t sequence_length, siz
 tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, const tens::tensor &weight, const tens::tensor &bias, tensor_pool &pool, size_t axis, float epsilon) {
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::layer_norm(&input_tensor, &weight, &bias) :: cannot apply layer_norm to a 0 sized tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
   assert(weight.shape.numel() > 0 
          && "tens::ops::layer_norm(&input_tensor, &weight, &bias) :: cannot apply layer_norm to a 0 sized tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
   assert(bias.shape.numel() > 0 
          && "tens::ops::layer_norm(&input_tensor, &weight, &bias) :: cannot apply layer_norm to a 0 sized tensor" 
-         && printf("File: %s :: Line: %d", __FILE__, __LINE__)
          ); 
 
   if (axis == (size_t)-1) {

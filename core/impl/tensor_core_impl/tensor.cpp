@@ -862,30 +862,40 @@ tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, const tens:
   if (axis == (size_t)-1) {
     axis = input_tensor.shape.ndim - 1;
   }
-    
-  tens::tensor mean_t     = tens::ops::mean (input_tensor, pool, axis, true);
-  tens::tensor diff       = tens::ops::sub  (input_tensor, mean_t, pool);
-  tens::tensor diff_sq    = tens::ops::mul  (diff, diff, pool);
-  tens::tensor var_t      = tens::ops::mean (diff_sq, pool, axis, true);
-  tens::tensor var_eps    = tens::ops::add  (var_t, epsilon, pool);
-  tens::tensor std_t      = tens::ops::root (var_eps, pool);
-  tens::tensor normalized = tens::ops::div  (diff, std_t, pool);
-  tens::tensor output;
   
-  output.shape       = input_tensor.shape;
-  output.tensor_data = pool.arena.nn_alloc<float>(input_tensor.shape.numel());
- 
-  size_t outer_size  = 1;
-  size_t norm_size   = input_tensor.shape.dims[axis];
+  size_t outer_size = 1;
+  size_t norm_size = input_tensor.shape.dims[axis];
   
   for (size_t i = 0; i < axis; i++) {
     outer_size *= input_tensor.shape.dims[i];
   }
   
+  tens::tensor output;
+  output.shape = input_tensor.shape;
+  output.tensor_data = pool.arena.nn_alloc<float>(input_tensor.shape.numel());
+  
   for (size_t o = 0; o < outer_size; o++) {
+    float* row_in = input_tensor.tensor_data + o * norm_size;
+    float* row_out = output.tensor_data + o * norm_size;
+    
+    float mean = 0.0f;
     for (size_t n = 0; n < norm_size; n++) {
-      size_t idx = o * norm_size + n;
-      output.tensor_data[idx] = normalized.tensor_data[idx] * weight.tensor_data[n] + bias.tensor_data[n];
+      mean += row_in[n];
+    }
+    mean /= (float)norm_size;
+    
+    float var = 0.0f;
+    for (size_t n = 0; n < norm_size; n++) {
+      float diff = row_in[n] - mean;
+      var += diff * diff;
+    }
+    var /= (float)norm_size;
+    
+    float std_inv = 1.0f / std::sqrt(var + epsilon);
+    
+    for (size_t n = 0; n < norm_size; n++) {
+      float normalized = (row_in[n] - mean) * std_inv;
+      row_out[n] = normalized * weight.tensor_data[n] + bias.tensor_data[n];
     }
   }
   return output;

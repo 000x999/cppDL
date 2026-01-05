@@ -1,4 +1,4 @@
-#include "model_core/gpt2.hpp"gpt2.cpp
+#include "model_core/gpt2.hpp"
 #include <cstdio>
 #include <cstring>
 #include <cmath>

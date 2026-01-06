@@ -400,10 +400,15 @@ int main(int argc, char* argv[]){
   
   gpt2::model model;
   gpt2::init_model(&model);
-  
+ 
+  gpt2::tokenizer tokenizer;
+  if (!tokenizer.load("vocab.json")) {
+    std::printf("Warning: Could not load vocab.json. Output will be IDs only.\n");
+  }
+
   if (!gpt2::load_model(&model, model_path, model_arena)) {
-      std::printf("Failed to load model from: %s\n", model_path);
-      return 1;
+    std::printf("Failed to load model from: %s\n", model_path);
+    return 1;
   }
   
   size_t max_seq_len = 1024;
@@ -431,12 +436,17 @@ int main(int argc, char* argv[]){
   int tokens_generated = 0;
   
   std::printf("Generated token IDs: ");
+
+  std::printf("Generated text:\n");
+    
+  std::printf("%s", tokenizer.decode((int)sequence[0]).c_str());
+  std::fflush(stdout);
   
   for (int i = 0; i < max_new_tokens; i++) {
     if (i < 2) { 
-        std::printf("\n[DEBUG] Forward pass %d, seq_len=%zu, tokens: ", i, seq_len);
-        for (size_t t = 0; t < seq_len && t < 5; t++) std::printf("%.0f ", sequence[t]);
-        std::printf("\n");
+      std::printf("\n[DEBUG] Forward pass %d, seq_len=%zu, tokens: ", i, seq_len);
+      for (size_t t = 0; t < seq_len && t < 5; t++) std::printf("%.0f ", sequence[t]);
+      std::printf("\n");
     }
 
     tens::tensor input;
@@ -457,10 +467,12 @@ int main(int argc, char* argv[]){
     total_flops += flops;
     tokens_generated++;
     
-   float* last_token_logits = logits.tensor_data + (seq_len - 1) * model.cfg.vocab_size;
-
-   int next_token = gpt2::sample_top_k_avx512(last_token_logits, model.cfg.vocab_size, 40, 0.75f, temp_pool );
-
+    float* last_token_logits = logits.tensor_data + (seq_len - 1) * model.cfg.vocab_size;
+    int next_token = gpt2::sample_top_k_avx512(last_token_logits, model.cfg.vocab_size, 40, 0.75f, temp_pool );
+   
+    std::string token_str = tokenizer.decode(next_token);
+    std::printf("%s", token_str.c_str());
+    std::fflush(stdout);
     std::printf("%d ", next_token);
     std::fflush(stdout);
     

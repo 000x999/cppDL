@@ -289,7 +289,7 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     b->ln1_bias = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_attn.weight", i);
-    tens::tensor qkv_weight = load_linear_transpose(name);
+    tens::tensor qkv_weight = load_tensor(&sf, name, alloc);
     
     if (i == 0) {
       std::printf("[DEBUG] c_attn.weight shape: [%zu, %zu]\n", 

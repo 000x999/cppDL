@@ -455,25 +455,33 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
     std::printf("[DEBUG] wte[0][1]: %.6f\n", m->wte.tensor_data[1]);
     std::printf("[DEBUG] x[0][0]: %.6f\n", x.tensor_data[0]);
 
-    if (debug) {
-        debug_tensor("logits", logits);
-        
-        std::printf("Top 5 logits: ");
-        float* l = logits.tensor_data;
-        for (int k = 0; k < 5; k++) {
-            int max_idx = 0;
-            float max_val = -1e30f;
-            for (size_t i = 0; i < m->cfg.vocab_size; i++) {
-                if (l[i] > max_val) {
-                    max_val = l[i];
-                    max_idx = i;
-                }
-            }
-            std::printf("%d(%.2f) ", max_idx, max_val);
-            l[max_idx] = -1e30f; 
-        }
-        std::printf("\n");
-    }
+if (debug) {
+  debug_tensor("logits", logits);
+  
+  std::printf("Top 5 logits: ");
+  float top_vals[5] = {-1e30f, -1e30f, -1e30f, -1e30f, -1e30f};
+  int top_idxs[5] = {0, 0, 0, 0, 0};
+  
+  float* l = logits.tensor_data;
+  for (size_t i = 0; i < m->cfg.vocab_size; i++) {
+      float val = l[i];
+      for (int k = 0; k < 5; k++) {
+          if (val > top_vals[k]) {
+              for (int j = 4; j > k; j--) {
+                  top_vals[j] = top_vals[j-1];
+                  top_idxs[j] = top_idxs[j-1];
+              }
+              top_vals[k] = val;
+              top_idxs[k] = i;
+              break;
+          }
+      }
+  }
+  for (int k = 0; k < 5; k++) {
+      std::printf("%d(%.2f) ", top_idxs[k], top_vals[k]);
+  }
+  std::printf("\n");
+}
     
     return logits;
 }

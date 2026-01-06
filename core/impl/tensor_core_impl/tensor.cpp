@@ -892,7 +892,7 @@ tens::tensor tens::ops::cpu_transpose_avx512(const tens::tensor& input, memory::
 
   const size_t BLOCK = 16;
 
-  alignas(32) int indices[16];
+  alignas(64) int indices[16];
   for (int i = 0; i < 16; ++i) indices[i] = i * rows;
   __m512i vindex = _mm512_load_si512(indices);
 

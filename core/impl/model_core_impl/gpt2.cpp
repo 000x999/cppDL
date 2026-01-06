@@ -271,14 +271,33 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
   size_t embed_dim = m->cfg.embed_dim;
   size_t atten_arena_size = MAX_SEQ_LEN * embed_dim * 16 * sizeof(float);
   
-  auto load_linear_transpose = [&](const char* tensor_name) -> tens::tensor {
+   auto load_linear_transpose = [&](const char* tensor_name) -> tens::tensor {
     tens::tensor t = load_tensor(&sf, tensor_name, alloc);
+    
     if (t.tensor_data && t.shape.ndim == 2) {
-         std::printf("[INFO] Transposing Linear Weight: %s\n", tensor_name);
-         return tens::ops::cpu_transpose_avx512(t, alloc);
-    }
-    return t;
-  };
+      std::printf("[INFO] Transposing Linear Weight (Manual): %s\n", tensor_name);
+     
+      tens::tensor out_t;
+      out_t.shape.ndim = 2;
+      out_t.shape.dims[0] = t.shape.dims[1]; 
+      out_t.shape.dims[1] = t.shape.dims[0];
+      out_t.shape.strides[0] = out_t.shape.dims[1];
+      out_t.shape.strides[1] = 1;
+      out_t.tensor_data = alloc.nn_alloc<float>(out_t.shape.numel());
+
+      size_t rows_in = t.shape.dims[0];
+      size_t cols_in = t.shape.dims[1];
+   
+      for (size_t r = 0; r < rows_in; r++) {
+        for (size_t c = 0; c < cols_in; c++) {
+          float val = t.tensor_data[r * cols_in + c];
+          out_t.tensor_data[c * rows_in + r] = val;
+        }
+      }
+      return out_t;
+      }
+      return t;
+    };
 
   for (size_t i = 0; i < m->cfg.num_layers; i++) {
     transformer_block* b = &m->blocks[i];

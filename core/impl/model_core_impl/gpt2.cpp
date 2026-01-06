@@ -338,14 +338,13 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
 
 tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &pool) {
     static int call_count = 0;
-    bool debug = (call_count == 0);
+    bool debug = (call_count == 1);  
     call_count++;
     
     size_t seq_len = tokens.shape.dims[0];
     size_t embed_dim = m->cfg.embed_dim;
     
     tens::tensor x = tens::ops::embedding(m->wte, tokens, pool);
-    if (debug) debug_tensor("embedding", x);
     
     tens::tensor pos_emb;
     pos_emb.shape.ndim = 2;
@@ -358,42 +357,27 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
     x = tens::ops::add(x, pos_emb, pool);
     if (debug) debug_tensor("after_pos", x);
     
-for (size_t i = 0; i < m->cfg.num_layers; i++) {
-    transformer_block* b = &m->blocks[i];
-    
-    tens::tensor residual = x;
-    
-    x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-    if (debug && i == 1) debug_tensor("layer1_ln1", x);
-    
-    x = m->attentions[i]->forward(x, *m->atten_pools[i]);
-    if (debug && i == 1) debug_tensor("layer1_attn", x);
-    
-    x = tens::ops::add(residual, x, pool);
-    if (debug && i == 1) debug_tensor("layer1_res1", x);
-    
-    residual = x;
-    
-    x = tens::ops::layer_norm(x, b->ln2_weight, b->ln2_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-    if (debug && i == 1) debug_tensor("layer1_ln2", x);
-    
-    x = linear(x, b->ffn_fc_weight, b->ffn_fc_bias, pool);
-    if (debug && i == 1) debug_tensor("layer1_ffn_fc", x);
-    
-    x = tens::ops::gelu(x, pool);
-    if (debug && i == 1) debug_tensor("layer1_gelu", x);
-    
-    x = linear(x, b->ffn_proj_weight, b->ffn_proj_bias, pool);
-    if (debug && i == 1) debug_tensor("layer1_ffn_proj", x);
-    
-    x = tens::ops::add(residual, x, pool);
-    
-    if (debug) {
-        char buf[32];
-        std::snprintf(buf, sizeof(buf), "layer_%zu", i);
-        debug_tensor(buf, x);
+    for (size_t i = 0; i < m->cfg.num_layers; i++) {
+        transformer_block* b = &m->blocks[i];
+        
+        tens::tensor residual = x;
+        
+        x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
+        if (debug && i == 0) debug_tensor("ln1", x);
+        
+        x = m->attentions[i]->forward(x, *m->atten_pools[i]);
+        if (debug && i == 0) debug_tensor("attn", x);
+        
+        x = tens::ops::add(residual, x, pool);
+        residual = x;
+        x = tens::ops::layer_norm(x, b->ln2_weight, b->ln2_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
+        x = linear(x, b->ffn_fc_weight, b->ffn_fc_bias, pool);
+        x = tens::ops::gelu(x, pool);
+        x = linear(x, b->ffn_proj_weight, b->ffn_proj_bias, pool);
+        x = tens::ops::add(residual, x, pool);
+        
+        if (debug && i == 0) debug_tensor("layer_0", x);
     }
-}
     
     x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
     if (debug) debug_tensor("final_ln", x);
@@ -439,7 +423,7 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
 
     level3::blas::crush_gemm(
     level3::transpose_gemm::no_transpose,
-    level3::transpose_gemm::no_transpose,  // no transpose needed
+    level3::transpose_gemm::no_transpose, 
     view_x,
     view_wte_T,
     1.0f,

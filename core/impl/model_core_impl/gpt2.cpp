@@ -497,6 +497,10 @@ tens::tensor forward(model *m, const tens::tensor &tokens, memory::neural_arena 
         
         x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
         
+        if (i == 0) {
+          std::printf("[DEBUG] Input to attn layer 0, pos 0, first 3: %.6f %.6f %.6f\n",
+                x.tensor_data[0], x.tensor_data[1], x.tensor_data[2]);
+        }
         x = m->attentions[i]->forward(x, *m->atten_pools[i]);
         
         x = tens::ops::add(residual, x, pool);

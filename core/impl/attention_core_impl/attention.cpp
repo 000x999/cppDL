@@ -312,6 +312,13 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, me
       V.data_view[s * embed_dim + d] += weights_data.b_values.tensor_data[d];
     }
   }
+  
+  if (sequence_length == 8) { 
+    std::printf("[DEBUG] W_Q[0][0:3]: %.6f %.6f %.6f\n",
+                weights_data.w_queries.tensor_data[0],
+                weights_data.w_queries.tensor_data[1],
+                weights_data.w_queries.tensor_data[2]);
+  }
 
   if (sequence_length == 1) {
     std::printf("[DEBUG] Q[0][0:3]: %.6f %.6f %.6f\n", 

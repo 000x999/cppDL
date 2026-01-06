@@ -266,8 +266,6 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
   std::printf("Detected config: vocab=%zu, embed=%zu, layers=%zu, heads=%zu\n",
                m->cfg.vocab_size, m->cfg.embed_dim, m->cfg.num_layers, m->cfg.num_heads);
 
-  std::printf("[INFO] Transposing wte (Manual)...\n");
-    
   m->wte_T.shape.ndim = 2;
   m->wte_T.shape.dims[0] = m->cfg.embed_dim;
   m->wte_T.shape.dims[1] = m->cfg.vocab_size;
@@ -280,7 +278,6 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
 
   for (size_t v = 0; v < vocab; v++) {
       for (size_t e = 0; e < embed; e++) {
-          // Src: [v, e] -> Dst: [e, v]
           float val = m->wte.tensor_data[v * embed + e];
           m->wte_T.tensor_data[e * vocab + v] = val;
       }
@@ -299,20 +296,7 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_attn.weight", i);
     tens::tensor qkv_weight = load_tensor(&sf, name, alloc);
-    
-    if (i == 0) {
-      std::printf("[DEBUG] c_attn.weight shape: [%zu, %zu]\n", 
-                  qkv_weight.shape.dims[0], qkv_weight.shape.dims[1]);
-      std::printf("[DEBUG] Raw c_attn.weight[0][0:3]: %.6f %.6f %.6f\n",
-                  qkv_weight.tensor_data[0], 
-                  qkv_weight.tensor_data[1], 
-                  qkv_weight.tensor_data[2]);
-      std::printf("[DEBUG] Raw c_attn.weight[0][768:771]: %.6f %.6f %.6f\n",
-                  qkv_weight.tensor_data[768], 
-                  qkv_weight.tensor_data[769], 
-                  qkv_weight.tensor_data[770]);
-    }
-
+  
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_attn.bias", i);
     tens::tensor qkv_bias = load_tensor(&sf, name, alloc);
     
@@ -334,12 +318,6 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
       w_v_buf[row * embed_dim + col] = qkv_weight.tensor_data[src_row_offset + 2 * embed_dim + col];
     }
   } 
-    if (i == 0) {
-      std::printf("[DEBUG] After split - W_Q[0][0:3]: %.6f %.6f %.6f\n",
-                  w_q_buf[0], w_q_buf[1], w_q_buf[2]);
-      std::printf("[DEBUG] After split - W_K[0][0:3]: %.6f %.6f %.6f\n",
-                  w_k_buf[0], w_k_buf[1], w_k_buf[2]);
-    }
     
     float* b_q = qkv_bias.tensor_data;
     float* b_k = qkv_bias.tensor_data + embed_dim;
@@ -354,10 +332,6 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     m->attentions[i]  = new (atten_mem) atten::multi_head_attention(embed_dim, m->cfg.num_heads);
     m->attentions[i]->init(alloc);
     m->attentions[i]->load_weights(w_q_buf, w_k_buf, w_v_buf, w_o, b_q, b_k, b_v, b_o);
-    std::printf("[DEBUG] After load_weights - stored W_Q[0][0:3]: %.6f %.6f %.6f\n",
-                m->attentions[i]->weights_data.w_queries.tensor_data[0],
-                m->attentions[i]->weights_data.w_queries.tensor_data[1],
-                m->attentions[i]->weights_data.w_queries.tensor_data[2]);
     
     std::snprintf(name, sizeof(name), "h.%zu.ln_2.weight", i);
     b->ln2_weight = load_tensor(&sf, name, alloc);
@@ -375,22 +349,6 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.bias", i);
     b->ffn_proj_bias = load_tensor(&sf, name, alloc);
-    
-    if (i == 0) {
-    std::printf("[DEBUG] ffn_fc_weight shape: [%zu, %zu]\n", 
-                b->ffn_fc_weight.shape.dims[0], b->ffn_fc_weight.shape.dims[1]);
-    std::printf("[DEBUG] ffn_proj_weight shape: [%zu, %zu]\n",
-                b->ffn_proj_weight.shape.dims[0], b->ffn_proj_weight.shape.dims[1]);
-    }
-
-    if (i == 0) {
-    std::printf("[DEBUG] attn c_proj shape: [%zu, %zu]\n",
-                attn_proj_weight.shape.dims[0], attn_proj_weight.shape.dims[1]);
-    std::printf("[DEBUG] ffn_fc shape: [%zu, %zu]\n",
-                b->ffn_fc_weight.shape.dims[0], b->ffn_fc_weight.shape.dims[1]);
-    std::printf("[DEBUG] ffn_proj shape: [%zu, %zu]\n",
-                b->ffn_proj_weight.shape.dims[0], b->ffn_proj_weight.shape.dims[1]);
-    }
   }
     
   m->ln_f_weight = load_tensor(&sf, "ln_f.weight", alloc);
@@ -529,10 +487,6 @@ tens::tensor forward(model *m, const tens::tensor &tokens, memory::neural_arena 
         float* target_row = x.tensor_data + (t * embed_dim);
 
         size_t wpe_offset = t * embed_dim; 
-        if (t == 1) {
-          std::printf(">>> DEBUG CHECK: WPE Offset for t=1 is %zu. (Should be 768)\n", wpe_offset);
-        }
-
         for (size_t j = 0; j < embed_dim; j++) {
             target_row[j] = wte_row[j] + wpe_row[j];
         }
@@ -544,10 +498,6 @@ tens::tensor forward(model *m, const tens::tensor &tokens, memory::neural_arena 
         
         x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
         
-        if (i == 0) {
-          std::printf("[DEBUG] Input to attn layer 0, pos 0, first 3: %.6f %.6f %.6f\n",
-                x.tensor_data[0], x.tensor_data[1], x.tensor_data[2]);
-        }
         x = m->attentions[i]->forward(x, *m->atten_pools[i]);
         
         x = tens::ops::add(residual, x, pool);

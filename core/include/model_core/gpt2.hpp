@@ -106,35 +106,55 @@ struct tokenizer {
 
     std::vector<int> encode(const std::string& text) {
         std::vector<int> tokens;
-        std::string current_word;
-        bool first_word = true;
+        
+        std::string current_chunk;
+        bool is_start_of_word = true; 
 
-        for (size_t i = 0; i <= text.length(); i++) {
-            char c = (i < text.length()) ? text[i] : ' '; 
+        auto commit_chunk = [&](std::string chunk, bool prepend_space) {
+            if (chunk.empty()) return;
             
-            if (c == ' ') {
-                if (!current_word.empty()) {
-                    std::string search_term = current_word;
-                    if (!first_word) {
-                        search_term = "";
-                        search_term += (char)0xC4;
-                        search_term += (char)0xA0;
-                        search_term += current_word;
-                    }
+            std::string search = chunk;
+            if (prepend_space) {
+                std::string tmp = ""; 
+                tmp += (char)0xC4; tmp += (char)0xA0; 
+                tmp += chunk;
+                
+                if (token_to_id.count(tmp)) search = tmp;
+            }
 
-                    if (token_to_id.find(search_term) != token_to_id.end()) {
-                        tokens.push_back(token_to_id[search_term]);
-                    } else {
-                        std::printf("[WARN] Unknown token: '%s'\n", current_word.c_str());
-                    }
-                    current_word = "";
-                    first_word = false;
-                }
+            if (token_to_id.count(search)) {
+                tokens.push_back(token_to_id[search]);
+            } else if (token_to_id.count(chunk)) {
+                tokens.push_back(token_to_id[chunk]);
             } else {
-                current_word += c;
+                std::printf("[WARN] Unknown token: '%s'\n", chunk.c_str());
+            }
+        };
+
+        for (size_t i = 0; i < text.length(); i++) {
+            char c = text[i];
+            
+            if (std::isspace(c)) {
+                commit_chunk(current_chunk, !is_start_of_word);
+                current_chunk = "";
+                is_start_of_word = false;
+            } 
+            else if (std::ispunct(c) && c != '\'') {
+                commit_chunk(current_chunk, !is_start_of_word);
+                current_chunk = "";
+                
+                std::string p_str(1, c);
+                commit_chunk(p_str, false); 
+                
+                is_start_of_word = true; 
+            } 
+            else {
+                current_chunk += c;
             }
         }
-        return tokens;
+        commit_chunk(current_chunk, !is_start_of_word);
+        
+      return tokens;
     }
 };
 

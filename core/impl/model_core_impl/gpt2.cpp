@@ -479,24 +479,38 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
 }
 
 int argmax(const tens::tensor& logits) {
-  size_t vocab_size = logits.shape.dims[1];
-  size_t seq_len = logits.shape.dims[0];
-  
-  float* last_row = logits.tensor_data + (seq_len - 1) * vocab_size;
-  
-  std::printf("[DEBUG argmax] seq_len=%zu, looking at row %zu\n", seq_len, seq_len - 1);
-  
-  int max_idx = 0;
-  float max_val = last_row[0];
-  for (size_t i = 1; i < vocab_size; i++) {
-      if (last_row[i] > max_val) {
-          max_val = last_row[i];
-          max_idx = i;
-      }
-  }
-  std::printf("[DEBUG argmax] max_idx=%d, max_val=%.4f\n", max_idx, max_val);
-  
-  return max_idx;
+    size_t vocab_size = logits.shape.dims[1];
+    size_t seq_len = logits.shape.dims[0];
+    
+    float* last_row = logits.tensor_data + (seq_len - 1) * vocab_size;
+    
+    std::printf("[DEBUG argmax] seq_len=%zu\n", seq_len);
+    std::printf("[DEBUG argmax] Top 5 at last position: ");
+    
+    float top_vals[5] = {-1e30f, -1e30f, -1e30f, -1e30f, -1e30f};
+    int top_idxs[5] = {0, 0, 0, 0, 0};
+    
+    for (size_t i = 0; i < vocab_size; i++) {
+        float val = last_row[i];
+        for (int k = 0; k < 5; k++) {
+            if (val > top_vals[k]) {
+                for (int j = 4; j > k; j--) {
+                    top_vals[j] = top_vals[j-1];
+                    top_idxs[j] = top_idxs[j-1];
+                }
+                top_vals[k] = val;
+                top_idxs[k] = i;
+                break;
+            }
+        }
+    }
+    
+    for (int k = 0; k < 5; k++) {
+        std::printf("%d(%.2f) ", top_idxs[k], top_vals[k]);
+    }
+    std::printf("\n");
+    
+    return top_idxs[0];
 }
 
 void free_model(model* m) {

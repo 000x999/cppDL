@@ -312,6 +312,15 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, me
       V.data_view[s * embed_dim + d] += weights_data.b_values.tensor_data[d];
     }
   }
+
+  if (sequence_length == 1) {
+    std::printf("[DEBUG] Q[0][0:3]: %.6f %.6f %.6f\n", 
+                Q.data_view[0], Q.data_view[1], Q.data_view[2]);
+    std::printf("[DEBUG] K[0][0:3]: %.6f %.6f %.6f\n", 
+                K.data_view[0], K.data_view[1], K.data_view[2]);
+    std::printf("[DEBUG] V[0][0:3]: %.6f %.6f %.6f\n", 
+                V.data_view[0], V.data_view[1], V.data_view[2]);
+  }
  
   tens::tensor k_tensor_wrapper;
   k_tensor_wrapper.shape.ndim = 2;
@@ -361,18 +370,6 @@ tens::tensor K_Transposed = tens::ops::cpu_transpose_avx512(k_tensor_wrapper, al
           scores_head.data_view[idx] *= scale;
         }
       }
-    }
-
-    if (sequence_length == 2 && head == 0) { 
-      std::printf("\n[DEBUG] ATTENTION SCORES (Layer ?, Head 0, Seq 2):\n");
-      for (size_t r = 0; r < sequence_length; r++) {
-        for (size_t c = 0; c < sequence_length; c++) {
-          float val = scores_head.data_view[r * sequence_length + c];
-          std::printf("%10.2f ", val);
-        }
-        std::printf("\n");
-      }
-      std::printf("--------------------------------\n");
     }
 
     auto weights_head = level3::blas::softmax(scores_head);

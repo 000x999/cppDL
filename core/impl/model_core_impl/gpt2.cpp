@@ -207,21 +207,18 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
   safetensor::print_entries(&sf);
   std::printf("\n");
   
-  // 1. Load Global Tensors
   m->wte = load_tensor(&sf, "wte.weight", alloc);
   m->wpe = load_tensor(&sf, "wpe.weight", alloc);
 
-  // 2. Setup Config
   if (m->wte.tensor_data) {
     m->cfg.vocab_size = m->wte.shape.dims[0];
-    m->cfg.embed_dim = m->wte.shape.dims[1]; 
+    m->cfg.embed_dim  = m->wte.shape.dims[1]; 
   }
   if (m->wpe.tensor_data) {
     m->cfg.max_seq_len = m->wpe.shape.dims[0];
   }
   m->cfg.layer_norm_eps = 1e-5f;
   
-  // 3. Count Layers
   m->cfg.num_layers = 0;
   char name[safetensor::MAX_NAME_LEN];
   for (size_t i = 0; i < MAX_LAYERS; i++) {
@@ -287,7 +284,7 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     float* w_o = attn_proj_weight.tensor_data;
     float* b_o = attn_proj_bias.tensor_data;
     
-    void* pool_mem = alloc.nn_alloc<char>(sizeof(atten::atten_pool));
+    void* pool_mem  = alloc.nn_alloc<char>(sizeof(atten::atten_pool));
     void* atten_mem = alloc.nn_alloc<char>(sizeof(atten::multi_head_attention));
     
     m->atten_pools[i] = new (pool_mem) atten::atten_pool(atten_arena_size);

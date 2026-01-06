@@ -42,7 +42,7 @@ struct model {
 };
 
 void         init_model (model* m                                                    );
-bool         load_model (model* m,const char* path,memory::neural_arena& alloc       );
+bool         load_model (model* m,const char* path, memory::neural_arena& alloc       );
 tens::tensor forward    (model* m,const tens::tensor& tokens,tens::tensor_pool& pool );
 int          argmax     (const tens::tensor& logits                                  );
 void         free_model (model* m                                                    );

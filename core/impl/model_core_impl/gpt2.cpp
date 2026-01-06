@@ -202,7 +202,23 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
   
   m->wte = load_tensor(&sf, "wte.weight", alloc);
   m->wpe = load_tensor(&sf, "wpe.weight", alloc);
-  
+ 
+  size_t vocab_size = m->wte.shape.dims[0];
+  size_t embed_dim = m->wte.shape.dims[1];
+
+  m->wte_T.shape.ndim = 2;
+  m->wte_T.shape.dims[0] = embed_dim;
+  m->wte_T.shape.dims[1] = vocab_size;
+  m->wte_T.shape.strides[0] = vocab_size;
+  m->wte_T.shape.strides[1] = 1;
+  m->wte_T.tensor_data = alloc.nn_alloc<float>(vocab_size * embed_dim);
+
+  for (size_t i = 0; i < vocab_size; i++) {
+    for (size_t j = 0; j < embed_dim; j++) {
+      m->wte_T.tensor_data[j * vocab_size + i] = m->wte.tensor_data[i * embed_dim + j];
+    }
+  }
+
   if (m->wte.tensor_data) {
     m->cfg.vocab_size = m->wte.shape.dims[0];
     m->cfg.embed_dim = m->wte.shape.dims[1];
@@ -398,11 +414,11 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
         .data_view = x.tensor_data
     };
     
-    level3::mat_ops_view view_wte {
-        .row_view = m->cfg.vocab_size,
-        .col_view = embed_dim,
-        .leading_dimension = embed_dim,
-        .data_view = m->wte.tensor_data
+    level3::mat_ops_view view_wte_T {
+        .row_view = embed_dim,
+        .col_view = m->cfg.vocab_size,
+        .leading_dimension = m->cfg.vocab_size,
+        .data_view = m->wte_T.tensor_data
     };
     
     level3::mat_ops_view view_logits {
@@ -422,14 +438,14 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
     std::printf("[DEBUG] Manual logit[0][0]: %.6f\n", manual_logit_0);
 
     level3::blas::crush_gemm(
-        level3::transpose_gemm::no_transpose,
-        level3::transpose_gemm::transpose,
-        view_x,
-        view_wte,
-        1.0f,
-        0.0f,
-        view_logits
-    );
+    level3::transpose_gemm::no_transpose,
+    level3::transpose_gemm::no_transpose,  // no transpose needed
+    view_x,
+    view_wte_T,
+    1.0f,
+    0.0f,
+    view_logits
+);
    
     std::printf("[DEBUG] GEMM logit[0][0]: %.6f\n", logits.tensor_data[0]);
 
@@ -454,7 +470,7 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
                 }
             }
             std::printf("%d(%.2f) ", max_idx, max_val);
-            l[max_idx] = -1e30f;  // mask out for next iteration
+            l[max_idx] = -1e30f; 
         }
         std::printf("\n");
     }

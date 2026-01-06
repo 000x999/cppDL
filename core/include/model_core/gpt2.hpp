@@ -32,6 +32,7 @@ struct model {
   config cfg;
   tens::tensor wte;
   tens::tensor wpe;
+  tens::tensor wte_T;
   transformer_block blocks[MAX_LAYERS];
   atten::multi_head_attention * attentions [MAX_LAYERS];
   atten::atten_pool           * atten_pools[MAX_LAYERS];

@@ -388,11 +388,10 @@ void gemm_test(float A){
 int main(int argc, char* argv[]) {
   const char* model_path = "model.safetensors";
   const char* vocab_path = "vocab.json";
-  if (argc > 1) model_path = argv[1];
 
   std::string prompt = "Hello, my name is"; 
-  if (argc > 2) {
-    prompt = argv[2];
+  if (argc > 1) {
+    prompt = argv[1];
   }
   
   memory::neural_arena model_arena(1024ULL * 1024ULL * 1024ULL);

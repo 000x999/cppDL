@@ -876,8 +876,8 @@ tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, const tens:
 }
 
 tens::tensor tens::ops::cpu_transpose_avx512(const tens::tensor& input, memory::neural_arena& pool) {
-  size_t rows = input.shape.dims[0];
-  size_t cols = input.shape.dims[1];
+  size_t rows = input.shape.dims[1];
+  size_t cols = input.shape.dims[0];
 
   tens::tensor out;
   out.shape.ndim = 2;

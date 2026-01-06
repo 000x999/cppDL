@@ -388,6 +388,7 @@ void gemm_test(float A){
 int main(int argc, char* argv[]) {
   const char* model_path = "model.safetensors";
   const char* vocab_path = "vocab.json";
+  const char* merges_path = "merges.txt";
 
   std::string prompt = "Hello, my name is";
   if (argc > 1) {
@@ -402,8 +403,8 @@ int main(int argc, char* argv[]) {
   if (!gpt2::load_model(&model, model_path, model_arena)) return 1;
 
   gpt2::tokenizer tokenizer;
-  if (!tokenizer.load(vocab_path)) {
-    std::printf("[WARN] No vocab.json found\n");
+  if (!tokenizer.load(vocab_path, merges_path)) {
+    std::printf("[WARN] Failed to load tokenizer files (vocab.json / merges.txt)\n");
   }
 
   std::vector<int> input_ids = tokenizer.encode(prompt);

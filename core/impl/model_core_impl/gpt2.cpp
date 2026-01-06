@@ -204,18 +204,18 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
   m->wpe = load_tensor(&sf, "wpe.weight", alloc);
  
   size_t vocab_size = m->wte.shape.dims[0];
-  size_t embed_dim = m->wte.shape.dims[1];
+  size_t embed_dim_wte = m->wte.shape.dims[1];
 
   m->wte_T.shape.ndim = 2;
-  m->wte_T.shape.dims[0] = embed_dim;
+  m->wte_T.shape.dims[0] = embed_dim_wte;
   m->wte_T.shape.dims[1] = vocab_size;
   m->wte_T.shape.strides[0] = vocab_size;
   m->wte_T.shape.strides[1] = 1;
-  m->wte_T.tensor_data = alloc.nn_alloc<float>(vocab_size * embed_dim);
+  m->wte_T.tensor_data = alloc.nn_alloc<float>(vocab_size * embed_dim_wte);
 
   for (size_t i = 0; i < vocab_size; i++) {
-    for (size_t j = 0; j < embed_dim; j++) {
-      m->wte_T.tensor_data[j * vocab_size + i] = m->wte.tensor_data[i * embed_dim + j];
+    for (size_t j = 0; j < embed_dim_wte; j++) {
+      m->wte_T.tensor_data[j * vocab_size + i] = m->wte.tensor_data[i * embed_dim_wte + j];
     }
   }
 

@@ -352,9 +352,9 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
     }
     
     level3::mat_ops_view k_head {
-      .row_view          = sequence_length, 
-      .col_view          = head_dim, 
-      .leading_dimension = embed_dim, 
+      .row_view          = head_dim, 
+      .col_view          = sequence_length, 
+      .leading_dimension = sequence_length, 
       .data_view         = k_head_transposed
     };
 
@@ -374,7 +374,7 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
     
     float scale = 1.0f / std::sqrt((float)head_dim);
 
-    level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::transpose, q_head, k_head, 1.0f, 0.0f, scores_head);
+    level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, q_head, k_head, 1.0f, 0.0f, scores_head);
     if (sequence_length == 2 && head == 0) {
       std::printf("[ATTN DEBUG] Raw scores (before scale/mask):\n");
       std::printf("  pos0 -> [%.4f, %.4f]\n", 

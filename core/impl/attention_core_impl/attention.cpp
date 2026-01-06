@@ -313,22 +313,6 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, me
     }
   }
   
-  if (sequence_length == 8) { 
-    std::printf("[DEBUG] W_Q[0][0:3]: %.6f %.6f %.6f\n",
-                weights_data.w_queries.tensor_data[0],
-                weights_data.w_queries.tensor_data[1],
-                weights_data.w_queries.tensor_data[2]);
-  }
-
-  if (sequence_length == 1) {
-    std::printf("[DEBUG] Q[0][0:3]: %.6f %.6f %.6f\n", 
-                Q.data_view[0], Q.data_view[1], Q.data_view[2]);
-    std::printf("[DEBUG] K[0][0:3]: %.6f %.6f %.6f\n", 
-                K.data_view[0], K.data_view[1], K.data_view[2]);
-    std::printf("[DEBUG] V[0][0:3]: %.6f %.6f %.6f\n", 
-                V.data_view[0], V.data_view[1], V.data_view[2]);
-  }
-  
   float scale = 1.0f / std::sqrt((float)head_dim);
   float minus_inf = -1e9f;
 
@@ -365,14 +349,7 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, me
     };
         
     level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, q_head, k_head_T, 1.0f, 0.0f, scores_head);
-      
-    if (sequence_length == 8 && head == 0) {
-      std::printf("[DEBUG] Raw scores [0,0]: %.6f\n", scores_head.data_view[0]);
-      std::printf("[DEBUG] Raw scores [0,7]: %.6f\n", scores_head.data_view[7]);
-      std::printf("[DEBUG] Raw scores [7,0]: %.6f\n", scores_head.data_view[7*8+0]);
-      std::printf("[DEBUG] Raw scores [7,7]: %.6f\n", scores_head.data_view[7*8+7]);
-    }
-
+ 
     for (size_t i = 0; i < sequence_length; i++){
       for (size_t j = 0; j < sequence_length; j++){
         size_t idx = i * sequence_length + j;

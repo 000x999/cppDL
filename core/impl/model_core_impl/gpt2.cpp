@@ -317,14 +317,14 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     float* w_k_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
     float* w_v_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
 
-    for (size_t row = 0; row < embed_dim; row++) {
-      size_t src_row_offset = row * (3 * embed_dim);
-      for (size_t col = 0; col < embed_dim; col++) {
-        w_q_buf[row * embed_dim + col] = qkv_weight.tensor_data[src_row_offset + col * 3 + 0];
-        w_k_buf[row * embed_dim + col] = qkv_weight.tensor_data[src_row_offset + col * 3 + 1];
-        w_v_buf[row * embed_dim + col] = qkv_weight.tensor_data[src_row_offset + col * 3 + 2];
-      }
+   for (size_t row = 0; row < embed_dim; row++) {
+    size_t src_row_offset = row * (3 * embed_dim);
+    for (size_t col = 0; col < embed_dim; col++) {
+      w_q_buf[row * embed_dim + col] = qkv_weight.tensor_data[src_row_offset + col];
+      w_k_buf[row * embed_dim + col] = qkv_weight.tensor_data[src_row_offset + embed_dim + col];
+      w_v_buf[row * embed_dim + col] = qkv_weight.tensor_data[src_row_offset + 2 * embed_dim + col];
     }
+  } 
     if (i == 0) {
       std::printf("[DEBUG] After split - W_Q[0][0:3]: %.6f %.6f %.6f\n",
                   w_q_buf[0], w_q_buf[1], w_q_buf[2]);

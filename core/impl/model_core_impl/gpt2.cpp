@@ -299,20 +299,14 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_proj.bias", i);
     tens::tensor attn_proj_bias = load_tensor(&sf, name, alloc);
-
+  
     float* w_q_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
     float* w_k_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
     float* w_v_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
     float* src_ptr = qkv_weight.tensor_data;
-    
-    for (size_t row = 0; row < embed_dim; row++) {
-      std::memcpy(w_q_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
-      src_ptr += embed_dim;
-      std::memcpy(w_k_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
-      src_ptr += embed_dim;
-      std::memcpy(w_v_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
-      src_ptr += embed_dim;
-    }
+    std::memcpy(w_q_buf, src_ptr, embed_dim * embed_dim * sizeof(float));
+    std::memcpy(w_k_buf, src_ptr + embed_dim * embed_dim, embed_dim * embed_dim * sizeof(float));
+    std::memcpy(w_v_buf, src_ptr + 2 * embed_dim * embed_dim, embed_dim * embed_dim * sizeof(float));
     
     float* b_q = qkv_bias.tensor_data;
     float* b_k = qkv_bias.tensor_data + embed_dim;

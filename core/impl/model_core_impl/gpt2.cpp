@@ -234,7 +234,6 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
   std::printf("Detected config: vocab=%zu, embed=%zu, layers=%zu, heads=%zu\n",
               m->cfg.vocab_size, m->cfg.embed_dim, m->cfg.num_layers, m->cfg.num_heads);
 
-  std::printf("[INFO] Transposing WTE with AVX512...\n");
   m->wte_T = tens::ops::cpu_transpose_avx512(m->wte, alloc);
 
   size_t embed_dim = m->cfg.embed_dim;
@@ -367,7 +366,6 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
         for (size_t k = 0; k < embed_dim; k++) {
              manual_logit_0 += x.tensor_data[k] * m->wte.tensor_data[k]; 
         }
-        std::printf("[DEBUG] Manual logit[0][0] (Pre-Alloc check): %.6f\n", manual_logit_0);
     }
 
     tens::tensor wte_transposed = m->wte_T;
@@ -408,9 +406,6 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
         .data_view = logits.tensor_data
     };
    
-    std::printf("[DEBUG] Computing logits: x[%zu, %zu] @ wte_T[%zu, %zu]\n",
-                seq_len, embed_dim, embed_dim, m->cfg.vocab_size);
-
     level3::blas::crush_gemm(
         level3::transpose_gemm::no_transpose,
         level3::transpose_gemm::no_transpose, 
@@ -420,35 +415,6 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
         0.0f,
         view_logits
     );
-
-  if (debug) {
-    debug_tensor("logits", logits);
-    
-    std::printf("Top 5 logits: ");
-    float top_vals[5] = {-1e30f, -1e30f, -1e30f, -1e30f, -1e30f};
-    int top_idxs[5] = {0, 0, 0, 0, 0};
-    
-    float* l = logits.tensor_data;
-    for (size_t i = 0; i < m->cfg.vocab_size; i++) {
-        float val = l[i];
-        for (int k = 0; k < 5; k++) {
-            if (val > top_vals[k]) {
-                for (int j = 4; j > k; j--) {
-                    top_vals[j] = top_vals[j-1];
-                    top_idxs[j] = top_idxs[j-1];
-                }
-                top_vals[k] = val;
-                top_idxs[k] = i;
-                break;
-            }
-        }
-    }
-    for (int k = 0; k < 5; k++) {
-        std::printf("%d(%.2f) ", top_idxs[k], top_vals[k]);
-    }
-    std::printf("\n");
-  }
-    
     return logits;
 }
 
@@ -457,9 +423,6 @@ int argmax(const tens::tensor& logits) {
     size_t seq_len = logits.shape.dims[0];
     
     float* last_row = logits.tensor_data + (seq_len - 1) * vocab_size;
-    
-    std::printf("[DEBUG argmax] seq_len=%zu\n", seq_len);
-    std::printf("[DEBUG argmax] Top 5 at last position: ");
     
     float top_vals[5] = {-1e30f, -1e30f, -1e30f, -1e30f, -1e30f};
     int top_idxs[5] = {0, 0, 0, 0, 0};

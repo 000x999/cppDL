@@ -233,9 +233,6 @@ void atten::multi_head_attention::load_weights(float *w_q, float *w_k, float *w_
 
 
 tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, atten_pool &alloc_pool){
-  static int attn_call = 0;
-  bool debug = (attn_call == 0);
-  attn_call++;
   size_t sequence_length = input_tensor.shape.dims[0]; 
   size_t embed_dim       = input_tensor.shape.dims[1]; 
   size_t head_dim        = embedded_dim / num_heads;
@@ -315,24 +312,6 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
     }
   }
 
- if (debug) {
-  float q_min = Q.data_view[0], q_max = Q.data_view[0];
-  float k_min = K.data_view[0], k_max = K.data_view[0];
-  float v_min = V.data_view[0], v_max = V.data_view[0];
-  for (size_t i = 0; i < sequence_length * embed_dim; i++) {
-    if (Q.data_view[i] < q_min) q_min = Q.data_view[i];
-    if (Q.data_view[i] > q_max) q_max = Q.data_view[i];
-    if (K.data_view[i] < k_min) k_min = K.data_view[i];
-    if (K.data_view[i] > k_max) k_max = K.data_view[i];
-    if (V.data_view[i] < v_min) v_min = V.data_view[i];
-    if (V.data_view[i] > v_max) v_max = V.data_view[i];
-  }
-  std::printf("[ATTN] Q: min=%.4f max=%.4f\n", q_min, q_max);
-  std::printf("[ATTN] K: min=%.4f max=%.4f\n", k_min, k_max);
-  std::printf("[ATTN] V: min=%.4f max=%.4f\n", v_min, v_max);
-  }
-
-
   for(size_t head = 0; head < num_heads; ++head){
     size_t offset = head * head_dim; 
     
@@ -375,13 +354,6 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
     float scale = 1.0f / std::sqrt((float)head_dim);
 
     level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, q_head, k_head, 1.0f, 0.0f, scores_head);
-    if (sequence_length == 2 && head == 0) {
-      std::printf("[ATTN DEBUG] Raw scores (before scale/mask):\n");
-      std::printf("  pos0 -> [%.4f, %.4f]\n", 
-                  scores_head.data_view[0], scores_head.data_view[1]);
-      std::printf("  pos1 -> [%.4f, %.4f]\n", 
-                  scores_head.data_view[2], scores_head.data_view[3]);
-    } 
     
     for (size_t i = 0; i < sequence_length; i++){
       for (size_t j = 0; j < sequence_length; j++){
@@ -395,14 +367,6 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
       }
     }
 
-    if (debug) {
-      float s_min = output_ptr_scores[0], s_max = output_ptr_scores[0];
-      for (size_t i = 0; i < num_heads * sequence_length * sequence_length; i++) {
-        if (output_ptr_scores[i] < s_min) s_min = output_ptr_scores[i];
-        if (output_ptr_scores[i] > s_max) s_max = output_ptr_scores[i];
-      }
-      std::printf("[ATTN] scores after scale+mask: min=%.4f max=%.4f\n", s_min, s_max);
-    }
     auto weights_head = level3::blas::softmax(scores_head); 
     
     level3::mat_ops_view atten_head_output {
@@ -412,34 +376,7 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
       .data_view = output_ptr_outputs + offset
     };
 
-    if (sequence_length == 2 && head == 0) {
-      std::printf("[ATTN DEBUG] Head 0 attention matrix (after softmax):\n");
-      std::printf("  pos0 -> [%.4f, %.4f]\n",
-                  weights_head.data_view[0], weights_head.data_view[1]);
-      std::printf("  pos1 -> [%.4f, %.4f]\n",
-                  weights_head.data_view[2], weights_head.data_view[3]);
-    }
-
-
-    if (sequence_length == 2 && head == 0) {
-      std::printf("[ATTN DEBUG] Head 0 attention matrix (after softmax):\n");
-      std::printf("  pos0 -> [%.4f, %.4f]\n", 
-                weights_head.data_view[0], weights_head.data_view[1]);
-      std::printf("  pos1 -> [%.4f, %.4f]\n", 
-                weights_head.data_view[2], weights_head.data_view[3]);
-    }
     level3::blas::crush_gemm(level3::transpose_gemm::no_transpose,level3::transpose_gemm::no_transpose, weights_head, v_head, 1.0f, 0.0f, atten_head_output); 
-    
-    if (sequence_length == 2 && head == 0) {
-      std::printf("[ATTN DEBUG] Head 0 output row 0 first 3: %.4f %.4f %.4f\n",
-                  atten_head_output.data_view[0],
-                  atten_head_output.data_view[1],
-                  atten_head_output.data_view[2]);
-      std::printf("[ATTN DEBUG] Head 0 output row 1 first 3: %.4f %.4f %.4f\n",
-                  atten_head_output.data_view[embed_dim],
-                  atten_head_output.data_view[embed_dim+1],
-                  atten_head_output.data_view[embed_dim+2]);
-    }
   }
  
   level3::mat_ops_view atten_output_view {
@@ -456,17 +393,6 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
     .data_view         = output_ptr_final
   };
 
-  if (sequence_length == 2) {
-    std::printf("[ATTN DEBUG] Concatenated heads row 1 first 3: %.4f %.4f %.4f\n",
-                output_ptr_outputs[embed_dim], 
-                output_ptr_outputs[embed_dim+1], 
-                output_ptr_outputs[embed_dim+2]);
-    std::printf("[ATTN DEBUG] Concatenated heads row 1 [64:67]: %.4f %.4f %.4f\n",
-                output_ptr_outputs[embed_dim + 64], 
-                output_ptr_outputs[embed_dim + 65], 
-                output_ptr_outputs[embed_dim + 66]);  
-  } 
-
   level3::blas::crush_gemm(level3::transpose_gemm::no_transpose,level3::transpose_gemm::no_transpose, atten_output_view, wo_view, 1.0f, 0.0f, final_view);
   
   for (size_t s = 0; s < sequence_length; s++) {
@@ -475,22 +401,6 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
     }
   }
   
-  if (debug) {
-    float o_min = output_ptr_final[0], o_max = output_ptr_final[0];
-    for (size_t i = 0; i < sequence_length * embed_dim; i++) {
-      if (output_ptr_final[i] < o_min) o_min = output_ptr_final[i];
-      if (output_ptr_final[i] > o_max) o_max = output_ptr_final[i];
-    }
-    std::printf("[ATTN] output: min=%.4f max=%.4f\n", o_min, o_max);
-  }
-
-  if (sequence_length == 2) {
-    std::printf("[ATTN DEBUG] Final output row 0 first 3: %.4f %.4f %.4f\n",
-                final_view.data_view[0], final_view.data_view[1], final_view.data_view[2]);
-    std::printf("[ATTN DEBUG] Final output row 1 first 3: %.4f %.4f %.4f\n",
-                final_view.data_view[embed_dim], final_view.data_view[embed_dim+1], final_view.data_view[embed_dim+2]);
-  }
-
 
   tens::tensor output_tensor; 
   output_tensor.shape.dims[0]    = sequence_length; 

@@ -22,21 +22,24 @@ struct Token {
 
 struct tokenizer {
     std::unordered_map<int, std::string> id_to_token;
-    
-    std::string clean_token(const std::string& token) {
-        std::string out = "";
-        for (size_t i = 0; i < token.length(); ) {
-            if (i + 1 < token.length() && 
-                (unsigned char)token[i] == 0xC4 && 
-                (unsigned char)token[i+1] == 0xA0) {
-                out += " ";
-                i += 2;
-            } else {
-                out += token[i];
-                i++;
-            }
+
+    void append_utf8(std::string& out, int codepoint) {
+        if (codepoint <= 0x7F) out += (char)codepoint;
+        else if (codepoint <= 0x7FF) {
+            out += (char)(0xC0 | (codepoint >> 6));
+            out += (char)(0x80 | (codepoint & 0x3F));
+        } else {
+            out += (char)(0xE0 | (codepoint >> 12));
+            out += (char)(0x80 | ((codepoint >> 6) & 0x3F));
+            out += (char)(0x80 | (codepoint & 0x3F));
         }
-        return out;
+    }
+
+    int hex_val(char c) {
+        if (c >= '0' && c <= '9') return c - '0';
+        if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+        if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+        return 0;
     }
 
     bool load(const char* vocab_path) {
@@ -51,53 +54,54 @@ struct tokenizer {
         while (true) {
             size_t key_start = content.find('"', pos);
             if (key_start == std::string::npos) break;
-            
             size_t key_end = content.find('"', key_start + 1);
             if (key_end == std::string::npos) break;
-
+            
             size_t val_start = content.find_first_of("0123456789", key_end + 1);
             if (val_start == std::string::npos) break;
-
             size_t val_end = content.find_first_not_of("0123456789", val_start);
             if (val_end == std::string::npos) val_end = content.length();
 
-            std::string token_raw = content.substr(key_start + 1, key_end - key_start - 1);
-            std::string id_str = content.substr(val_start, val_end - val_start);
+            std::string raw = content.substr(key_start + 1, key_end - key_start - 1);
+            int id = std::stoi(content.substr(val_start, val_end - val_start));
             
-            try {
-                int id = std::stoi(id_str);
-                
-                std::string token_decoded = "";
-                for (size_t i = 0; i < token_raw.length(); i++) {
-                    if (token_raw[i] == '\\' && i + 1 < token_raw.length()) {
-                        if (token_raw[i+1] == 'u') {
-                             i += 5;
-                        } else {
-                            token_decoded += token_raw[i+1];
-                            i++;
-                        }
-                    } else {
-                        token_decoded += token_raw[i];
-                    }
+            std::string decoded = "";
+            for (size_t i = 0; i < raw.length(); i++) {
+                if (raw[i] == '\\' && i + 5 < raw.length() && raw[i+1] == 'u') {
+                    int cp = (hex_val(raw[i+2]) << 12) | (hex_val(raw[i+3]) << 8) |
+                             (hex_val(raw[i+4]) << 4)  | hex_val(raw[i+5]);
+                    append_utf8(decoded, cp);
+                    i += 5;
+                } else if (raw[i] == '\\' && i + 1 < raw.length()) {
+                     decoded += raw[i+1]; 
+                     i++;
+                } else {
+                    decoded += raw[i];
                 }
-                
-                if (token_decoded.empty()) token_decoded = token_raw;
-                
-                id_to_token[id] = token_decoded;
-            } catch (...) {}
-
+            }
+            id_to_token[id] = decoded;
             pos = val_end + 1;
         }
-        
-        std::printf("Loaded tokenizer vocab: %zu tokens\n", id_to_token.size());
         return true;
     }
 
     std::string decode(int id) {
-        if (id_to_token.find(id) != id_to_token.end()) {
-            return clean_token(id_to_token[id]);
+        if (id_to_token.find(id) == id_to_token.end()) return "";
+        std::string raw = id_to_token[id];
+        std::string out = "";
+        
+        for (size_t i = 0; i < raw.length(); ) {
+            if (i+1 < raw.length() && (unsigned char)raw[i]==0xC4 && (unsigned char)raw[i+1]==0xA0) {
+                out += " "; i += 2;
+            }
+            else if (i+1 < raw.length() && (unsigned char)raw[i]==0xC4 && (unsigned char)raw[i+1]==0x8A) {
+                out += "\n"; i += 2;
+            }
+            else {
+                out += raw[i]; i++;
+            }
         }
-        return ""; 
+        return out;
     }
 };
 

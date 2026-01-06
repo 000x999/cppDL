@@ -51,13 +51,13 @@ public:
 
 class multi_head_attention{
 private:
-  atten_weights weights_data;
   atten_comps   atten_data; 
   size_t        embedded_dim; 
   size_t        num_heads; 
   size_t        head_dim; 
 
 public: 
+  atten_weights weights_data;
   multi_head_attention      (size_t       embedded_dim, size_t num_heads                  ); 
   void         init         (memory::neural_arena   &persistent_arena                     ); 
   void         load_weights (float *w_q,  float *w_k, float *w_v, float*w_o, float *b_q, float *b_k, float *b_v, float *b_o); 

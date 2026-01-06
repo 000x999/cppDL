@@ -424,7 +424,7 @@ int main(int argc, char* argv[]){
   std::printf("Starting generation...\n");
   std::printf("Input token: %d\n\n", (int)sequence[0]);
   
-  int max_new_tokens = 50;
+  int max_new_tokens = 5;
   
   uint64_t total_time_ns = 0;
   size_t total_flops = 0;

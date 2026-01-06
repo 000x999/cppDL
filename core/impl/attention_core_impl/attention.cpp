@@ -354,7 +354,7 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
       .row_view          = sequence_length, 
       .col_view          = head_dim, 
       .leading_dimension = embed_dim, 
-      .data_view         = k_transposed + offset * sequence_length 
+      .data_view         = k_transposed +  head * head_dim * sequence_length
     };
 
     level3::mat_ops_view v_head {

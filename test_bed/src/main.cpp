@@ -385,144 +385,116 @@ void gemm_test(float A){
             << "s, GFLOP/S = " << optGflops << "\n";
 }
 
-int main(int argc, char* argv[]){
-  const char* model_path = "model.safetensors";
-  
-  if (argc > 1) {
-      model_path = argv[1];
-  }
-  
-  size_t model_arena_size = 1024ULL * 1024ULL * 1024ULL; 
-  size_t temp_arena_size = 1024ULL * 1024ULL * 512ULL;   
-  
-  memory::neural_arena model_arena(model_arena_size);
-  tens::tensor_pool temp_pool(temp_arena_size);
-  
-  gpt2::model model;
-  gpt2::init_model(&model);
- 
-  gpt2::tokenizer tokenizer;
-  if (!tokenizer.load("vocab.json")) {
-    std::printf("Warning: Could not load vocab.json. Output will be IDs only.\n");
-  }
-
-  if (!gpt2::load_model(&model, model_path, model_arena)) {
-    std::printf("Failed to load model from: %s\n", model_path);
-    return 1;
-  }
-  
-  size_t max_seq_len = 1024;
-  float* sequence = (float*)std::malloc(max_seq_len * sizeof(float));
-  
-  sequence[0] = 15496.0f; 
-  size_t seq_len = 1;
-  
-  std::printf("\n");
-  std::printf("Model config:\n");
-  std::printf("  vocab_size:  %zu\n", model.cfg.vocab_size);
-  std::printf("  embed_dim:   %zu\n", model.cfg.embed_dim);
-  std::printf("  num_layers:  %zu\n", model.cfg.num_layers);
-  std::printf("  num_heads:   %zu\n", model.cfg.num_heads);
-  std::printf("  max_seq_len: %zu\n", model.cfg.max_seq_len);
-  std::printf("\n");
-  
-  std::printf("Starting generation...\n");
-  std::printf("Input token: %d\n\n", (int)sequence[0]);
-  
-  int max_new_tokens = 50;
-  
-  uint64_t total_time_ns = 0;
-  size_t total_flops = 0;
-  int tokens_generated = 0;
-  
-  std::printf("Generated token IDs: ");
-
-  std::printf("Generated text:\n");
+int main(int argc, char* argv[]) {
+    const char* model_path = "model.safetensors";
+    const char* vocab_path = "vocab.json";
     
-  std::printf("%s", tokenizer.decode((int)sequence[0]).c_str());
-  std::fflush(stdout);
-  
-  for (int i = 0; i < max_new_tokens; i++) {
-    if (i < 2) { 
-      std::printf("\n[DEBUG] Forward pass %d, seq_len=%zu, tokens: ", i, seq_len);
-      for (size_t t = 0; t < seq_len && t < 5; t++) std::printf("%.0f ", sequence[t]);
-      std::printf("\n");
+    if (argc > 1) model_path = argv[1];
+    
+    size_t model_arena_size = 1024ULL * 1024ULL * 1024ULL; 
+    size_t temp_arena_size = 1024ULL * 1024ULL * 512ULL;  
+    
+    memory::neural_arena model_arena(model_arena_size);
+    tens::tensor_pool temp_pool(temp_arena_size);
+    
+    // 2. Load Model
+    gpt2::model model;
+    gpt2::init_model(&model);
+    
+    if (!gpt2::load_model(&model, model_path, model_arena)) {
+        std::printf("Failed to load model from: %s\n", model_path);
+        return 1;
     }
 
-    tens::tensor input;
-    std::memset(&input, 0, sizeof(tens::tensor));
-    input.shape.ndim = 1;
-    input.shape.dims[0] = seq_len;
-    input.shape.strides[0] = 1;
-    input.tensor_data = sequence;
+    gpt2::tokenizer tokenizer;
+    if (!tokenizer.load(vocab_path)) {
+        std::printf("[WARN] Failed to load %s. Output will be raw IDs.\n", vocab_path);
+    }
     
-    uint64_t start = nanos();
-    tens::tensor logits = gpt2::forward(&model, input, temp_pool);
-    uint64_t end = nanos();
+    size_t max_seq_len = 1024;
+    float* sequence = (float*)std::malloc(max_seq_len * sizeof(float));
     
-    uint64_t elapsed_ns = end - start;
-    size_t flops = estimate_flops_per_token(model.cfg, seq_len);
+    sequence[0] = 15496.0f; 
+    size_t seq_len = 1;
     
-    total_time_ns += elapsed_ns;
-    total_flops += flops;
-    tokens_generated++;
+    std::printf("\n=== GPT-2 C++ Inference Engine ===\n");
+    std::printf("Config: L=%zu, H=%zu, D=%zu, V=%zu\n", 
+                model.cfg.num_layers, model.cfg.num_heads, model.cfg.embed_dim, model.cfg.vocab_size);
     
-    float* last_token_logits = logits.tensor_data + (seq_len - 1) * model.cfg.vocab_size;
-    int next_token = gpt2::sample_top_k_avx512(last_token_logits, model.cfg.vocab_size, 40, 0.75f, temp_pool );
-   
-    std::string token_str = tokenizer.decode(next_token);
-    std::printf("%s", token_str.c_str());
+    std::printf("\nGenerated text:\n");
+    
+    std::string prompt_str = tokenizer.decode((int)sequence[0]);
+    std::printf("%s", prompt_str.empty() ? "Hello" : prompt_str.c_str());
     std::fflush(stdout);
-    std::printf("%d ", next_token);
-    std::fflush(stdout);
+
+    int max_new_tokens = 50;
+    uint64_t total_time_ns = 0;
+    size_t total_flops = 0;
+    int tokens_generated = 0;
     
-    if (seq_len < max_seq_len) {
-      sequence[seq_len] = (float)next_token;
-      seq_len++;
-    } else {
-      std::printf("\n[Max sequence length reached]\n");
-      break;
+    for (int i = 0; i < max_new_tokens; i++) {
+        
+        tens::tensor input;
+        std::memset(&input, 0, sizeof(tens::tensor));
+        input.shape.ndim = 1;
+        input.shape.dims[0] = seq_len;
+        input.shape.strides[0] = 1;
+        input.tensor_data = sequence;
+        
+        uint64_t start = nanos();
+        tens::tensor logits = gpt2::forward(&model, input, temp_pool);
+        uint64_t end = nanos();
+        
+        total_time_ns += (end - start);
+        total_flops += estimate_flops_per_token(model.cfg, seq_len);
+        tokens_generated++;
+        
+        float* last_row = logits.tensor_data + (seq_len - 1) * model.cfg.vocab_size;
+        
+        int next_token = gpt2::sample_top_k_avx512(
+            last_row, 
+            model.cfg.vocab_size, 
+            40,    
+            0.75f,   
+            temp_pool
+        );
+        
+        std::string token_str = tokenizer.decode(next_token);
+        if (token_str.empty()) {
+            std::printf(" %d", next_token); 
+        } else {
+            std::printf("%s", token_str.c_str());
+        }
+        std::fflush(stdout);
+        
+        if (seq_len < max_seq_len) {
+            sequence[seq_len] = (float)next_token;
+            seq_len++;
+        } else {
+            break;
+        }
+        
+        if (next_token == 50256) {
+            break;
+        }
+        
+        temp_pool.arena.nn_reset();
+        for (size_t layer = 0; layer < model.cfg.num_layers; layer++) {
+            if (model.atten_pools[layer]) {
+                model.atten_pools[layer]->arena.nn_reset();
+            }
+        }
     }
     
-    if (next_token == 50256) {
-      std::printf("\n[EOS]\n");
-      break;
-    }
+    double total_time_s = (double)total_time_ns / 1e9;
+    double total_gflops = (double)total_flops / 1e9;
     
-    temp_pool.arena.nn_reset();
-      
-    for (size_t layer = 0; layer < model.cfg.num_layers; layer++) {
-      if (model.atten_pools[layer]) {
-        model.atten_pools[layer]->arena.nn_reset();
-      }
-    }
-}
-  
-  std::printf("\n\n");
-  
-  std::printf("Full sequence (%zu tokens): ", seq_len);
-  for (size_t i = 0; i < seq_len; i++) {
-    std::printf("%d ", (int)sequence[i]);
-  }
-  std::printf("\n\n");
-  
-  double total_time_s = (double)total_time_ns / 1e9;
-  double total_gflops = (double)total_flops / 1e9;
-  double gflops_per_sec = total_gflops / total_time_s;
-  double tokens_per_sec = (double)tokens_generated / total_time_s;
-  double ms_per_token = (total_time_s * 1000.0) / (double)tokens_generated;
-  
-  std::printf("=== Performance Summary ===\n");
-  std::printf("Tokens generated:  %d\n", tokens_generated);
-  std::printf("Total time:        %.3f s\n", total_time_s);
-  std::printf("Tokens/sec:        %.2f\n", tokens_per_sec);
-  std::printf("ms/token:          %.2f\n", ms_per_token);
-  std::printf("Total GFLOP:       %.2f\n", total_gflops);
-  std::printf("GFLOP/s:           %.2f\n", gflops_per_sec);
-  std::printf("===========================\n");
-  
-  std::free(sequence);
-  gpt2::free_model(&model);
-  
-  return 0;
+    std::printf("\n\n=== Performance ===\n");
+    std::printf("Tokens/sec:  %.2f\n", (double)tokens_generated / total_time_s);
+    std::printf("GFLOP/s:     %.2f\n", total_gflops / total_time_s);
+    
+    std::free(sequence);
+    gpt2::free_model(&model);
+    
+    return 0;
 }

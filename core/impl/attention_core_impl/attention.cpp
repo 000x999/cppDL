@@ -129,6 +129,7 @@ tens::tensor atten::attention::forward(tens::tensor &input_tensor, memory::neura
     scores.data_view[i] *= attn_scale;
   }
   
+
   auto weights = level3::blas::softmax(scores);
   
   level3::mat_ops_view attn_output_view {
@@ -360,6 +361,18 @@ tens::tensor K_Transposed = tens::ops::cpu_transpose_avx512(k_tensor_wrapper, al
           scores_head.data_view[idx] *= scale;
         }
       }
+    }
+
+    if (sequence_length == 2 && head == 0) { 
+      std::printf("\n[DEBUG] ATTENTION SCORES (Layer ?, Head 0, Seq 2):\n");
+      for (size_t r = 0; r < sequence_length; r++) {
+        for (size_t c = 0; c < sequence_length; c++) {
+          float val = scores_head.data_view[r * sequence_length + c];
+          std::printf("%10.2f ", val);
+        }
+        std::printf("\n");
+      }
+      std::printf("--------------------------------\n");
     }
 
     auto weights_head = level3::blas::softmax(scores_head);

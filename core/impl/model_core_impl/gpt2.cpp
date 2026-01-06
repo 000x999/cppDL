@@ -308,7 +308,7 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     tens::tensor qkv_bias = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_proj.weight", i);
-    tens::tensor attn_proj_weight = load_linear_transpose(name);
+    tens::tensor attn_proj_weight = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_proj.bias", i);
     tens::tensor attn_proj_bias = load_tensor(&sf, name, alloc);
@@ -352,13 +352,13 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     b->ln2_bias = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.weight", i);
-    b->ffn_fc_weight = load_linear_transpose(name); 
+    b->ffn_fc_weight = load_tensor(&sf, name, alloc); 
     
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.bias", i);
     b->ffn_fc_bias = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.weight", i);
-    b->ffn_proj_weight = load_linear_transpose(name); 
+    b->ffn_proj_weight = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.bias", i);
     b->ffn_proj_bias = load_tensor(&sf, name, alloc);

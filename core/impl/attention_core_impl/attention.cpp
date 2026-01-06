@@ -335,7 +335,18 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, me
   k_tensor_wrapper.shape.dims[1] = embed_dim;
   k_tensor_wrapper.tensor_data = output_ptr_k;
 
-tens::tensor K_Transposed = tens::ops::cpu_transpose_avx512(k_tensor_wrapper, alloc_pool);
+  tens::tensor K_Transposed = tens::ops::cpu_transpose_avx512(k_tensor_wrapper, alloc_pool);  
+
+  if (sequence_length == 8) {
+    std::printf("[DEBUG] K[0,0]: %.6f, K_T[0,0]: %.6f\n", 
+                K.data_view[0], K_Transposed.tensor_data[0]);
+    std::printf("[DEBUG] K[0,1]: %.6f, K_T[1,0]: %.6f\n",
+                K.data_view[1], K_Transposed.tensor_data[1 * sequence_length + 0]);
+    std::printf("[DEBUG] K[1,0]: %.6f, K_T[0,1]: %.6f\n",
+                K.data_view[1 * embed_dim + 0], K_Transposed.tensor_data[0 * sequence_length + 1]);
+    std::printf("[DEBUG] K[7,63]: %.6f, K_T[63,7]: %.6f\n",
+                K.data_view[7 * embed_dim + 63], K_Transposed.tensor_data[63 * sequence_length + 7]);
+  }
   
   float scale = 1.0f / std::sqrt((float)head_dim);
   float minus_inf = -1e9f;

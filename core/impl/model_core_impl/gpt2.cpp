@@ -243,7 +243,6 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
   for (size_t i = 0; i < m->cfg.num_layers; i++) {
     transformer_block* b = &m->blocks[i];
     
-    // LN1
     std::snprintf(name, sizeof(name), "h.%zu.ln_1.weight", i);
     b->ln1_weight = load_tensor(&sf, name, alloc);
     std::snprintf(name, sizeof(name), "h.%zu.ln_1.bias", i);
@@ -501,4 +500,41 @@ void free_model(model* m) {
   }
   m->initialized = false;
 }
+
+int sample_top_k(float* logits, size_t vocab_size, int k) {
+  std::vector<std::pair<int, float>> pairs(vocab_size);
+  for (size_t i = 0; i < vocab_size; i++) {
+    pairs[i] = { (int)i, logits[i] };
+  }
+
+  std::partial_sort(pairs.begin(), pairs.begin() + k, pairs.end(), 
+                    [](const auto& a, const auto& b) {
+                        return a.second > b.second; 
+                    });
+
+  float max_logit = pairs[0].second;
+  float sum_exp = 0.0f;
+  std::vector<float> probs(k);
+  
+  for (int i = 0; i < k; i++) {
+    probs[i] = std::exp(pairs[i].second - max_logit);
+    sum_exp += probs[i];
+  }
+
+  static std::mt19937 rng(std::random_device{}());
+  std::uniform_real_distribution<float> dist(0.0f, sum_exp);
+  float r = dist(rng);
+  
+  float cum_prob = 0.0f;
+  for (int i = 0; i < k; i++) {
+    cum_prob += probs[i];
+    if (r <= cum_prob) {
+      return pairs[i].first;
+    }
+  }
+  
+  return pairs[k-1].first; 
 }
+
+}
+

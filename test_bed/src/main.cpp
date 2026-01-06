@@ -392,8 +392,8 @@ int main(int argc, char* argv[]){
       model_path = argv[1];
   }
   
-  size_t model_arena_size = 1024ULL * 1024ULL * 1024ULL;
-  size_t temp_arena_size = 1024ULL * 1024ULL * 256ULL;
+  size_t model_arena_size = 1024ULL * 1024ULL * 1024ULL; 
+  size_t temp_arena_size = 1024ULL * 1024ULL * 512ULL;   
   
   memory::neural_arena model_arena(model_arena_size);
   tens::tensor_pool temp_pool(temp_arena_size);
@@ -409,7 +409,7 @@ int main(int argc, char* argv[]){
   size_t max_seq_len = 1024;
   float* sequence = (float*)std::malloc(max_seq_len * sizeof(float));
   
-  sequence[0] = 15496.0f;
+  sequence[0] = 15496.0f; 
   size_t seq_len = 1;
   
   std::printf("\n");
@@ -433,11 +433,12 @@ int main(int argc, char* argv[]){
   std::printf("Generated token IDs: ");
   
   for (int i = 0; i < max_new_tokens; i++) {
-    std::printf("\n[DEBUG] Forward pass %d, seq_len=%zu, tokens: ", i, seq_len);
-    for (size_t t = 0; t < seq_len && t < 5; t++) {
-      std::printf("%.0f ", sequence[t]);
+    if (i < 2) { 
+        std::printf("\n[DEBUG] Forward pass %d, seq_len=%zu, tokens: ", i, seq_len);
+        for (size_t t = 0; t < seq_len && t < 5; t++) std::printf("%.0f ", sequence[t]);
+        std::printf("\n");
     }
-    std::printf("\n");
+
     tens::tensor input;
     std::memset(&input, 0, sizeof(tens::tensor));
     input.shape.ndim = 1;
@@ -456,7 +457,10 @@ int main(int argc, char* argv[]){
     total_flops += flops;
     tokens_generated++;
     
-    int next_token = gpt2::argmax(logits);
+    float* last_token_logits = logits.tensor_data + (seq_len - 1) * model.cfg.vocab_size;
+
+    int next_token = gpt2::sample_top_k(last_token_logits, model.cfg.vocab_size, 40); 
+    
     std::printf("%d ", next_token);
     std::fflush(stdout);
     

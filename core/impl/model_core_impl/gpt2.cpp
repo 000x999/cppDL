@@ -279,9 +279,9 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
      
       tens::tensor out_t;
       out_t.shape.ndim = 2;
-      out_t.shape.dims[0] = t.shape.dims[1]; 
-      out_t.shape.dims[1] = t.shape.dims[0];
-      out_t.shape.strides[0] = out_t.shape.dims[1];
+      out_t.shape.dims[0] = t.shape.dims[0]; 
+      out_t.shape.dims[1] = t.shape.dims[1];
+      out_t.shape.strides[0] = out_t.shape.dims[0];
       out_t.shape.strides[1] = 1;
       out_t.tensor_data = alloc.nn_alloc<float>(out_t.shape.numel());
 

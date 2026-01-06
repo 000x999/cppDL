@@ -392,7 +392,7 @@ int main(int argc, char* argv[]){
       model_path = argv[1];
   }
   
-  size_t model_arena_size = 1024ULL * 1024ULL * 600ULL;
+  size_t model_arena_size = 1024ULL * 1024ULL * 700ULL;
   size_t temp_arena_size = 1024ULL * 1024ULL * 256ULL;
   
   memory::neural_arena model_arena(model_arena_size);

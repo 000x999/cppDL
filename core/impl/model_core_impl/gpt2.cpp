@@ -291,6 +291,19 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_attn.weight", i);
     tens::tensor qkv_weight = load_linear_transpose(name);
     
+    if (i == 0) {
+      std::printf("[DEBUG] c_attn.weight shape: [%zu, %zu]\n", 
+                  qkv_weight.shape.dims[0], qkv_weight.shape.dims[1]);
+      std::printf("[DEBUG] Raw c_attn.weight[0][0:3]: %.6f %.6f %.6f\n",
+                  qkv_weight.tensor_data[0], 
+                  qkv_weight.tensor_data[1], 
+                  qkv_weight.tensor_data[2]);
+      std::printf("[DEBUG] Raw c_attn.weight[0][768:771]: %.6f %.6f %.6f\n",
+                  qkv_weight.tensor_data[768], 
+                  qkv_weight.tensor_data[769], 
+                  qkv_weight.tensor_data[770]);
+    }
+
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_attn.bias", i);
     tens::tensor qkv_bias = load_tensor(&sf, name, alloc);
     

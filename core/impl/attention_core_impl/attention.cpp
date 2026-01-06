@@ -388,11 +388,6 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
       }
       std::printf("[ATTN] scores after scale+mask: min=%.4f max=%.4f\n", s_min, s_max);
     }
-
-    for(size_t i = 0; i < sequence_length * sequence_length; ++i){
-      scores_head.data_view[i] *= scale;
-    }
-    
     auto weights_head = level3::blas::softmax(scores_head); 
     
     level3::mat_ops_view atten_head_output {

@@ -389,6 +389,11 @@ int main(int argc, char* argv[]) {
   const char* model_path = "model.safetensors";
   const char* vocab_path = "vocab.json";
   if (argc > 1) model_path = argv[1];
+
+  std::string prompt = "Hello, my name is"; 
+  if (argc > 2) {
+    prompt = argv[2];
+  }
   
   memory::neural_arena model_arena(1024ULL * 1024ULL * 1024ULL);
   tens::tensor_pool temp_pool(1024ULL * 1024ULL * 512ULL);      
@@ -404,9 +409,20 @@ int main(int argc, char* argv[]) {
   float* sequence = (float*)std::malloc(max_seq_len * sizeof(float));
   sequence[0] = 15496.0f; 
   size_t seq_len = 1;
+
+  std::vector<int> input_ids = tokenizer.encode(prompt);
+  if (input_ids.empty()) {
+    std::printf("Error: Could not encode prompt.\n");
+    return 1;
+  }
   
-  std::printf("\n=== GPT-2 C++ Generation ===\n");
-  std::printf("%s", tokenizer.decode((int)sequence[0]).c_str()); 
+  for (size_t i = 0; i < seq_len; i++) {
+    sequence[i] = (float)input_ids[i];
+  }
+  
+  std::printf("\n=== cppDL Inference ===\n");
+  std::printf("%s", tokenizer.decode((int)sequence[0]).c_str());
+  std::printf("Prompt: \"%s\"\n", prompt.c_str());
   std::fflush(stdout);
 
   int max_new_tokens = 50;

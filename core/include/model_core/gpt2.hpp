@@ -22,6 +22,7 @@ struct Token {
 
 struct tokenizer {
     std::unordered_map<int, std::string> id_to_token;
+    std::unordered_map<std::string, int> token_to_id; 
 
     int hex_val(char c) {
         if (c >= '0' && c <= '9') return c - '0';
@@ -73,13 +74,14 @@ struct tokenizer {
                     append_utf8(decoded, cp);
                     i += 5;
                 } else if (raw[i] == '\\' && i + 1 < raw.length()) {
-                     decoded += raw[i+1];
+                     decoded += raw[i+1]; 
                      i++;
                 } else {
                     decoded += raw[i];
                 }
             }
             id_to_token[id] = decoded;
+            token_to_id[decoded] = id; 
             pos = val_end + 1;
         }
         return true;
@@ -93,15 +95,46 @@ struct tokenizer {
         for (size_t i = 0; i < raw.length(); ) {
             if (i+1 < raw.length() && (unsigned char)raw[i]==0xC4 && (unsigned char)raw[i+1]==0xA0) {
                 out += " "; i += 2;
-            }
-            else if (i+1 < raw.length() && (unsigned char)raw[i]==0xC4 && (unsigned char)raw[i+1]==0x8A) {
+            } else if (i+1 < raw.length() && (unsigned char)raw[i]==0xC4 && (unsigned char)raw[i+1]==0x8A) {
                 out += "\n"; i += 2;
-            }
-            else {
+            } else {
                 out += raw[i]; i++;
             }
         }
         return out;
+    }
+
+    std::vector<int> encode(const std::string& text) {
+        std::vector<int> tokens;
+        std::string current_word;
+        bool first_word = true;
+
+        for (size_t i = 0; i <= text.length(); i++) {
+            char c = (i < text.length()) ? text[i] : ' '; 
+            
+            if (c == ' ') {
+                if (!current_word.empty()) {
+                    std::string search_term = current_word;
+                    if (!first_word) {
+                        search_term = "";
+                        search_term += (char)0xC4;
+                        search_term += (char)0xA0;
+                        search_term += current_word;
+                    }
+
+                    if (token_to_id.find(search_term) != token_to_id.end()) {
+                        tokens.push_back(token_to_id[search_term]);
+                    } else {
+                        std::printf("[WARN] Unknown token: '%s'\n", current_word.c_str());
+                    }
+                    current_word = "";
+                    first_word = false;
+                }
+            } else {
+                current_word += c;
+            }
+        }
+        return tokens;
     }
 };
 

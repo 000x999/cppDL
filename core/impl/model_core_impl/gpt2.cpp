@@ -491,12 +491,6 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
 */
 
 tens::tensor forward(model *m, const tens::tensor &tokens, memory::neural_arena &pool) {
-    for (size_t i = 0; i < m->cfg.num_layers; i++) {
-        if (m->atten_pools[i]) {
-            m->atten_pools[i]->nn_reset();
-        }
-    }
-    
     static int call_count = 0;
     bool debug = (call_count == 0); 
     call_count++;

@@ -297,7 +297,7 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     std::snprintf(name, sizeof(name), "h.%zu.ln_2.bias", i);
     b->ln2_bias = load_tensor(&sf, name, alloc);
     
-    std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.weight", i);
+   std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.weight", i);
     tens::tensor fc_raw = load_tensor(&sf, name, alloc);
     
     b->ffn_fc_weight = tens::ops::cpu_transpose_avx512(fc_raw, alloc);

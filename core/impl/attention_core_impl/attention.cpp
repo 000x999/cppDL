@@ -446,6 +446,17 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
     .data_view         = output_ptr_final
   };
 
+  if (sequence_length == 2) {
+    std::printf("[ATTN DEBUG] Concatenated heads row 1 first 3: %.4f %.4f %.4f\n",
+                output_ptr_outputs[embed_dim], 
+                output_ptr_outputs[embed_dim+1], 
+                output_ptr_outputs[embed_dim+2]);
+    std::printf("[ATTN DEBUG] Concatenated heads row 1 [64:67]: %.4f %.4f %.4f\n",
+                output_ptr_outputs[embed_dim + 64], 
+                output_ptr_outputs[embed_dim + 65], 
+                output_ptr_outputs[embed_dim + 66]);  
+  } 
+
   level3::blas::crush_gemm(level3::transpose_gemm::no_transpose,level3::transpose_gemm::no_transpose, atten_output_view, wo_view, 1.0f, 0.0f, final_view);
   
   for (size_t s = 0; s < sequence_length; s++) {

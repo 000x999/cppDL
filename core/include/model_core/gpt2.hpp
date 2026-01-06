@@ -185,7 +185,7 @@ struct model {
   tens::tensor wte_T;
   transformer_block blocks[MAX_LAYERS];
   atten::multi_head_attention * attentions [MAX_LAYERS];
-  atten::atten_pool           * atten_pools[MAX_LAYERS];
+  memory::neural_arena        * atten_pools[MAX_LAYERS];
   tens::tensor ln_f_weight;
   tens::tensor ln_f_bias;
   bool initialized;
@@ -193,10 +193,10 @@ struct model {
 
 void         init_model          (model* m                                                     );
 bool         load_model          (model* m,const char* path, memory::neural_arena& alloc       );
-tens::tensor forward             (model* m,const tens::tensor& tokens,tens::tensor_pool& pool  );
+tens::tensor forward             (model* m,const tens::tensor& tokens, memory::neural_arena& pool  );
 int          argmax              (const tens::tensor& logits                                   );
 void         free_model          (model* m                                                     );
-int          sample_top_k_avx512 (float* logits, size_t vocab_size, int k, float temperature, tens::tensor_pool& pool);
+int          sample_top_k_avx512 (float* logits, size_t vocab_size, int k, float temperature, memory::neural_arena& pool);
 int          sample_top_k        (float* logits, size_t vocab_size, int k);
-tens::tensor matmul              (const tens::tensor &a, const tens::tensor &b, tens::tensor_pool &pool);
+tens::tensor matmul              (const tens::tensor &a, const tens::tensor &b, memory::neural_arena &pool);
 }  // namespace gpt2

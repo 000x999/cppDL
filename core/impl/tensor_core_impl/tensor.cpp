@@ -148,7 +148,7 @@ __m512 tens::ops::fast_exp(__m512 input_vec){
   return r;
 }
 
-tens::tensor tens::ops::add(const tens::tensor &left_tensor, const tens::tensor &right_tensor, tensor_pool &pool){
+tens::tensor tens::ops::add(const tens::tensor &left_tensor, const tens::tensor &right_tensor, memory::neural_arena &pool){
   if(left_tensor.shape.numel() != right_tensor.shape.numel()){
     CPPDL_FATAL("tens::ops::add(&left_tensor, &right_tensor) :: cannot add two un-equal sized tensors"); 
     throw std::runtime_error(":: ABORTING ::");
@@ -159,7 +159,7 @@ tens::tensor tens::ops::add(const tens::tensor &left_tensor, const tens::tensor 
       output_tensor.shape.dims[i]    = left_tensor.shape.dims[i]; 
       output_tensor.shape.strides[i] = left_tensor.shape.strides[i];
     }
-    output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel()); 
+    output_tensor.tensor_data = pool.nn_alloc<float>(output_tensor.shape.numel()); 
 
     size_t tensor_size = left_tensor.shape.numel(); 
     size_t i           = 0; 
@@ -180,7 +180,7 @@ tens::tensor tens::ops::add(const tens::tensor &left_tensor, const tens::tensor 
   }
 }
 
-tens::tensor tens::ops::add(const tens::tensor &left_tensor, float scalar, tensor_pool &pool){
+tens::tensor tens::ops::add(const tens::tensor &left_tensor, float scalar, memory::neural_arena &pool){
   if(left_tensor.shape.numel() <= 0){
     CPPDL_FATAL("tens::ops::add(&left_tensor, &right_tensor) :: cannot add a scalar to a 0 sized tensor"); 
     throw std::runtime_error(":: ABORTING ::");
@@ -191,7 +191,7 @@ tens::tensor tens::ops::add(const tens::tensor &left_tensor, float scalar, tenso
       output_tensor.shape.dims[i]    = left_tensor.shape.dims[i]; 
       output_tensor.shape.strides[i] = left_tensor.shape.strides[i];
     }
-    output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());
+    output_tensor.tensor_data = pool.nn_alloc<float>(output_tensor.shape.numel());
 
     __m512 scalar_vec  = _mm512_set1_ps(scalar);    
     
@@ -212,7 +212,7 @@ tens::tensor tens::ops::add(const tens::tensor &left_tensor, float scalar, tenso
   }
 }
 
-tens::tensor tens::ops::sub(const tens::tensor &left_tensor, const tens::tensor &right_tensor, tensor_pool &pool){
+tens::tensor tens::ops::sub(const tens::tensor &left_tensor, const tens::tensor &right_tensor, memory::neural_arena &pool){
   if(left_tensor.shape.numel() != right_tensor.shape.numel()){
     CPPDL_FATAL("tens::ops::sub(&left_tensor, &right_tensor) :: cannot sub two un-equal sized tensors"); 
     throw std::runtime_error(":: ABORTING ::");
@@ -223,7 +223,7 @@ tens::tensor tens::ops::sub(const tens::tensor &left_tensor, const tens::tensor 
       output_tensor.shape.dims[i]    = left_tensor.shape.dims[i]; 
       output_tensor.shape.strides[i] = left_tensor.shape.strides[i];
     } 
-    output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());
+    output_tensor.tensor_data = pool.nn_alloc<float>(output_tensor.shape.numel());
    
     size_t tensor_size = left_tensor.shape.numel(); 
     size_t i           = 0; 
@@ -244,7 +244,7 @@ tens::tensor tens::ops::sub(const tens::tensor &left_tensor, const tens::tensor 
   }
 }
 
-tens::tensor tens::ops::mul(const tens::tensor &left_tensor, const tens::tensor &right_tensor, tensor_pool &pool){
+tens::tensor tens::ops::mul(const tens::tensor &left_tensor, const tens::tensor &right_tensor, memory::neural_arena &pool){
   if(left_tensor.shape.numel() != right_tensor.shape.numel()){
     CPPDL_FATAL("tens::ops::mul(&left_tensor, &right_tensor) :: cannot mul two un-equal sized tensors"); 
     throw std::runtime_error(":: ABORTING ::");
@@ -255,7 +255,7 @@ tens::tensor tens::ops::mul(const tens::tensor &left_tensor, const tens::tensor 
       output_tensor.shape.dims[i]    = left_tensor.shape.dims[i]; 
       output_tensor.shape.strides[i] = left_tensor.shape.strides[i];
     } 
-    output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());    
+    output_tensor.tensor_data = pool.nn_alloc<float>(output_tensor.shape.numel());    
     
     size_t tensor_size = left_tensor.shape.numel(); 
     size_t i           = 0; 
@@ -276,7 +276,7 @@ tens::tensor tens::ops::mul(const tens::tensor &left_tensor, const tens::tensor 
   }
 }
 
-tens::tensor tens::ops::div(const tens::tensor &left_tensor, const tens::tensor &right_tensor, tensor_pool &pool){
+tens::tensor tens::ops::div(const tens::tensor &left_tensor, const tens::tensor &right_tensor, memory::neural_arena &pool){
   if(left_tensor.shape.numel() != right_tensor.shape.numel()){
     CPPDL_FATAL("tens::ops::div(&left_tensor, &right_tensor) :: cannot div two un-equal sized tensors"); 
     throw std::runtime_error(":: ABORTING ::");
@@ -287,7 +287,7 @@ tens::tensor tens::ops::div(const tens::tensor &left_tensor, const tens::tensor 
       output_tensor.shape.dims[i]    = left_tensor.shape.dims[i]; 
       output_tensor.shape.strides[i] = left_tensor.shape.strides[i];
     } 
-    output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());   
+    output_tensor.tensor_data = pool.nn_alloc<float>(output_tensor.shape.numel());   
     
     size_t tensor_size = left_tensor.shape.numel(); 
     size_t i           = 0; 
@@ -308,7 +308,7 @@ tens::tensor tens::ops::div(const tens::tensor &left_tensor, const tens::tensor 
   }
 }
 
-tens::tensor tens::ops::scale(const tens::tensor &input_tensor, float scale, tensor_pool &pool){
+tens::tensor tens::ops::scale(const tens::tensor &input_tensor, float scale, memory::neural_arena &pool){
   if(input_tensor.shape.numel() <= 0){
     CPPDL_FATAL("tens::ops::scale(&input_tensor, scale) :: cannot scale a 0 sized tensor :: returning original tensor and continuing"); 
     return input_tensor; 
@@ -319,7 +319,7 @@ tens::tensor tens::ops::scale(const tens::tensor &input_tensor, float scale, ten
       output_tensor.shape.dims[i]    = input_tensor.shape.dims[i]; 
       output_tensor.shape.strides[i] = input_tensor.shape.strides[i];
     }
-    output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());    
+    output_tensor.tensor_data = pool.nn_alloc<float>(output_tensor.shape.numel());    
     
     size_t tensor_size = input_tensor.shape.numel(); 
     size_t i           = 0; 
@@ -339,7 +339,7 @@ tens::tensor tens::ops::scale(const tens::tensor &input_tensor, float scale, ten
   }
 }
 
-tens::tensor tens::ops::root(const tens::tensor &input_tensor, tensor_pool &pool){
+tens::tensor tens::ops::root(const tens::tensor &input_tensor, memory::neural_arena &pool){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::root(&input_tensor, scale) :: cannot get root of elems from a 0 sized tensor" 
          ); 
@@ -349,7 +349,7 @@ tens::tensor tens::ops::root(const tens::tensor &input_tensor, tensor_pool &pool
     output_tensor.shape.dims[i]    = input_tensor.shape.dims[i]; 
     output_tensor.shape.strides[i] = input_tensor.shape.strides[i];
   } 
-  output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());
+  output_tensor.tensor_data = pool.nn_alloc<float>(output_tensor.shape.numel());
  
   size_t tensor_size = input_tensor.shape.numel(); 
   size_t i = 0; 
@@ -364,7 +364,7 @@ tens::tensor tens::ops::root(const tens::tensor &input_tensor, tensor_pool &pool
   return output_tensor; 
 }
 
-tens::tensor tens::ops::tanh(const tens::tensor &input_tensor, tensor_pool &pool){
+tens::tensor tens::ops::tanh(const tens::tensor &input_tensor, memory::neural_arena &pool){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::tanh(&input_tensor) :: cannot apply tanh to a 0 sized tensor" 
          ); 
@@ -374,7 +374,7 @@ tens::tensor tens::ops::tanh(const tens::tensor &input_tensor, tensor_pool &pool
     output_tensor.shape.dims[i] = input_tensor.shape.dims[i]; 
     output_tensor.shape.strides[i] = input_tensor.shape.strides[i];
   } 
-  output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());  
+  output_tensor.tensor_data = pool.nn_alloc<float>(output_tensor.shape.numel());  
   
   size_t tensor_size = input_tensor.shape.numel();
   
@@ -403,7 +403,7 @@ tens::tensor tens::ops::tanh(const tens::tensor &input_tensor, tensor_pool &pool
   return output_tensor; 
 }
 
-tens::tensor tens::ops::var(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis, bool keep_dim){
+tens::tensor tens::ops::var(const tens::tensor &input_tensor, memory::neural_arena &pool, size_t axis, bool keep_dim){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::var(&input_tensor, scale) :: cannot get root of elems from a 0 sized tensor" 
          ); 
@@ -429,7 +429,7 @@ tens::tensor tens::ops::var(const tens::tensor &input_tensor, tensor_pool &pool,
   return final_tens; 
 }
 
-tens::tensor tens::ops::sum(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis, bool keep_dim){
+tens::tensor tens::ops::sum(const tens::tensor &input_tensor, memory::neural_arena &pool, size_t axis, bool keep_dim){
   assert(input_tensor.shape.is_contiguous() 
          && "tens::ops::sum(&input_tensor, axis, keep_dim) :: cannot sum tensor over non-contiguous tensor" 
          ); 
@@ -477,7 +477,7 @@ tens::tensor tens::ops::sum(const tens::tensor &input_tensor, tensor_pool &pool,
   }
   
   size_t output_numel = inner_size * outter_size; 
-  output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());  
+  output_tensor.tensor_data = pool.nn_alloc<float>(output_tensor.shape.numel());  
   
   for(size_t i = 0; i < outter_size; ++i){
     for(size_t j = 0; j < inner_size; ++j){
@@ -494,7 +494,7 @@ tens::tensor tens::ops::sum(const tens::tensor &input_tensor, tensor_pool &pool,
 } 
 
 
-tens::tensor tens::ops::mean(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis, bool keep_dim){
+tens::tensor tens::ops::mean(const tens::tensor &input_tensor, memory::neural_arena &pool, size_t axis, bool keep_dim){
   assert(input_tensor.shape.is_contiguous() 
          && "tens::ops::sum(&input_tensor, axis, keep_dim) :: cannot sum tensor over non-contiguous tensor" 
          ); 
@@ -542,7 +542,7 @@ tens::tensor tens::ops::mean(const tens::tensor &input_tensor, tensor_pool &pool
   }
   
   size_t output_numel = inner_size * outter_size;
-  output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());
+  output_tensor.tensor_data = pool.nn_alloc<float>(output_tensor.shape.numel());
   
   for(size_t i = 0; i < outter_size; ++i){
     for(size_t j = 0; j < inner_size; ++j){
@@ -558,7 +558,7 @@ tens::tensor tens::ops::mean(const tens::tensor &input_tensor, tensor_pool &pool
   return output_tensor;
 } 
 
-tens::tensor tens::ops::max(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis, bool keep_dim){
+tens::tensor tens::ops::max(const tens::tensor &input_tensor, memory::neural_arena &pool, size_t axis, bool keep_dim){
   assert(input_tensor.shape.is_contiguous() 
          && "tens::ops::sum(&input_tensor, axis, keep_dim) :: cannot sum tensor over non-contiguous tensor" 
          ); 
@@ -606,7 +606,7 @@ tens::tensor tens::ops::max(const tens::tensor &input_tensor, tensor_pool &pool,
   }
   
   size_t output_numel = inner_size * outter_size;
-  output_tensor.tensor_data = pool.arena.nn_alloc<float>(inner_size * outter_size);
+  output_tensor.tensor_data = pool.nn_alloc<float>(inner_size * outter_size);
   
   for(size_t i = 0; i < outter_size; ++i){
     for(size_t j = 0; j < inner_size; ++j){
@@ -622,7 +622,7 @@ tens::tensor tens::ops::max(const tens::tensor &input_tensor, tensor_pool &pool,
   return output_tensor;
 }
 
-tens::tensor tens::ops::min(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis, bool keep_dim){
+tens::tensor tens::ops::min(const tens::tensor &input_tensor, memory::neural_arena &pool, size_t axis, bool keep_dim){
   assert(input_tensor.shape.is_contiguous() 
          && "tens::ops::sum(&input_tensor, axis, keep_dim) :: cannot sum tensor over non-contiguous tensor" 
          ); 
@@ -670,7 +670,7 @@ tens::tensor tens::ops::min(const tens::tensor &input_tensor, tensor_pool &pool,
   }
   
   size_t output_numel = inner_size * outter_size;
-  output_tensor.tensor_data = pool.arena.nn_alloc<float>(inner_size * outter_size);
+  output_tensor.tensor_data = pool.nn_alloc<float>(inner_size * outter_size);
   
   for(size_t i = 0; i < outter_size; ++i){
     for(size_t j = 0; j < inner_size; ++j){
@@ -686,7 +686,7 @@ tens::tensor tens::ops::min(const tens::tensor &input_tensor, tensor_pool &pool,
   return output_tensor;
 }
 
-tens::tensor tens::ops::exp(const tens::tensor &input_tensor, tensor_pool &pool){
+tens::tensor tens::ops::exp(const tens::tensor &input_tensor, memory::neural_arena &pool){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::exp(&input_tensor) :: cannot cannot apply exp to a 0 sized tensor" 
          ); 
@@ -696,7 +696,7 @@ tens::tensor tens::ops::exp(const tens::tensor &input_tensor, tensor_pool &pool)
     output_tensor.shape.dims[i]    = input_tensor.shape.dims[i]; 
     output_tensor.shape.strides[i] = input_tensor.shape.strides[i];
   }
-  output_tensor.tensor_data = pool.arena.nn_alloc<float>(output_tensor.shape.numel());      
+  output_tensor.tensor_data = pool.nn_alloc<float>(output_tensor.shape.numel());      
 
   size_t i = 0; 
   for(; i + 15 < input_tensor.shape.numel(); i += 16){
@@ -710,7 +710,7 @@ tens::tensor tens::ops::exp(const tens::tensor &input_tensor, tensor_pool &pool)
   return output_tensor; 
 }
 
-tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis, float epsilon, float gamma, float beta){
+tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, memory::neural_arena &pool, size_t axis, float epsilon, float gamma, float beta){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::layer_norm(&input_tensor, scale) :: cannot get root of elems from a 0 sized tensor" 
          ); 
@@ -730,7 +730,7 @@ tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, tensor_pool
   return final_tens; 
 }
 
-tens::tensor tens::ops::gelu(const tens::tensor &input_tensor, tensor_pool &pool){
+tens::tensor tens::ops::gelu(const tens::tensor &input_tensor, memory::neural_arena &pool){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::gelu(&input_tensor, scale) :: cannot apply gelu() to a 0 sized tensor" 
          ); 
@@ -748,7 +748,7 @@ tens::tensor tens::ops::gelu(const tens::tensor &input_tensor, tensor_pool &pool
   return final_tens; 
 }
 
-tens::tensor tens::ops::softmax(const tens::tensor &input_tensor, tensor_pool &pool, size_t axis){
+tens::tensor tens::ops::softmax(const tens::tensor &input_tensor, memory::neural_arena &pool, size_t axis){
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::gelu(&input_tensor, scale) :: cannot apply gelu() to a 0 sized tensor" 
          ); 
@@ -762,7 +762,7 @@ tens::tensor tens::ops::softmax(const tens::tensor &input_tensor, tensor_pool &p
   return final_tens; 
 }
 
-tens::tensor tens::ops::embedding(const tens::tensor &input_weights, const tens::tensor &input_indices, tensor_pool &pool){
+tens::tensor tens::ops::embedding(const tens::tensor &input_weights, const tens::tensor &input_indices, memory::neural_arena &pool){
   assert(input_weights.shape.numel() > 0 
          && "tens::ops::embedding(&input_weights, &input_indices) :: cannot apply embeddings to a 0 sized tensor" 
          ); 
@@ -785,7 +785,7 @@ tens::tensor tens::ops::embedding(const tens::tensor &input_weights, const tens:
   for(int i = output_tensor.shape.ndim - 2; i >= 0; --i){
     output_tensor.shape.strides[i] = input_indices.shape.strides[i + 1] * input_indices.shape.dims[i + 1]; 
   }
-  output_tensor.tensor_data = pool.arena.nn_alloc<float>(num_indices * embed_dim);
+  output_tensor.tensor_data = pool.nn_alloc<float>(num_indices * embed_dim);
  
   for(size_t i = 0; i < num_indices; ++i){
     int token_id = (int)input_indices.tensor_data[i];
@@ -797,14 +797,14 @@ tens::tensor tens::ops::embedding(const tens::tensor &input_weights, const tens:
   return output_tensor; 
 }
 
-tens::tensor tens::positional_encoders::sine_encoder(size_t sequence_length, size_t embed_dim, tensor_pool &pool){
+tens::tensor tens::positional_encoders::sine_encoder(size_t sequence_length, size_t embed_dim, memory::neural_arena &pool){
   tens::tensor output_tensor; 
   output_tensor.shape.ndim = 2; 
   output_tensor.shape.dims[0] = sequence_length; 
   output_tensor.shape.dims[1] = embed_dim; 
   output_tensor.shape.strides[0] = embed_dim; 
   output_tensor.shape.strides[1] = 1; 
-  output_tensor.tensor_data = pool.arena.nn_alloc<float>(sequence_length * embed_dim);
+  output_tensor.tensor_data = pool.nn_alloc<float>(sequence_length * embed_dim);
 
   for(size_t pos = 0; pos < sequence_length; ++pos){
     for(size_t i = 0; i < embed_dim; i += 2){
@@ -822,7 +822,7 @@ tens::tensor tens::positional_encoders::sine_encoder(size_t sequence_length, siz
   return output_tensor; 
 }
 
-tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, const tens::tensor &weight, const tens::tensor &bias, tensor_pool &pool, size_t axis, float epsilon) {
+tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, const tens::tensor &weight, const tens::tensor &bias, memory::neural_arena &pool, size_t axis, float epsilon) {
   assert(input_tensor.shape.numel() > 0 
          && "tens::ops::layer_norm(&input_tensor, &weight, &bias) :: cannot apply layer_norm to a 0 sized tensor" 
          ); 
@@ -846,7 +846,7 @@ tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, const tens:
   
   tens::tensor output;
   output.shape = input_tensor.shape;
-  output.tensor_data = pool.arena.nn_alloc<float>(input_tensor.shape.numel());
+  output.tensor_data = pool.nn_alloc<float>(input_tensor.shape.numel());
   
   for (size_t o = 0; o < outer_size; o++) {
     float* row_in = input_tensor.tensor_data + o * norm_size;
@@ -886,54 +886,6 @@ tens::tensor tens::ops::cpu_transpose_avx512(const tens::tensor& input, memory::
   out.shape.strides[0] = rows;
   out.shape.strides[1] = 1;
   out.tensor_data = pool.nn_alloc<float>(rows * cols);
-
-  float* src = input.tensor_data;
-  float* dst = out.tensor_data;
-
-  const size_t BLOCK = 16;
-
-  alignas(64) int indices[16];
-  for (int i = 0; i < 16; ++i) indices[i] = i * rows;
-  __m512i vindex = _mm512_load_si512(indices);
-
-  size_t i = 0;
-  for (; i + BLOCK <= rows; i += BLOCK) {
-    size_t j = 0;
-    for (; j + BLOCK <= cols; j += BLOCK) {
-      for (size_t k = 0; k < BLOCK; ++k) {
-        __m512 val = _mm512_loadu_ps(&src[(i + k) * cols + j]);
-
-        void* addr = &dst[j * rows + (i + k)];
-        _mm512_i32scatter_ps(addr, vindex, val, 4);
-      }
-    }
-      
-    for (; j < cols; ++j) {
-      for (size_t k = 0; k < BLOCK; ++k) {
-        dst[j * rows + (i + k)] = src[(i + k) * cols + j];
-      }
-    }
-  }
-
-  for (; i < rows; ++i) {
-    for (size_t j = 0; j < cols; ++j) {
-      dst[j * rows + i] = src[i * cols + j];
-    }
-  }
-  return out;
-}
-
-tens::tensor tens::ops::cpu_transpose_avx512(const tens::tensor& input, tens::tensor_pool& pool) {
-  size_t rows = input.shape.dims[0];
-  size_t cols = input.shape.dims[1];
-
-  tens::tensor out;
-  out.shape.ndim = 2;
-  out.shape.dims[0] = cols;
-  out.shape.dims[1] = rows;
-  out.shape.strides[0] = rows;
-  out.shape.strides[1] = 1;
-  out.tensor_data = pool.arena.nn_alloc<float>(rows * cols);
 
   float* src = input.tensor_data;
   float* dst = out.tensor_data;

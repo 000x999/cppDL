@@ -192,20 +192,20 @@ void attention_test(){
   
   size_t weight_size = embed_dim * head_dim;
   size_t total_weights = weight_size * 4;    
-  atten::atten_pool persistent_arena(total_weights * sizeof(float) * 50); 
+  memory::neural_arena persistent_arena(total_weights * sizeof(float) * 50); 
   attn.init(persistent_arena); 
   
-  atten::atten_pool temp_arena(seq_len * embed_dim * 200 * sizeof(float)); 
+  memory::neural_arena temp_arena(seq_len * embed_dim * 200 * sizeof(float)); 
   
-  float *input_data = temp_arena.arena.nn_alloc<float>(seq_len * embed_dim); 
+  float *input_data = temp_arena.nn_alloc<float>(seq_len * embed_dim); 
   for(size_t i = 0; i < seq_len * embed_dim; ++i){
       input_data[i] = dist(gen); 
   }
   
-  float *wq_data = temp_arena.arena.nn_alloc<float>(weight_size); 
-  float *wk_data = temp_arena.arena.nn_alloc<float>(weight_size);
-  float *wv_data = temp_arena.arena.nn_alloc<float>(weight_size);
-  float *wo_data = temp_arena.arena.nn_alloc<float>(weight_size);
+  float *wq_data = temp_arena.nn_alloc<float>(weight_size); 
+  float *wk_data = temp_arena.nn_alloc<float>(weight_size);
+  float *wv_data = temp_arena.nn_alloc<float>(weight_size);
+  float *wo_data = temp_arena.nn_alloc<float>(weight_size);
   
   for(size_t i = 0; i < weight_size; ++i){
     wq_data[i] = dist(gen); 
@@ -254,20 +254,20 @@ void multi_head_attention_test(){
 
   size_t weight_size = embed_dim * embed_dim;
   size_t total_weights = weight_size * 4;    
-  atten::atten_pool persistent_arena(total_weights * sizeof(float) + 4096); 
+  memory::neural_arena persistent_arena(total_weights * sizeof(float) + 4096); 
   attn.init(persistent_arena); 
 
-  atten::atten_pool temp_arena(seq_len * embed_dim * 200 * sizeof(float)); 
+  memory::neural_arena temp_arena(seq_len * embed_dim * 200 * sizeof(float)); 
 
-  float *input_data = temp_arena.arena.nn_alloc<float>(seq_len * embed_dim); 
+  float *input_data = temp_arena.nn_alloc<float>(seq_len * embed_dim); 
   for(size_t i = 0; i < seq_len * embed_dim; ++i){
     input_data[i] = dist(gen); 
   }
 
-  float *wq_data = temp_arena.arena.nn_alloc<float>(weight_size); 
-  float *wk_data = temp_arena.arena.nn_alloc<float>(weight_size);
-  float *wv_data = temp_arena.arena.nn_alloc<float>(weight_size);
-  float *wo_data = temp_arena.arena.nn_alloc<float>(weight_size);
+  float *wq_data = temp_arena.nn_alloc<float>(weight_size); 
+  float *wk_data = temp_arena.nn_alloc<float>(weight_size);
+  float *wv_data = temp_arena.nn_alloc<float>(weight_size);
+  float *wo_data = temp_arena.nn_alloc<float>(weight_size);
 
   for(size_t i = 0; i < weight_size; ++i){
     wq_data[i] = dist(gen); 
@@ -339,11 +339,11 @@ void gemm_test(float A){
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_real_distribution<float> dist(-1.0f, 1.0f); 
-  atten::atten_pool temp_arena(3 * (A * A) * sizeof(float) + 4096);
+  memory::neural_arena temp_arena(3 * (A * A) * sizeof(float) + 4096);
 
-  float *data_ptr_a = temp_arena.arena.nn_alloc<float>(A * A); 
-  float *data_ptr_b = temp_arena.arena.nn_alloc<float>(A * A);
-  float *data_ptr_c = temp_arena.arena.nn_alloc<float>(A * A);
+  float *data_ptr_a = temp_arena.nn_alloc<float>(A * A); 
+  float *data_ptr_b = temp_arena.nn_alloc<float>(A * A);
+  float *data_ptr_c = temp_arena.nn_alloc<float>(A * A);
 
   for(size_t i = 0; i < A * A; ++i){
     data_ptr_a[i] = dist(gen);
@@ -395,7 +395,7 @@ int main(int argc, char* argv[]) {
   }
   
   memory::neural_arena model_arena(1024ULL * 1024ULL * 1024ULL);
-  tens::tensor_pool temp_pool(1024ULL * 1024ULL * 512ULL);      
+  memory::neural_arena temp_pool(1024ULL * 1024ULL * 512ULL);      
   
   gpt2::model model;
   gpt2::init_model(&model);
@@ -471,9 +471,9 @@ int main(int argc, char* argv[]) {
     
     if (next_token == 50256) break;
 
-    temp_pool.arena.nn_reset();
+    temp_pool.nn_reset();
     for (size_t l = 0; l < model.cfg.num_layers; l++) 
-        if (model.atten_pools[l]) model.atten_pools[l]->arena.nn_reset();
+        if (model.atten_pools[l]) model.atten_pools[l]->nn_reset();
   }
   
   std::printf("\n\nStats: %.2f tok/s | %.2f GFLOP/s\n", 

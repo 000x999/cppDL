@@ -34,11 +34,6 @@ struct atten_comps{
   tens::tensor attn_output; 
 }; 
 
-struct atten_pool{
-  memory::neural_arena arena;
-  explicit atten_pool(size_t arena_size) : arena(arena_size){}
-}; 
-
 class attention{
 private:
   atten_weights weights_data; 
@@ -48,10 +43,10 @@ private:
   size_t        head_dim;  
 
 public:
-  attention                 (size_t       embedded_dim  , size_t    num_heads     ); 
-  void         init         (atten_pool   &persistent_arena                       ); 
-  void         load_weights (float *w_q,  float *w_k, float *w_v, float *w_o      );
-  tens::tensor forward      (tens::tensor &input_tensor , atten_pool &alloc_pool  ); 
+  attention                 (size_t       embedded_dim  , size_t    num_heads               ); 
+  void         init         (memory::neural_arena   &persistent_arena                       ); 
+  void         load_weights (float *w_q,  float *w_k, float *w_v, float *w_o                );
+  tens::tensor forward      (tens::tensor &input_tensor , memory::neural_arena &alloc_pool  ); 
 };
 
 class multi_head_attention{
@@ -63,10 +58,10 @@ private:
   size_t        head_dim; 
 
 public: 
-  multi_head_attention      (size_t       embedded_dim, size_t num_heads        ); 
-  void         init         (atten_pool   &persistent_arena                     ); 
+  multi_head_attention      (size_t       embedded_dim, size_t num_heads                  ); 
+  void         init         (memory::neural_arena   &persistent_arena                     ); 
   void         load_weights (float *w_q,  float *w_k, float *w_v, float*w_o, float *b_q, float *b_k, float *b_v, float *b_o); 
-  tens::tensor forward      (tens::tensor &input_tensor, atten_pool &alloc_pool ); 
+  tens::tensor forward      (tens::tensor &input_tensor, memory::neural_arena &alloc_pool ); 
 };
 
 };//namespace  

@@ -29,11 +29,6 @@ struct tensor_shape{
   bool   is_contiguous() const;
 }; 
 
-struct tensor_pool{
-  memory::neural_arena arena;
-  explicit tensor_pool(size_t arena_size) : arena(arena_size){}
-}; 
-
 class tensor{
 public: 
   float        *tensor_data; 
@@ -51,33 +46,32 @@ public:
 
 class positional_encoders{
 public:
-  static tens::tensor sine_encoder(size_t sequence_length, size_t embed_dim, tensor_pool &pool); 
+  static tens::tensor sine_encoder(size_t sequence_length, size_t embed_dim, memory::neural_arena &pool); 
 };
 
 class ops{
 public: 
   static __m512       fast_exp             (__m512 input_vec                                                                             ); 
-  static tens::tensor add                  (const tens::tensor &left_tensor  , const tens::tensor &right_tensor, tensor_pool &pool       );
-  static tens::tensor add                  (const tens::tensor &input_tensor , float scalar                    , tensor_pool &pool       ); 
-  static tens::tensor sub                  (const tens::tensor &left_tensor  , const tens::tensor &right_tensor, tensor_pool &pool       ); 
-  static tens::tensor mul                  (const tens::tensor &left_tensor  , const tens::tensor &right_tensor, tensor_pool &pool       ); 
-  static tens::tensor div                  (const tens::tensor &left_tensor  , const tens::tensor &right_tensor, tensor_pool &pool       );
-  static tens::tensor scale                (const tens::tensor &input_tensor , float scale                     , tensor_pool &pool       );
-  static tens::tensor exp                  (const tens::tensor &input_tensor , tensor_pool &pool                                         ); 
-  static tens::tensor root                 (const tens::tensor &input_tensor , tensor_pool &pool                                         );
-  static tens::tensor tanh                 (const tens::tensor &input_tensor , tensor_pool &pool                                         );
-  static tens::tensor var                  (const tens::tensor &input_tensor , tensor_pool &pool, size_t axis = -1, bool keep_dim = false);
-  static tens::tensor sum                  (const tens::tensor &input_tensor , tensor_pool &pool, size_t axis = -1, bool keep_dim = false); 
-  static tens::tensor mean                 (const tens::tensor &input_tensor , tensor_pool &pool, size_t axis = -1, bool keep_dim = false); 
-  static tens::tensor max                  (const tens::tensor &input_tensor , tensor_pool &pool, size_t axis = -1, bool keep_dim = false); 
-  static tens::tensor min                  (const tens::tensor &input_tensor , tensor_pool &pool, size_t axis = -1, bool keep_dim = false);
-  static tens::tensor layer_norm           (const tens::tensor &input_tensor , tensor_pool &pool, size_t axis = -1, float epsilon = 1e-5, float gamma = 0.0f, float beta = 1.0f);
-  static tens::tensor layer_norm           (const tens::tensor &input_tensor , const tens::tensor &weight, const tens::tensor &bias, tensor_pool &pool, size_t axis = -1, float epsilon = 1e-5);
-  static tens::tensor gelu                 (const tens::tensor &input_tensor , tensor_pool &pool                                         );
-  static tens::tensor softmax              (const tens::tensor &input_tensor , tensor_pool &pool, size_t axis = -1                       ); 
-  static tens::tensor embedding            (const tens::tensor &input_weights, const tens::tensor &input_indices, tensor_pool &pool      );
-  static tens::tensor cpu_transpose_avx512 (const tens::tensor &input_tensor , memory::neural_arena &pool                                ); 
-  static tens::tensor cpu_transpose_avx512 (const tens::tensor &input_tensor , tens::tensor_pool    &pool                                );
+  static tens::tensor add                  (const tens::tensor &left_tensor  , const tens::tensor &right_tensor, memory::neural_arena &pool       );
+  static tens::tensor add                  (const tens::tensor &input_tensor , float scalar                    , memory::neural_arena &pool       ); 
+  static tens::tensor sub                  (const tens::tensor &left_tensor  , const tens::tensor &right_tensor, memory::neural_arena &pool       ); 
+  static tens::tensor mul                  (const tens::tensor &left_tensor  , const tens::tensor &right_tensor, memory::neural_arena &pool       ); 
+  static tens::tensor div                  (const tens::tensor &left_tensor  , const tens::tensor &right_tensor, memory::neural_arena &pool       );
+  static tens::tensor scale                (const tens::tensor &input_tensor , float scale                     , memory::neural_arena &pool       );
+  static tens::tensor exp                  (const tens::tensor &input_tensor , memory::neural_arena &pool                                         ); 
+  static tens::tensor root                 (const tens::tensor &input_tensor , memory::neural_arena &pool                                         );
+  static tens::tensor tanh                 (const tens::tensor &input_tensor , memory::neural_arena &pool                                         );
+  static tens::tensor var                  (const tens::tensor &input_tensor , memory::neural_arena &pool, size_t axis = -1, bool keep_dim = false);
+  static tens::tensor sum                  (const tens::tensor &input_tensor , memory::neural_arena &pool, size_t axis = -1, bool keep_dim = false); 
+  static tens::tensor mean                 (const tens::tensor &input_tensor , memory::neural_arena &pool, size_t axis = -1, bool keep_dim = false); 
+  static tens::tensor max                  (const tens::tensor &input_tensor , memory::neural_arena &pool, size_t axis = -1, bool keep_dim = false); 
+  static tens::tensor min                  (const tens::tensor &input_tensor , memory::neural_arena &pool, size_t axis = -1, bool keep_dim = false);
+  static tens::tensor layer_norm           (const tens::tensor &input_tensor , memory::neural_arena &pool, size_t axis = -1, float epsilon = 1e-5, float gamma = 0.0f, float beta = 1.0f);
+  static tens::tensor layer_norm           (const tens::tensor &input_tensor , const tens::tensor &weight, const tens::tensor &bias, memory::neural_arena &pool, size_t axis = -1, float epsilon = 1e-5);
+  static tens::tensor gelu                 (const tens::tensor &input_tensor , memory::neural_arena &pool                                         );
+  static tens::tensor softmax              (const tens::tensor &input_tensor , memory::neural_arena &pool, size_t axis = -1                       ); 
+  static tens::tensor embedding            (const tens::tensor &input_weights, const tens::tensor &input_indices, memory::neural_arena &pool      );
+  static tens::tensor cpu_transpose_avx512 (const tens::tensor &input_tensor , memory::neural_arena &pool                                         ); 
 };
 }; 
 

@@ -55,7 +55,7 @@ tens::tensor load_tensor(safetensor::safetensor_file *sf, const char *name, memo
   return t;
 }
 
-tens::tensor matmul(const tens::tensor &a, const tens::tensor &b, tens::tensor_pool &pool){
+tens::tensor matmul(const tens::tensor &a, const tens::tensor &b, memory::neural_arena &pool){
   size_t M = a.shape.dims[0];
   size_t K = a.shape.dims[1];
   size_t N = b.shape.dims[1]; 
@@ -66,7 +66,7 @@ tens::tensor matmul(const tens::tensor &a, const tens::tensor &b, tens::tensor_p
   out.shape.dims[1] = N;
   out.shape.strides[0] = N;
   out.shape.strides[1] = 1;
-  out.tensor_data = pool.arena.nn_alloc<float>(M * N);
+  out.tensor_data = pool.nn_alloc<float>(M * N);
   
   std::memset(out.tensor_data, 0, M * N * sizeof(float));
   
@@ -104,7 +104,7 @@ tens::tensor matmul(const tens::tensor &a, const tens::tensor &b, tens::tensor_p
   return out;
 }
 
-tens::tensor linear(const tens::tensor &x, const tens::tensor &weight, const tens::tensor &bias, tens::tensor_pool &pool) {
+tens::tensor linear(const tens::tensor &x, const tens::tensor &weight, const tens::tensor &bias, memory::neural_arena &pool) {
 size_t seq_len = x.shape.dims[0];
   size_t in_features = x.shape.dims[1];
   
@@ -123,7 +123,7 @@ size_t seq_len = x.shape.dims[0];
   out.shape.dims[1] = out_features;
   out.shape.strides[0] = out_features;
   out.shape.strides[1] = 1;
-  out.tensor_data = pool.arena.nn_alloc<float>(seq_len * out_features);
+  out.tensor_data = pool.nn_alloc<float>(seq_len * out_features);
   
   std::memset(out.tensor_data, 0, seq_len * out_features * sizeof(float));
   
@@ -278,9 +278,10 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     float* w_o = attn_proj_weight.tensor_data; 
     float* b_o = attn_proj_bias.tensor_data;
     
-    void* pool_mem  = alloc.nn_alloc<char>(sizeof(atten::atten_pool));
+    void* pool_mem  = alloc.nn_alloc<char>(sizeof(memory::neural_arena));
     void* atten_mem = alloc.nn_alloc<char>(sizeof(atten::multi_head_attention));
-    m->atten_pools[i] = new (pool_mem) atten::atten_pool(atten_arena_size);
+    
+    m->atten_pools[i] = new (pool_mem) memory::neural_arena(atten_arena_size);
     m->attentions[i]  = new (atten_mem) atten::multi_head_attention(embed_dim, m->cfg.num_heads);
     m->attentions[i]->init(*m->atten_pools[i]);
     m->attentions[i]->load_weights(w_q_buf, w_k_buf, w_v_buf, w_o, b_q, b_k, b_v, b_o);
@@ -406,10 +407,10 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
 }
 */
 
-tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &pool) {
+tens::tensor forward(model *m, const tens::tensor &tokens, memory::neural_arena &pool) {
     for (size_t i = 0; i < m->cfg.num_layers; i++) {
         if (m->atten_pools[i]) {
-            m->atten_pools[i]->arena.nn_reset();
+            m->atten_pools[i]->nn_reset();
         }
     }
     
@@ -426,7 +427,7 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
     x.shape.dims[1] = embed_dim;
     x.shape.strides[0] = embed_dim;
     x.shape.strides[1] = 1;
-    x.tensor_data = pool.arena.nn_alloc<float>(seq_len * embed_dim);
+    x.tensor_data = pool.nn_alloc<float>(seq_len * embed_dim);
 
     for (size_t t = 0; t < seq_len; t++) {
         int token_id = (int)tokens.tensor_data[t];
@@ -486,7 +487,7 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
     logits.shape.dims[1] = m->cfg.vocab_size;
     logits.shape.strides[0] = m->cfg.vocab_size;
     logits.shape.strides[1] = 1;
-    logits.tensor_data = pool.arena.nn_alloc<float>(seq_len * m->cfg.vocab_size);
+    logits.tensor_data = pool.nn_alloc<float>(seq_len * m->cfg.vocab_size);
     
     level3::mat_ops_view view_x {
         .row_view = seq_len,
@@ -555,13 +556,14 @@ int argmax(const tens::tensor& logits) {
 }
 
 void free_model(model* m) {
+
   for (size_t i = 0; i < m->cfg.num_layers; i++) {
     if (m->attentions[i]) {
       m->attentions[i]->~multi_head_attention();
       m->attentions[i] = nullptr;
     }
     if (m->atten_pools[i]) {
-      m->atten_pools[i]->~atten_pool();
+      m->atten_pools[i]->~neural_arena();
       m->atten_pools[i] = nullptr;
     }
   }
@@ -603,8 +605,8 @@ int sample_top_k(float* logits, size_t vocab_size, int k) {
   return pairs[k-1].first; 
 }
 
-int sample_top_k_avx512(float* logits, size_t vocab_size, int k, float temperature, tens::tensor_pool& pool) {
-  Token* top_k = pool.arena.nn_alloc<Token>(k + 1);
+int sample_top_k_avx512(float* logits, size_t vocab_size, int k, float temperature, memory::neural_arena &pool) {
+  Token* top_k = pool.nn_alloc<Token>(k + 1);
   
   for (int i = 0; i < k; ++i) {
     top_k[i] = { -1e30f, -1 };
@@ -661,7 +663,7 @@ for (; i < vocab_size; ++i) {
   insert_candidate(logits[i], i);
 }
 
-float* probs = pool.arena.nn_alloc<float>(k);
+float* probs = pool.nn_alloc<float>(k);
 
 float max_logit = top_k[0].score / temperature; 
 float sum_exp = 0.0f;

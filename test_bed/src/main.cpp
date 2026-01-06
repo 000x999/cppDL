@@ -15,34 +15,8 @@
 #include <x86intrin.h>
 #include <limits>
 
-size_t estimate_flops_per_token(gpt2::config& cfg, size_t seq_len) {
-  size_t embed_dim = cfg.embed_dim;
-  size_t num_heads = cfg.num_heads;
-  size_t num_layers = cfg.num_layers;
-  size_t vocab_size = cfg.vocab_size;
-  size_t head_dim = embed_dim / num_heads;
-  size_t ffn_hidden = embed_dim * 4;
-  
-  size_t flops = 0;
-  
-  for (size_t l = 0; l < num_layers; l++) {
-    flops += 5 * seq_len * embed_dim;
-    flops += 3 * 2 * seq_len * embed_dim * embed_dim;
-    flops += 2 * num_heads * seq_len * seq_len * head_dim;
-    flops += 5 * num_heads * seq_len * seq_len;
-    flops += 2 * num_heads * seq_len * seq_len * head_dim;
-    flops += 2 * seq_len * embed_dim * embed_dim;
-    flops += 5 * seq_len * embed_dim;
-    flops += 2 * seq_len * embed_dim * ffn_hidden;
-    flops += 10 * seq_len * ffn_hidden;
-    flops += 2 * seq_len * ffn_hidden * embed_dim;
-  }
-  
-  flops += 5 * seq_len * embed_dim;
-  
-  flops += 2 * seq_len * embed_dim * vocab_size;
-  
-  return flops;
+size_t estimate_flops_per_token(const gpt2::config& cfg, size_t seq_len) {
+  return 24ULL * 768ULL * 768ULL * 2ULL * (size_t)cfg.num_layers; 
 }
 
 

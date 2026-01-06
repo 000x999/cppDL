@@ -105,8 +105,16 @@ tens::tensor matmul(const tens::tensor &a, const tens::tensor &b, tens::tensor_p
 }
 
 tens::tensor linear(const tens::tensor &x, const tens::tensor &weight, const tens::tensor &bias, tens::tensor_pool &pool) {
-  size_t seq_len = x.shape.dims[0];
+size_t seq_len = x.shape.dims[0];
   size_t in_features = x.shape.dims[1];
+  
+  if (weight.shape.dims[0] != in_features) {
+      std::printf("[FATAL] Linear Dimension Mismatch! Input Col: %zu, Weight Row: %zu\n", 
+                  in_features, weight.shape.dims[0]);
+      std::printf("       Hint: Did you forget to transpose the PyTorch weights?\n");
+      std::exit(1);
+  }
+
   size_t out_features = weight.shape.dims[1]; 
   
   tens::tensor out;
@@ -122,14 +130,14 @@ tens::tensor linear(const tens::tensor &x, const tens::tensor &weight, const ten
   level3::mat_ops_view view_x {
     .row_view = seq_len,
     .col_view = in_features,
-    .leading_dimension = x.shape.strides[0],
+    .leading_dimension = in_features,
     .data_view = x.tensor_data
   };
   
   level3::mat_ops_view view_w {
-    .row_view = weight.shape.dims[0],
-    .col_view = weight.shape.dims[1],
-    .leading_dimension = weight.shape.strides[0],
+    .row_view = in_features,
+    .col_view = out_features,
+    .leading_dimension = out_features, 
     .data_view = weight.tensor_data
   };
   
@@ -155,7 +163,6 @@ tens::tensor linear(const tens::tensor &x, const tens::tensor &weight, const ten
       out.tensor_data[i * out_features + j] += bias.tensor_data[j];
     }
   }
-  
   return out;
 }
 
@@ -200,34 +207,21 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
   safetensor::print_entries(&sf);
   std::printf("\n");
   
+  // 1. Load Global Tensors
   m->wte = load_tensor(&sf, "wte.weight", alloc);
   m->wpe = load_tensor(&sf, "wpe.weight", alloc);
- 
-  size_t vocab_size = m->wte.shape.dims[0];
-  size_t embed_dim_wte = m->wte.shape.dims[1];
 
-  m->wte_T.shape.ndim = 2;
-  m->wte_T.shape.dims[0] = embed_dim_wte;
-  m->wte_T.shape.dims[1] = vocab_size;
-  m->wte_T.shape.strides[0] = vocab_size;
-  m->wte_T.shape.strides[1] = 1;
-  m->wte_T.tensor_data = alloc.nn_alloc<float>(vocab_size * embed_dim_wte);
-
-  for (size_t i = 0; i < vocab_size; i++) {
-    for (size_t j = 0; j < embed_dim_wte; j++) {
-      m->wte_T.tensor_data[j * vocab_size + i] = m->wte.tensor_data[i * embed_dim_wte + j];
-    }
-  }
-
+  // 2. Setup Config
   if (m->wte.tensor_data) {
     m->cfg.vocab_size = m->wte.shape.dims[0];
-    m->cfg.embed_dim = m->wte.shape.dims[1];
+    m->cfg.embed_dim = m->wte.shape.dims[1]; 
   }
   if (m->wpe.tensor_data) {
     m->cfg.max_seq_len = m->wpe.shape.dims[0];
   }
   m->cfg.layer_norm_eps = 1e-5f;
   
+  // 3. Count Layers
   m->cfg.num_layers = 0;
   char name[safetensor::MAX_NAME_LEN];
   for (size_t i = 0; i < MAX_LAYERS; i++) {
@@ -238,13 +232,14 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
       break;
     }
   }
-  
   m->cfg.num_heads = m->cfg.embed_dim / 64;
   
-  std::printf("Detected config: vocab=%zu, embed=%zu, layers=%zu, heads=%zu, max_seq=%zu\n",
-              m->cfg.vocab_size, m->cfg.embed_dim, m->cfg.num_layers,
-              m->cfg.num_heads, m->cfg.max_seq_len);
-  
+  std::printf("Detected config: vocab=%zu, embed=%zu, layers=%zu, heads=%zu\n",
+              m->cfg.vocab_size, m->cfg.embed_dim, m->cfg.num_layers, m->cfg.num_heads);
+
+  std::printf("[INFO] Transposing WTE with AVX512...\n");
+  m->wte_T = tens::ops::cpu_transpose_avx512(m->wte, alloc);
+
   size_t embed_dim = m->cfg.embed_dim;
   size_t atten_arena_size = MAX_SEQ_LEN * embed_dim * 16 * sizeof(float);
   
@@ -263,39 +258,34 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     tens::tensor qkv_bias = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_proj.weight", i);
-    tens::tensor proj_weight = load_tensor(&sf, name, alloc);
+    tens::tensor attn_proj_weight = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_proj.bias", i);
-    tens::tensor proj_bias = load_tensor(&sf, name, alloc);
-   
-    if (i == 0) {
-      std::printf("[DEBUG] c_attn.weight shape: [%zu, %zu]\n", 
-                qkv_weight.shape.dims[0], qkv_weight.shape.dims[1]);
-    
-      std::printf("[DEBUG] c_attn.weight[0][0]: %.6f\n", qkv_weight.tensor_data[0]);
-      std::printf("[DEBUG] c_attn.weight[0][768]: %.6f\n", qkv_weight.tensor_data[768]);
-      std::printf("[DEBUG] c_attn.weight[0][1536]: %.6f\n", qkv_weight.tensor_data[1536]);
-    }
-
+    tens::tensor attn_proj_bias = load_tensor(&sf, name, alloc);
 
     float* w_q_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
     float* w_k_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
     float* w_v_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
     
+    float* src_ptr = qkv_weight.tensor_data;
+    
     for (size_t row = 0; row < embed_dim; row++) {
-      for (size_t col = 0; col < embed_dim; col++) {
-        size_t src_stride = 3 * embed_dim;
-        w_q_buf[row * embed_dim + col] = qkv_weight.tensor_data[row * src_stride + col];
-        w_k_buf[row * embed_dim + col] = qkv_weight.tensor_data[row * src_stride + embed_dim + col];
-        w_v_buf[row * embed_dim + col] = qkv_weight.tensor_data[row * src_stride + 2 * embed_dim + col];
-      }
+      std::memcpy(w_q_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
+      src_ptr += embed_dim;
+      
+      std::memcpy(w_k_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
+      src_ptr += embed_dim;
+      
+      std::memcpy(w_v_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
+      src_ptr += embed_dim;
     }
     
     float* b_q = qkv_bias.tensor_data;
     float* b_k = qkv_bias.tensor_data + embed_dim;
     float* b_v = qkv_bias.tensor_data + 2 * embed_dim;
-    float* w_o = proj_weight.tensor_data;
-    float* b_o = proj_bias.tensor_data;
+    
+    float* w_o = attn_proj_weight.tensor_data;
+    float* b_o = attn_proj_bias.tensor_data;
     
     void* pool_mem = alloc.nn_alloc<char>(sizeof(atten::atten_pool));
     void* atten_mem = alloc.nn_alloc<char>(sizeof(atten::multi_head_attention));
@@ -311,19 +301,18 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     b->ln2_bias = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.weight", i);
-    b->ffn_fc_weight = load_tensor(&sf, name, alloc);
+    tens::tensor fc_raw = load_tensor(&sf, name, alloc);
+    b->ffn_fc_weight = tens::ops::cpu_transpose_avx512(fc_raw, alloc);
+    
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.bias", i);
     b->ffn_fc_bias = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.weight", i);
-    b->ffn_proj_weight = load_tensor(&sf, name, alloc);
+    tens::tensor proj_raw = load_tensor(&sf, name, alloc);
+    b->ffn_proj_weight = tens::ops::cpu_transpose_avx512(proj_raw, alloc);
+    
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.bias", i);
     b->ffn_proj_bias = load_tensor(&sf, name, alloc);
-
-    std::printf("[DEBUG] layer %zu ffn_fc_weight: [%zu, %zu]\n", 
-            i, b->ffn_fc_weight.shape.dims[0], b->ffn_fc_weight.shape.dims[1]);
-    std::printf("[DEBUG] layer %zu ffn_proj_weight: [%zu, %zu]\n", 
-            i, b->ffn_proj_weight.shape.dims[0], b->ffn_proj_weight.shape.dims[1]);
   }
   
   m->ln_f_weight = load_tensor(&sf, "ln_f.weight", alloc);
@@ -341,7 +330,7 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
       m->atten_pools[i]->arena.nn_reset();
     }
     static int call_count = 0;
-    bool debug = (call_count == 1);  
+    bool debug = (call_count == 0); 
     call_count++;
     
     size_t seq_len = tokens.shape.dims[0];
@@ -362,7 +351,6 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
     
     for (size_t i = 0; i < m->cfg.num_layers; i++) {
         transformer_block* b = &m->blocks[i];
-        
         tens::tensor residual = x;
         
         x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
@@ -373,8 +361,11 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
         
         x = tens::ops::add(residual, x, pool);
         residual = x;
+        
         x = tens::ops::layer_norm(x, b->ln2_weight, b->ln2_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
+        
         x = linear(x, b->ffn_fc_weight, b->ffn_fc_bias, pool);
+        
         x = tens::ops::gelu(x, pool);
         x = linear(x, b->ffn_proj_weight, b->ffn_proj_bias, pool);
         x = tens::ops::add(residual, x, pool);
@@ -385,6 +376,21 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
     x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
     if (debug) debug_tensor("final_ln", x);
     
+    if (debug) {
+        float manual_logit_0 = 0.0f;
+        for (size_t k = 0; k < embed_dim; k++) {
+             manual_logit_0 += x.tensor_data[k] * m->wte.tensor_data[k]; 
+        }
+        std::printf("[DEBUG] Manual logit[0][0] (Pre-Alloc check): %.6f\n", manual_logit_0);
+    }
+
+    tens::tensor wte_transposed = m->wte_T;
+    
+    if (wte_transposed.shape.dims[0] != embed_dim) {
+        if (debug) printf("[WARN] wte_T not pre-transposed. Transposing now (Slow!)...\n");
+        wte_transposed = tens::ops::cpu_transpose_avx512(m->wte, pool);
+    }
+
     tens::tensor logits;
     logits.shape.ndim = 2;
     logits.shape.dims[0] = seq_len;
@@ -392,6 +398,7 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
     logits.shape.strides[0] = m->cfg.vocab_size;
     logits.shape.strides[1] = 1;
     logits.tensor_data = pool.arena.nn_alloc<float>(seq_len * m->cfg.vocab_size);
+    
     std::memset(logits.tensor_data, 0, seq_len * m->cfg.vocab_size * sizeof(float));
     
     level3::mat_ops_view view_x {
@@ -404,8 +411,8 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
     level3::mat_ops_view view_wte_T {
         .row_view = embed_dim,
         .col_view = m->cfg.vocab_size,
-        .leading_dimension = m->cfg.vocab_size,
-        .data_view = m->wte_T.tensor_data
+        .leading_dimension = m->cfg.vocab_size, 
+        .data_view = wte_transposed.tensor_data
     };
     
     level3::mat_ops_view view_logits {
@@ -414,61 +421,47 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
         .leading_dimension = m->cfg.vocab_size,
         .data_view = logits.tensor_data
     };
- 
-    std::printf("[DEBUG] Computing logits: x[%zu, %zu] @ wte[%zu, %zu]^T\n",
-                seq_len, embed_dim, m->cfg.vocab_size, embed_dim);
-
-    float manual_logit_0 = 0.0f;
-    for (size_t k = 0; k < embed_dim; k++) {
-      manual_logit_0 += x.tensor_data[k] * m->wte.tensor_data[k]; 
-    }
-    std::printf("[DEBUG] Manual logit[0][0]: %.6f\n", manual_logit_0);
+   
+    std::printf("[DEBUG] Computing logits: x[%zu, %zu] @ wte_T[%zu, %zu]\n",
+                seq_len, embed_dim, embed_dim, m->cfg.vocab_size);
 
     level3::blas::crush_gemm(
-    level3::transpose_gemm::no_transpose,
-    level3::transpose_gemm::no_transpose, 
-    view_x,
-    view_wte_T,
-    1.0f,
-    0.0f,
-    view_logits
-);
-   
-    std::printf("[DEBUG] GEMM logit[0][0]: %.6f\n", logits.tensor_data[0]);
+        level3::transpose_gemm::no_transpose,
+        level3::transpose_gemm::no_transpose, 
+        view_x,
+        view_wte_T,
+        1.0f,
+        0.0f,
+        view_logits
+    );
 
-    std::printf("[DEBUG] wte shape: [%zu, %zu]\n", m->wte.shape.dims[0], m->wte.shape.dims[1]);
-    std::printf("[DEBUG] x shape: [%zu, %zu]\n", x.shape.dims[0], x.shape.dims[1]);
-    std::printf("[DEBUG] wte[0][0]: %.6f\n", m->wte.tensor_data[0]);
-    std::printf("[DEBUG] wte[0][1]: %.6f\n", m->wte.tensor_data[1]);
-    std::printf("[DEBUG] x[0][0]: %.6f\n", x.tensor_data[0]);
-
-if (debug) {
-  debug_tensor("logits", logits);
-  
-  std::printf("Top 5 logits: ");
-  float top_vals[5] = {-1e30f, -1e30f, -1e30f, -1e30f, -1e30f};
-  int top_idxs[5] = {0, 0, 0, 0, 0};
-  
-  float* l = logits.tensor_data;
-  for (size_t i = 0; i < m->cfg.vocab_size; i++) {
-      float val = l[i];
-      for (int k = 0; k < 5; k++) {
-          if (val > top_vals[k]) {
-              for (int j = 4; j > k; j--) {
-                  top_vals[j] = top_vals[j-1];
-                  top_idxs[j] = top_idxs[j-1];
-              }
-              top_vals[k] = val;
-              top_idxs[k] = i;
-              break;
-          }
-      }
+  if (debug) {
+    debug_tensor("logits", logits);
+    
+    std::printf("Top 5 logits: ");
+    float top_vals[5] = {-1e30f, -1e30f, -1e30f, -1e30f, -1e30f};
+    int top_idxs[5] = {0, 0, 0, 0, 0};
+    
+    float* l = logits.tensor_data;
+    for (size_t i = 0; i < m->cfg.vocab_size; i++) {
+        float val = l[i];
+        for (int k = 0; k < 5; k++) {
+            if (val > top_vals[k]) {
+                for (int j = 4; j > k; j--) {
+                    top_vals[j] = top_vals[j-1];
+                    top_idxs[j] = top_idxs[j-1];
+                }
+                top_vals[k] = val;
+                top_idxs[k] = i;
+                break;
+            }
+        }
+    }
+    for (int k = 0; k < 5; k++) {
+        std::printf("%d(%.2f) ", top_idxs[k], top_vals[k]);
+    }
+    std::printf("\n");
   }
-  for (int k = 0; k < 5; k++) {
-      std::printf("%d(%.2f) ", top_idxs[k], top_vals[k]);
-  }
-  std::printf("\n");
-}
     
     return logits;
 }

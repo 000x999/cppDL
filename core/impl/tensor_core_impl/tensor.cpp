@@ -874,3 +874,99 @@ tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, const tens:
   }
   return output;
 }
+
+tens::tensor cpu_transpose_avx512(const tens::tensor& input, memory::neural_arena& pool) {
+  size_t rows = input.shape.dims[0];
+  size_t cols = input.shape.dims[1];
+
+  tens::tensor out;
+  out.shape.ndim = 2;
+  out.shape.dims[0] = cols;
+  out.shape.dims[1] = rows;
+  out.shape.strides[0] = rows;
+  out.shape.strides[1] = 1;
+  out.tensor_data = pool.nn_alloc<float>(rows * cols);
+
+  float* src = input.tensor_data;
+  float* dst = out.tensor_data;
+
+  const size_t BLOCK = 16;
+
+  alignas(64) int indices[16];
+  for (int i = 0; i < 16; ++i) indices[i] = i * rows;
+  __m512i vindex = _mm512_load_si512(indices);
+
+  size_t i = 0;
+  for (; i + BLOCK <= rows; i += BLOCK) {
+    size_t j = 0;
+    for (; j + BLOCK <= cols; j += BLOCK) {
+      for (size_t k = 0; k < BLOCK; ++k) {
+        __m512 val = _mm512_loadu_ps(&src[(i + k) * cols + j]);
+
+        void* addr = &dst[j * rows + (i + k)];
+        _mm512_i32scatter_ps(addr, vindex, val, 4);
+      }
+    }
+      
+    for (; j < cols; ++j) {
+      for (size_t k = 0; k < BLOCK; ++k) {
+        dst[j * rows + (i + k)] = src[(i + k) * cols + j];
+      }
+    }
+  }
+
+  for (; i < rows; ++i) {
+    for (size_t j = 0; j < cols; ++j) {
+      dst[j * rows + i] = src[i * cols + j];
+    }
+  }
+  return out;
+}
+
+tens::tensor cpu_transpose_avx512(const tens::tensor& input, tens::tensor_pool& pool) {
+  size_t rows = input.shape.dims[0];
+  size_t cols = input.shape.dims[1];
+
+  tens::tensor out;
+  out.shape.ndim = 2;
+  out.shape.dims[0] = cols;
+  out.shape.dims[1] = rows;
+  out.shape.strides[0] = rows;
+  out.shape.strides[1] = 1;
+  out.tensor_data = pool.arena.nn_alloc<float>(rows * cols);
+
+  float* src = input.tensor_data;
+  float* dst = out.tensor_data;
+
+  const size_t BLOCK = 16;
+
+  alignas(64) int indices[16];
+  for (int i = 0; i < 16; ++i) indices[i] = i * rows;
+  __m512i vindex = _mm512_load_si512(indices);
+
+  size_t i = 0;
+  for (; i + BLOCK <= rows; i += BLOCK) {
+    size_t j = 0;
+    for (; j + BLOCK <= cols; j += BLOCK) {
+      for (size_t k = 0; k < BLOCK; ++k) {
+        __m512 val = _mm512_loadu_ps(&src[(i + k) * cols + j]);
+
+        void* addr = &dst[j * rows + (i + k)];
+        _mm512_i32scatter_ps(addr, vindex, val, 4);
+      }
+    }
+      
+    for (; j < cols; ++j) {
+      for (size_t k = 0; k < BLOCK; ++k) {
+        dst[j * rows + (i + k)] = src[(i + k) * cols + j];
+      }
+    }
+  }
+
+  for (; i < rows; ++i) {
+    for (size_t j = 0; j < cols; ++j) {
+      dst[j * rows + i] = src[i * cols + j];
+    }
+  }
+  return out;
+}

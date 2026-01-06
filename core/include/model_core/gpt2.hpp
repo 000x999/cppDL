@@ -23,23 +23,23 @@ struct Token {
 struct tokenizer {
     std::unordered_map<int, std::string> id_to_token;
 
-    void append_utf8(std::string& out, int codepoint) {
-        if (codepoint <= 0x7F) out += (char)codepoint;
-        else if (codepoint <= 0x7FF) {
-            out += (char)(0xC0 | (codepoint >> 6));
-            out += (char)(0x80 | (codepoint & 0x3F));
-        } else {
-            out += (char)(0xE0 | (codepoint >> 12));
-            out += (char)(0x80 | ((codepoint >> 6) & 0x3F));
-            out += (char)(0x80 | (codepoint & 0x3F));
-        }
-    }
-
     int hex_val(char c) {
         if (c >= '0' && c <= '9') return c - '0';
         if (c >= 'a' && c <= 'f') return c - 'a' + 10;
         if (c >= 'A' && c <= 'F') return c - 'A' + 10;
         return 0;
+    }
+
+    void append_utf8(std::string& out, int cp) {
+        if (cp <= 0x7F) out += (char)cp;
+        else if (cp <= 0x7FF) {
+            out += (char)(0xC0 | (cp >> 6));
+            out += (char)(0x80 | (cp & 0x3F));
+        } else {
+            out += (char)(0xE0 | (cp >> 12));
+            out += (char)(0x80 | ((cp >> 6) & 0x3F));
+            out += (char)(0x80 | (cp & 0x3F));
+        }
     }
 
     bool load(const char* vocab_path) {
@@ -73,7 +73,7 @@ struct tokenizer {
                     append_utf8(decoded, cp);
                     i += 5;
                 } else if (raw[i] == '\\' && i + 1 < raw.length()) {
-                     decoded += raw[i+1]; 
+                     decoded += raw[i+1];
                      i++;
                 } else {
                     decoded += raw[i];

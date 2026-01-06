@@ -233,135 +233,192 @@ void atten::multi_head_attention::load_weights(float *w_q, float *w_k, float *w_
 
 
 tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, memory::neural_arena &alloc_pool) {
-    size_t sequence_length = input_tensor.shape.dims[0]; 
-    size_t embed_dim       = input_tensor.shape.dims[1]; 
-    size_t head_dim        = embed_dim / num_heads;
+  size_t sequence_length = input_tensor.shape.dims[0]; 
+  size_t embed_dim       = input_tensor.shape.dims[1]; 
+  size_t head_dim        = embed_dim / num_heads;
 
-    float *output_ptr_q       = alloc_pool.nn_alloc<float>(sequence_length * embed_dim); 
-    float *output_ptr_k       = alloc_pool.nn_alloc<float>(sequence_length * embed_dim);
-    float *output_ptr_v       = alloc_pool.nn_alloc<float>(sequence_length * embed_dim);
-    float *output_ptr_scores  = alloc_pool.nn_alloc<float>(num_heads * sequence_length * sequence_length); 
-    float *output_ptr_outputs = alloc_pool.nn_alloc<float>(sequence_length * embed_dim);
-    float *output_ptr_final   = alloc_pool.nn_alloc<float>(sequence_length * embed_dim); 
+  float *output_ptr_q       = alloc_pool.nn_alloc<float>(sequence_length * embed_dim); 
+  float *output_ptr_k       = alloc_pool.nn_alloc<float>(sequence_length * embed_dim);
+  float *output_ptr_v       = alloc_pool.nn_alloc<float>(sequence_length * embed_dim);
+  float *output_ptr_scores  = alloc_pool.nn_alloc<float>(num_heads * sequence_length * sequence_length); 
+  float *output_ptr_outputs = alloc_pool.nn_alloc<float>(sequence_length * embed_dim);
+  float *output_ptr_final   = alloc_pool.nn_alloc<float>(sequence_length * embed_dim); 
 
-    level3::mat_ops_view input_view { .row_view = sequence_length, .col_view = embed_dim, .leading_dimension = embed_dim, .data_view = input_tensor.tensor_data };    
-    
-    level3::mat_ops_view wq_view { .row_view = weights_data.w_queries.shape.dims[0], .col_view = weights_data.w_queries.shape.dims[1], .leading_dimension = weights_data.w_queries.shape.dims[1], .data_view = weights_data.w_queries.tensor_data };
-    level3::mat_ops_view wk_view { .row_view = weights_data.w_keys.shape.dims[0], .col_view = weights_data.w_keys.shape.dims[1], .leading_dimension = weights_data.w_keys.shape.dims[1], .data_view = weights_data.w_keys.tensor_data };
-    level3::mat_ops_view wv_view { .row_view = weights_data.w_values.shape.dims[0], .col_view = weights_data.w_values.shape.dims[1], .leading_dimension = weights_data.w_values.shape.dims[1], .data_view = weights_data.w_values.tensor_data };
-    level3::mat_ops_view wo_view { .row_view = weights_data.w_output.shape.dims[0], .col_view = weights_data.w_output.shape.dims[1], .leading_dimension = weights_data.w_output.shape.dims[1], .data_view = weights_data.w_output.tensor_data };
+  level3::mat_ops_view input_view { 
+    .row_view          = sequence_length, 
+    .col_view          = embed_dim, 
+    .leading_dimension = embed_dim, 
+    .data_view         = input_tensor.tensor_data 
+  };    
+  
+  level3::mat_ops_view wq_view { 
+    .row_view          = weights_data.w_queries.shape.dims[0], 
+    .col_view          = weights_data.w_queries.shape.dims[1], 
+    .leading_dimension = weights_data.w_queries.shape.dims[1], 
+    .data_view         = weights_data.w_queries.tensor_data 
+  };
 
-    level3::mat_ops_view Q { .row_view = sequence_length, .col_view = embed_dim, .leading_dimension = embed_dim, .data_view = output_ptr_q }; 
-    level3::mat_ops_view K { .row_view = sequence_length, .col_view = embed_dim, .leading_dimension = embed_dim, .data_view = output_ptr_k }; 
-    level3::mat_ops_view V { .row_view = sequence_length, .col_view = embed_dim, .leading_dimension = embed_dim, .data_view = output_ptr_v }; 
-    
-    level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, input_view, wq_view, 1.0f, 0.0f, Q);
-    level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, input_view, wk_view, 1.0f, 0.0f, K);
-    level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, input_view, wv_view, 1.0f, 0.0f, V);
+  level3::mat_ops_view wk_view { 
+    .row_view          = weights_data.w_keys.shape.dims[0], 
+    .col_view          = weights_data.w_keys.shape.dims[1], 
+    .leading_dimension = weights_data.w_keys.shape.dims[1], 
+    .data_view         = weights_data.w_keys.tensor_data 
+  };
 
-    for (size_t s = 0; s < sequence_length; s++){
-        for (size_t d = 0; d < embed_dim; d++){
-            Q.data_view[s * embed_dim + d] += weights_data.b_queries.tensor_data[d];
-            K.data_view[s * embed_dim + d] += weights_data.b_keys.tensor_data[d];
-            V.data_view[s * embed_dim + d] += weights_data.b_values.tensor_data[d];
-        }
+  level3::mat_ops_view wv_view { 
+    .row_view          = weights_data.w_values.shape.dims[0], 
+    .col_view          = weights_data.w_values.shape.dims[1], 
+    .leading_dimension = weights_data.w_values.shape.dims[1], 
+    .data_view         = weights_data.w_values.tensor_data 
+  };
+
+  level3::mat_ops_view wo_view { 
+    .row_view          = weights_data.w_output.shape.dims[0], 
+    .col_view          = weights_data.w_output.shape.dims[1],
+    .leading_dimension = weights_data.w_output.shape.dims[1],
+    .data_view         = weights_data.w_output.tensor_data 
+  };
+
+  level3::mat_ops_view Q { 
+    .row_view          = sequence_length, 
+    .col_view          = embed_dim, 
+    .leading_dimension = embed_dim, 
+    .data_view         = output_ptr_q 
+  };
+
+  level3::mat_ops_view K { 
+    .row_view          = sequence_length, 
+    .col_view          = embed_dim, 
+    .leading_dimension = embed_dim, 
+    .data_view         = output_ptr_k 
+  }; 
+  
+  level3::mat_ops_view V { 
+    .row_view          = sequence_length, 
+    .col_view          = embed_dim, 
+    .leading_dimension = embed_dim, 
+    .data_view         = output_ptr_v 
+  }; 
+  
+  level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, input_view, wq_view, 1.0f, 0.0f, Q);
+  level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, input_view, wk_view, 1.0f, 0.0f, K);
+  level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, input_view, wv_view, 1.0f, 0.0f, V);
+
+  for (size_t s = 0; s < sequence_length; s++){
+    for (size_t d = 0; d < embed_dim; d++){
+      Q.data_view[s * embed_dim + d] += weights_data.b_queries.tensor_data[d];
+      K.data_view[s * embed_dim + d] += weights_data.b_keys.tensor_data[d];
+      V.data_view[s * embed_dim + d] += weights_data.b_values.tensor_data[d];
     }
+  }
  
-    tens::tensor k_tensor_wrapper;
-    k_tensor_wrapper.shape.ndim = 2;
-    k_tensor_wrapper.shape.dims[0] = sequence_length;
-    k_tensor_wrapper.shape.dims[1] = embed_dim;
-    k_tensor_wrapper.tensor_data = output_ptr_k;
+  tens::tensor k_tensor_wrapper;
+  k_tensor_wrapper.shape.ndim = 2;
+  k_tensor_wrapper.shape.dims[0] = sequence_length;
+  k_tensor_wrapper.shape.dims[1] = embed_dim;
+  k_tensor_wrapper.tensor_data = output_ptr_k;
 
-    tens::tensor K_Transposed = tens::ops::cpu_transpose_avx512(k_tensor_wrapper, alloc_pool);
+tens::tensor K_Transposed = tens::ops::cpu_transpose_avx512(k_tensor_wrapper, alloc_pool);
+  
+  float scale = 1.0f / std::sqrt((float)head_dim);
+  float minus_inf = -1e9f;
+
+  for(size_t head = 0; head < num_heads; ++head){
+    size_t head_offset_flat = head * head_dim; 
+
+    level3::mat_ops_view q_head {
+        .row_view          = sequence_length, 
+        .col_view          = head_dim, 
+        .leading_dimension = embed_dim, 
+        .data_view         = Q.data_view + head_offset_flat
+    };
+
+    size_t k_offset_transposed = head * head_dim * sequence_length;
     
-    float scale = 1.0f / std::sqrt((float)head_dim);
-    float minus_inf = -1e9f;
+    level3::mat_ops_view k_head_T {
+        .row_view          = head_dim, 
+        .col_view          = sequence_length, 
+        .leading_dimension = sequence_length,
+        .data_view         = K_Transposed.tensor_data + k_offset_transposed
+    };
 
-    for(size_t head = 0; head < num_heads; ++head){
-        size_t head_offset_flat = head * head_dim; 
-
-        level3::mat_ops_view q_head {
-            .row_view          = sequence_length, 
-            .col_view          = head_dim, 
-            .leading_dimension = embed_dim, 
-            .data_view         = Q.data_view + head_offset_flat
-        };
-
-        size_t k_offset_transposed = head * head_dim * sequence_length;
+    level3::mat_ops_view scores_head {
+        .row_view          = sequence_length, 
+        .col_view          = sequence_length, 
+        .leading_dimension = sequence_length, 
+        .data_view         = output_ptr_scores + head * sequence_length * sequence_length
+    };
         
-        level3::mat_ops_view k_head_T {
-            .row_view          = head_dim, 
-            .col_view          = sequence_length, 
-            .leading_dimension = sequence_length,
-            .data_view         = K_Transposed.tensor_data + k_offset_transposed
-        };
-
-        level3::mat_ops_view scores_head {
-            .row_view          = sequence_length, 
-            .col_view          = sequence_length, 
-            .leading_dimension = sequence_length, 
-            .data_view         = output_ptr_scores + head * sequence_length * sequence_length
-        };
-        
-        level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, q_head, k_head_T, 1.0f, 0.0f, scores_head);
-        
-        for (size_t i = 0; i < sequence_length; i++){
-            for (size_t j = 0; j < sequence_length; j++){
-                size_t idx = i * sequence_length + j;
-                if (j > i) {
-                    scores_head.data_view[idx] = minus_inf;
-                } else {
-                    scores_head.data_view[idx] *= scale;
-                }
-            }
+    level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, q_head, k_head_T, 1.0f, 0.0f, scores_head);
+          
+    for (size_t i = 0; i < sequence_length; i++){
+      for (size_t j = 0; j < sequence_length; j++){
+        size_t idx = i * sequence_length + j;
+        if (j > i) {
+          scores_head.data_view[idx] = minus_inf;
+        } else {
+          scores_head.data_view[idx] *= scale;
         }
-
-        auto weights_head = level3::blas::softmax(scores_head); 
-        
-        level3::mat_ops_view v_head {
-            .row_view          = sequence_length, 
-            .col_view          = head_dim, 
-            .leading_dimension = embed_dim, 
-            .data_view         = V.data_view + head_offset_flat
-        };
-        
-        float* tmp_out_ptr = alloc_pool.nn_alloc<float>(sequence_length * head_dim);
-
-        level3::mat_ops_view atten_head_output_tmp {
-            .row_view = sequence_length, 
-            .col_view = head_dim, 
-            .leading_dimension = head_dim, 
-            .data_view = tmp_out_ptr
-        };
-
-        level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, weights_head, v_head, 1.0f, 0.0f, atten_head_output_tmp); 
-
-        for(size_t s = 0; s < sequence_length; s++) {
-            float* src = tmp_out_ptr + (s * head_dim);
-            float* dst = output_ptr_outputs + (s * embed_dim) + head_offset_flat;
-            std::memcpy(dst, src, head_dim * sizeof(float));
-        }
+      }
     }
 
-    level3::mat_ops_view atten_output_view { .row_view = sequence_length, .col_view = embed_dim, .leading_dimension = embed_dim, .data_view = output_ptr_outputs };
-    level3::mat_ops_view final_view { .row_view = sequence_length, .col_view = embed_dim, .leading_dimension = embed_dim, .data_view = output_ptr_final };
+    auto weights_head = level3::blas::softmax(scores_head);
 
-    level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, atten_output_view, wo_view, 1.0f, 0.0f, final_view);
+      
+    level3::mat_ops_view v_head {
+        .row_view          = sequence_length, 
+        .col_view          = head_dim, 
+        .leading_dimension = embed_dim, 
+        .data_view         = V.data_view + head_offset_flat
+    };
     
-    for (size_t s = 0; s < sequence_length; s++) {
-        for (size_t d = 0; d < embed_dim; d++) {
-            final_view.data_view[s * embed_dim + d] += weights_data.b_output.tensor_data[d];
-        }
+    float* tmp_out_ptr = alloc_pool.nn_alloc<float>(sequence_length * head_dim);
+
+    level3::mat_ops_view atten_head_output_tmp {
+        .row_view          = sequence_length, 
+        .col_view          = head_dim, 
+        .leading_dimension = head_dim, 
+        .data_view         = tmp_out_ptr
+    };
+
+    level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, weights_head, v_head, 1.0f, 0.0f, atten_head_output_tmp); 
+
+    for(size_t s = 0; s < sequence_length; s++) {
+        float* src = tmp_out_ptr + (s * head_dim);
+        float* dst = output_ptr_outputs + (s * embed_dim) + head_offset_flat;
+        std::memcpy(dst, src, head_dim * sizeof(float));
     }
-    
-    tens::tensor output_tensor; 
-    output_tensor.shape.dims[0]    = sequence_length; 
-    output_tensor.shape.dims[1]    = embed_dim; 
-    output_tensor.shape.strides[0] = embed_dim;
-    output_tensor.shape.strides[1] = 1; 
-    output_tensor.shape.ndim       = 2; 
-    output_tensor.tensor_data      = output_ptr_final; 
+  }
 
-    return output_tensor; 
+  level3::mat_ops_view atten_output_view { 
+    .row_view          = sequence_length, 
+    .col_view          = embed_dim, 
+    .leading_dimension = embed_dim, 
+    .data_view         = output_ptr_outputs 
+  };
+
+  level3::mat_ops_view final_view { 
+    .row_view          = sequence_length, 
+    .col_view          = embed_dim, 
+    .leading_dimension = embed_dim, 
+    .data_view         = output_ptr_final 
+  };
+
+  level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::no_transpose, atten_output_view, wo_view, 1.0f, 0.0f, final_view);
+  
+  for (size_t s = 0; s < sequence_length; s++) {
+    for (size_t d = 0; d < embed_dim; d++) {
+      final_view.data_view[s * embed_dim + d] += weights_data.b_output.tensor_data[d];
+    } 
+  }
+    
+  tens::tensor output_tensor; 
+  output_tensor.shape.dims[0]    = sequence_length; 
+  output_tensor.shape.dims[1]    = embed_dim; 
+  output_tensor.shape.strides[0] = embed_dim;
+  output_tensor.shape.strides[1] = 1; 
+  output_tensor.shape.ndim       = 2; 
+  output_tensor.tensor_data      = output_ptr_final; 
+
+  return output_tensor; 
 }

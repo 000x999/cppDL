@@ -104,6 +104,7 @@ tens::tensor matmul(const tens::tensor &a, const tens::tensor &b, memory::neural
   return out;
 }
 
+/*
 tens::tensor linear(const tens::tensor &x, const tens::tensor &weight, const tens::tensor &bias, memory::neural_arena &pool) {
 size_t seq_len = x.shape.dims[0];
   size_t in_features = x.shape.dims[1];
@@ -164,6 +165,36 @@ size_t seq_len = x.shape.dims[0];
     }
   }
   return out;
+}
+*/
+
+tens::tensor linear(const tens::tensor& input, const tens::tensor& weight, const tens::tensor& bias, memory::neural_arena& pool) {
+  tens::tensor output = matmul(input, weight, pool); 
+
+  size_t seq_len    = output.shape.dims[0];
+  size_t output_dim = output.shape.dims[1]; 
+
+  if (bias.shape.numel() != output_dim) {
+     printf("FATAL: Linear bias dim %zu != output dim %zu\n", bias.shape.numel(), output_dim);
+     exit(1);
+  }
+
+  for (size_t i = 0; i < seq_len; i++) {
+    float* out_row  = output.tensor_data + (i * output_dim);
+    float* bias_ptr = bias.tensor_data;
+    size_t j = 0;
+    
+    for (; j + 15 < output_dim; j += 16) {
+      __m512 v_out  = _mm512_loadu_ps(out_row + j);
+      __m512 v_bias = _mm512_loadu_ps(bias_ptr + j);
+      _mm512_storeu_ps(out_row + j, _mm512_add_ps(v_out, v_bias));
+    }
+    for (; j < output_dim; j++) {
+      out_row[j] += bias_ptr[j];
+    }
+  }
+
+  return output;
 }
 
 void init_model(model* m) {

@@ -332,47 +332,34 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
     pos_emb.tensor_data = m->wpe.tensor_data;
     
     x = tens::ops::add(x, pos_emb, pool);
-    if (debug) debug_tensor("after_pos", x);
     
     for (size_t i = 0; i < m->cfg.num_layers; i++) {
-        transformer_block* b = &m->blocks[i];
-        tens::tensor residual = x;
-        
-        x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-        if (debug && i == 0) debug_tensor("ln1", x);
-        
-        x = m->attentions[i]->forward(x, *m->atten_pools[i]);
-        if (debug && i == 0) debug_tensor("attn", x);
-        
-        x = tens::ops::add(residual, x, pool);
-        residual = x;
-        
-        x = tens::ops::layer_norm(x, b->ln2_weight, b->ln2_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-        
-        x = linear(x, b->ffn_fc_weight, b->ffn_fc_bias, pool);
-        
-        x = tens::ops::gelu(x, pool);
-        x = linear(x, b->ffn_proj_weight, b->ffn_proj_bias, pool);
-        x = tens::ops::add(residual, x, pool);
-        
-        if (debug && i == 0) debug_tensor("layer_0", x);
+      transformer_block* b = &m->blocks[i];
+      tens::tensor residual = x;
+      
+      x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
+      
+      x = m->attentions[i]->forward(x, *m->atten_pools[i]);
+      
+      x = tens::ops::add(residual, x, pool);
+      residual = x;
+      
+      x = tens::ops::layer_norm(x, b->ln2_weight, b->ln2_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
+      
+      x = linear(x, b->ffn_fc_weight, b->ffn_fc_bias, pool);
+      
+      x = tens::ops::gelu(x, pool);
+      x = linear(x, b->ffn_proj_weight, b->ffn_proj_bias, pool);
+      x = tens::ops::add(residual, x, pool);
     }
     
     x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-    if (debug) debug_tensor("final_ln", x);
-    
-    if (debug) {
-        float manual_logit_0 = 0.0f;
-        for (size_t k = 0; k < embed_dim; k++) {
-             manual_logit_0 += x.tensor_data[k] * m->wte.tensor_data[k]; 
-        }
-    }
 
     tens::tensor wte_transposed = m->wte_T;
     
     if (wte_transposed.shape.dims[0] != embed_dim) {
-        if (debug) printf("[WARN] wte_T not pre-transposed. Transposing now (Slow!)...\n");
-        wte_transposed = tens::ops::cpu_transpose_avx512(m->wte, pool);
+      if (debug) printf("[WARN] wte_T not pre-transposed. Transposing now (Slow!)...\n");
+      wte_transposed = tens::ops::cpu_transpose_avx512(m->wte, pool);
     }
 
     tens::tensor logits;
@@ -443,7 +430,7 @@ int argmax(const tens::tensor& logits) {
     }
     
     for (int k = 0; k < 5; k++) {
-        std::printf("%d(%.2f) ", top_idxs[k], top_vals[k]);
+      std::printf("%d(%.2f) ", top_idxs[k], top_vals[k]);
     }
     std::printf("\n");
     
@@ -538,32 +525,32 @@ int sample_top_k_avx512(float* logits, size_t vocab_size, int k, float temperatu
     
     __mmask16 mask = _mm512_cmp_ps_mask(v_logits, v_threshold, _CMP_GT_OQ);
 
-    if (mask) {
-      while (mask) {
-        int bit_idx = __builtin_ctz(mask);
-        
-        float val = logits[i + bit_idx];
-        int id = i + bit_idx;
-        
-        insert_candidate(val, id);
-        
-        mask &= ~(1 << bit_idx); 
-      }
+  if (mask) {
+    while (mask) {
+      int bit_idx = __builtin_ctz(mask);
+      
+      float val = logits[i + bit_idx];
+      int id = i + bit_idx;
+      
+      insert_candidate(val, id);
+      
+      mask &= ~(1 << bit_idx); 
     }
-    v_current_indices = _mm512_add_epi32(v_current_indices, v_indices_step);
   }
+  v_current_indices = _mm512_add_epi32(v_current_indices, v_indices_step);
+}
 
-  for (; i < vocab_size; ++i) {
-    insert_candidate(logits[i], i);
-  }
+for (; i < vocab_size; ++i) {
+  insert_candidate(logits[i], i);
+}
 
-  float* probs = pool.arena.nn_alloc<float>(k);
-  
-  float max_logit = top_k[0].score / temperature; 
-  float sum_exp = 0.0f;
-  
-  for (int j = 0; j < k; j++) {
-    float val = (top_k[j].score / temperature);
+float* probs = pool.arena.nn_alloc<float>(k);
+
+float max_logit = top_k[0].score / temperature; 
+float sum_exp = 0.0f;
+
+for (int j = 0; j < k; j++) {
+  float val = (top_k[j].score / temperature);
     probs[j] = std::exp(val - max_logit);
     sum_exp += probs[j];
   }
@@ -581,6 +568,5 @@ int sample_top_k_avx512(float* logits, size_t vocab_size, int k, float temperatu
     }
   return top_k[k-1].id;
 }
-
 }
 

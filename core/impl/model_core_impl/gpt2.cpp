@@ -411,7 +411,16 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
         .leading_dimension = m->cfg.vocab_size,
         .data_view = logits.tensor_data
     };
-    
+ 
+    std::printf("[DEBUG] Computing logits: x[%zu, %zu] @ wte[%zu, %zu]^T\n",
+                seq_len, embed_dim, m->cfg.vocab_size, embed_dim);
+
+    float manual_logit_0 = 0.0f;
+    for (size_t k = 0; k < embed_dim; k++) {
+      manual_logit_0 += x.tensor_data[k] * m->wte.tensor_data[k]; 
+    }
+    std::printf("[DEBUG] Manual logit[0][0]: %.6f\n", manual_logit_0);
+
     level3::blas::crush_gemm(
         level3::transpose_gemm::no_transpose,
         level3::transpose_gemm::transpose,
@@ -421,7 +430,9 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
         0.0f,
         view_logits
     );
-    
+   
+    std::printf("[DEBUG] GEMM logit[0][0]: %.6f\n", logits.tensor_data[0]);
+
     std::printf("[DEBUG] wte shape: [%zu, %zu]\n", m->wte.shape.dims[0], m->wte.shape.dims[1]);
     std::printf("[DEBUG] x shape: [%zu, %zu]\n", x.shape.dims[0], x.shape.dims[1]);
     std::printf("[DEBUG] wte[0][0]: %.6f\n", m->wte.tensor_data[0]);

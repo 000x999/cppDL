@@ -301,6 +301,12 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.weight", i);
     tens::tensor fc_raw = load_tensor(&sf, name, alloc);
     b->ffn_fc_weight = tens::ops::cpu_transpose_avx512(fc_raw, alloc);
+    if (i == 0) {
+      std::printf("[DEBUG] Layer 0 FC Raw Dims: [%zu, %zu]\n", 
+                  fc_raw.shape.dims[0], fc_raw.shape.dims[1]);
+      std::printf("[DEBUG] Layer 0 FC Transposed Dims: [%zu, %zu]\n", 
+                  b->ffn_fc_weight.shape.dims[0], b->ffn_fc_weight.shape.dims[1]);
+    }
     
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.bias", i);
     b->ffn_fc_bias = load_tensor(&sf, name, alloc);

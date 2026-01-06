@@ -386,7 +386,6 @@ void gemm_test(float A){
 }
 
 int main(int argc, char* argv[]) {
-  std::printf("\n\n>>> BINARY UPDATED: CHECKING WPE FIX <<<\n\n");
   const char* model_path = "model.safetensors";
   const char* vocab_path = "vocab.json";
 
@@ -449,6 +448,18 @@ int main(int argc, char* argv[]) {
     tokens_gen++;
     
     float* last_row = logits.tensor_data + (seq_len - 1) * model.cfg.vocab_size;
+    std::printf("\n[DEBUG] Top 5 Logits for Token %zu:\n", seq_len);
+    
+    std::vector<std::pair<float, int>> debug_logits;
+    
+    for(int v=0; v < 50; v++) {
+      debug_logits.push_back({last_row[v], v});
+    }
+    std::sort(debug_logits.begin(), debug_logits.end(), [](auto a, auto b){ return a.first > b.first; });
+
+    for(int k=0; k<5; k++) {
+      std::printf("  ID %d: %f\n", debug_logits[k].second, debug_logits[k].first);
+    }
     int next_token = gpt2::sample_top_k_avx512(last_row, model.cfg.vocab_size, 40, 0.01f, temp_pool);
     
     std::string s = tokenizer.decode(next_token);

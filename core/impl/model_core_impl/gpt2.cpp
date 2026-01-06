@@ -309,7 +309,7 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
   std::printf("Model loaded successfully\n");
   return true;
 }
-/*
+
 tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &pool) {
     for (size_t i = 0; i < m->cfg.num_layers; i++) {
       m->atten_pools[i]->arena.nn_reset();
@@ -402,118 +402,6 @@ tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &po
         0.0f,
         view_logits
     );
-    return logits;
-}
-*/
-
-tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &pool) {
-    for (size_t i = 0; i < m->cfg.num_layers; i++) {
-        if (m->atten_pools[i]) {
-            m->atten_pools[i]->arena.nn_reset();
-        }
-    }
-    
-    static int call_count = 0;
-    bool debug = (call_count == 0); 
-    call_count++;
-    
-    size_t seq_len = tokens.shape.dims[0];
-    size_t embed_dim = m->cfg.embed_dim;
-
-    tens::tensor x;
-    x.shape.ndim = 2;
-    x.shape.dims[0] = seq_len;
-    x.shape.dims[1] = embed_dim;
-    x.shape.strides[0] = embed_dim;
-    x.shape.strides[1] = 1;
-    x.tensor_data = pool.arena.nn_alloc<float>(seq_len * embed_dim);
-
-    for (size_t t = 0; t < seq_len; t++) {
-        int token_id = (int)tokens.tensor_data[t];
-        
-        if (token_id < 0 || token_id >= m->cfg.vocab_size) {
-             token_id = 50256; 
-        }
-
-        float* wte_row = m->wte.tensor_data + (token_id * embed_dim);
-        
-        float* wpe_row = m->wpe.tensor_data + (t * embed_dim);
-        
-        float* target_row = x.tensor_data + (t * embed_dim);
-
-        for (size_t j = 0; j < embed_dim; j++) {
-            target_row[j] = wte_row[j] + wpe_row[j];
-        }
-    }
-
-    for (size_t i = 0; i < m->cfg.num_layers; i++) {
-        transformer_block* b = &m->blocks[i];
-        tens::tensor residual = x;
-        
-        x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-        
-        x = m->attentions[i]->forward(x, *m->atten_pools[i]);
-        
-        x = tens::ops::add(residual, x, pool);
-        residual = x;
-        
-        x = tens::ops::layer_norm(x, b->ln2_weight, b->ln2_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-        
-        x = linear(x, b->ffn_fc_weight, b->ffn_fc_bias, pool);
-        x = tens::ops::gelu(x, pool);
-        x = linear(x, b->ffn_proj_weight, b->ffn_proj_bias, pool);
-        
-        x = tens::ops::add(residual, x, pool);
-    }
-    
-    x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-
-    tens::tensor wte_transposed = m->wte_T;
-    
-    if (wte_transposed.shape.dims[0] != embed_dim) {
-        if (debug) printf("[WARN] wte_T not pre-transposed. Transposing now (Slow!)...\n");
-        wte_transposed = tens::ops::cpu_transpose_avx512(m->wte, pool);
-    }
-
-    tens::tensor logits;
-    logits.shape.ndim = 2;
-    logits.shape.dims[0] = seq_len;
-    logits.shape.dims[1] = m->cfg.vocab_size;
-    logits.shape.strides[0] = m->cfg.vocab_size;
-    logits.shape.strides[1] = 1;
-    logits.tensor_data = pool.arena.nn_alloc<float>(seq_len * m->cfg.vocab_size);
-    
-    level3::mat_ops_view view_x {
-        .row_view = seq_len,
-        .col_view = embed_dim,
-        .leading_dimension = embed_dim,
-        .data_view = x.tensor_data
-    };
-    
-    level3::mat_ops_view view_wte_T {
-        .row_view = embed_dim,
-        .col_view = m->cfg.vocab_size,
-        .leading_dimension = m->cfg.vocab_size, 
-        .data_view = wte_transposed.tensor_data
-    };
-    
-    level3::mat_ops_view view_logits {
-        .row_view = seq_len,
-        .col_view = m->cfg.vocab_size,
-        .leading_dimension = m->cfg.vocab_size,
-        .data_view = logits.tensor_data
-    };
-    
-    level3::blas::crush_gemm(
-        level3::transpose_gemm::no_transpose,
-        level3::transpose_gemm::no_transpose, 
-        view_x,
-        view_wte_T,
-        1.0f,
-        0.0f,
-        view_logits
-    );
-    
     return logits;
 }
 

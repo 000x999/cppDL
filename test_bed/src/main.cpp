@@ -394,7 +394,7 @@ int main(int argc, char* argv[]) {
     prompt = argv[1];
   }
   
-  memory::neural_arena model_arena(1024ULL * 1024ULL * 1024ULL);
+  memory::neural_arena model_arena(1024ULL * 1024ULL * 1024ULL * 512ULL);
   memory::neural_arena temp_pool(1024ULL * 1024ULL * 512ULL);      
   
   gpt2::model model;

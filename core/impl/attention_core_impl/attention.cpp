@@ -399,8 +399,15 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
       .col_view = head_dim, 
       .leading_dimension = embed_dim, 
       .data_view = output_ptr_outputs + offset
-    }; 
+    };
 
+    if (sequence_length == 2 && head == 0) {
+      std::printf("[ATTN DEBUG] Head 0 attention matrix (after softmax):\n");
+      std::printf("  pos0 -> [%.4f, %.4f]\n", 
+                weights_head.data_view[0], weights_head.data_view[1]);
+      std::printf("  pos1 -> [%.4f, %.4f]\n", 
+                weights_head.data_view[2], weights_head.data_view[3]);
+    }
     level3::blas::crush_gemm(level3::transpose_gemm::no_transpose,level3::transpose_gemm::no_transpose, weights_head, v_head, 1.0f, 0.0f, atten_head_output); 
   }
  

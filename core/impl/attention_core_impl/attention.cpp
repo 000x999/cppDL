@@ -374,7 +374,14 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
     float scale = 1.0f / std::sqrt((float)head_dim);
 
     level3::blas::crush_gemm(level3::transpose_gemm::no_transpose, level3::transpose_gemm::transpose, q_head, k_head, 1.0f, 0.0f, scores_head);
-     
+    if (sequence_length == 2 && head == 0) {
+      std::printf("[ATTN DEBUG] Raw scores (before scale/mask):\n");
+      std::printf("  pos0 -> [%.4f, %.4f]\n", 
+                  scores_head.data_view[0], scores_head.data_view[1]);
+      std::printf("  pos1 -> [%.4f, %.4f]\n", 
+                  scores_head.data_view[2], scores_head.data_view[3]);
+    } 
+    
     for (size_t i = 0; i < sequence_length; i++){
       for (size_t j = 0; j < sequence_length; j++){
         size_t idx = i * sequence_length + j;

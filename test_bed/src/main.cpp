@@ -433,6 +433,11 @@ int main(int argc, char* argv[]){
   std::printf("Generated token IDs: ");
   
   for (int i = 0; i < max_new_tokens; i++) {
+    std::printf("\n[DEBUG] Forward pass %d, seq_len=%zu, tokens: ", i, seq_len);
+    for (size_t t = 0; t < seq_len && t < 5; t++) {
+      std::printf("%.0f ", sequence[t]);
+    }
+    std::printf("\n");
     tens::tensor input;
     std::memset(&input, 0, sizeof(tens::tensor));
     input.shape.ndim = 1;

@@ -484,14 +484,18 @@ int argmax(const tens::tensor& logits) {
   
   float* last_row = logits.tensor_data + (seq_len - 1) * vocab_size;
   
+  std::printf("[DEBUG argmax] seq_len=%zu, looking at row %zu\n", seq_len, seq_len - 1);
+  
   int max_idx = 0;
   float max_val = last_row[0];
   for (size_t i = 1; i < vocab_size; i++) {
-    if (last_row[i] > max_val) {
-      max_val = last_row[i];
-      max_idx = i;
-    }
+      if (last_row[i] > max_val) {
+          max_val = last_row[i];
+          max_idx = i;
+      }
   }
+  std::printf("[DEBUG argmax] max_idx=%d, max_val=%.4f\n", max_idx, max_val);
+  
   return max_idx;
 }
 

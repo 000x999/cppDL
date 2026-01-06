@@ -315,6 +315,13 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
     }
   }
 
+  float* k_transposed = alloc_pool.arena.nn_alloc<float>(sequence_length * embed_dim);
+  for (size_t i = 0; i < sequence_length; i++) {
+    for (size_t j = 0; j < embed_dim; j++) {
+        k_transposed[j * sequence_length + i] = K.data_view[i * embed_dim + j];
+    }
+  }
+
  if (debug) {
   float q_min = Q.data_view[0], q_max = Q.data_view[0];
   float k_min = K.data_view[0], k_max = K.data_view[0];
@@ -347,7 +354,7 @@ tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, at
       .row_view          = sequence_length, 
       .col_view          = head_dim, 
       .leading_dimension = embed_dim, 
-      .data_view         = K.data_view + offset
+      .data_view         = k_transposed + offset * sequence_length 
     };
 
     level3::mat_ops_view v_head {

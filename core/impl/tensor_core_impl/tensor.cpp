@@ -875,7 +875,7 @@ tens::tensor tens::ops::layer_norm(const tens::tensor &input_tensor, const tens:
   return output;
 }
 
-tens::tensor cpu_transpose_avx512(const tens::tensor& input, memory::neural_arena& pool) {
+tens::tensor tens::ops::cpu_transpose_avx512(const tens::tensor& input, memory::neural_arena& pool) {
   size_t rows = input.shape.dims[0];
   size_t cols = input.shape.dims[1];
 
@@ -923,7 +923,7 @@ tens::tensor cpu_transpose_avx512(const tens::tensor& input, memory::neural_aren
   return out;
 }
 
-tens::tensor cpu_transpose_avx512(const tens::tensor& input, tens::tensor_pool& pool) {
+tens::tensor tens::ops::cpu_transpose_avx512(const tens::tensor& input, tens::tensor_pool& pool) {
   size_t rows = input.shape.dims[0];
   size_t cols = input.shape.dims[1];
 

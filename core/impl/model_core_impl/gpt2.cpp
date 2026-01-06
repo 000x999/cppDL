@@ -481,7 +481,7 @@ int argmax(const tens::tensor& logits) {
             if (val > top_vals[k]) {
                 for (int j = 4; j > k; j--) {
                     top_vals[j] = top_vals[j-1];
-                    top_idxs[j] = top_idxs[j-1];
+                    top_idxs[j] = top_idxs[j-1];  
                 }
                 top_vals[k] = val;
                 top_idxs[k] = i;

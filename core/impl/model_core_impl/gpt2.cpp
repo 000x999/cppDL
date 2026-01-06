@@ -266,7 +266,25 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
   std::printf("Detected config: vocab=%zu, embed=%zu, layers=%zu, heads=%zu\n",
                m->cfg.vocab_size, m->cfg.embed_dim, m->cfg.num_layers, m->cfg.num_heads);
 
-  m->wte_T = tens::ops::cpu_transpose_avx512(m->wte, alloc);
+  std::printf("[INFO] Transposing wte (Manual)...\n");
+    
+  m->wte_T.shape.ndim = 2;
+  m->wte_T.shape.dims[0] = m->cfg.embed_dim;
+  m->wte_T.shape.dims[1] = m->cfg.vocab_size;
+  m->wte_T.shape.strides[0] = m->cfg.vocab_size;
+  m->wte_T.shape.strides[1] = 1;
+  m->wte_T.tensor_data = alloc.nn_alloc<float>(m->cfg.embed_dim * m->cfg.vocab_size);
+
+  size_t vocab = m->cfg.vocab_size;
+  size_t embed = m->cfg.embed_dim;
+
+  for (size_t v = 0; v < vocab; v++) {
+      for (size_t e = 0; e < embed; e++) {
+          // Src: [v, e] -> Dst: [e, v]
+          float val = m->wte.tensor_data[v * embed + e];
+          m->wte_T.tensor_data[e * vocab + v] = val;
+      }
+  }
 
   size_t embed_dim = m->cfg.embed_dim;
   size_t atten_arena_size = MAX_SEQ_LEN * embed_dim * 16 * sizeof(float);

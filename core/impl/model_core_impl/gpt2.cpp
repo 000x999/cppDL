@@ -240,7 +240,7 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
   size_t embed_dim = m->cfg.embed_dim;
   size_t atten_arena_size = MAX_SEQ_LEN * embed_dim * 16 * sizeof(float);
   
-  for (size_t i = 0; i < m->cfg.num_layers; i++) {
+for (size_t i = 0; i < m->cfg.num_layers; i++) {
     transformer_block* b = &m->blocks[i];
     
     std::snprintf(name, sizeof(name), "h.%zu.ln_1.weight", i);
@@ -255,9 +255,7 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     tens::tensor qkv_bias = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_proj.weight", i);
-    tens::tensor attn_proj_raw = load_tensor(&sf, name, alloc);
-    
-    tens::tensor attn_proj_transposed = tens::ops::cpu_transpose_avx512(attn_proj_raw, alloc);
+    tens::tensor attn_proj_weight = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_proj.bias", i);
     tens::tensor attn_proj_bias = load_tensor(&sf, name, alloc);
@@ -267,13 +265,12 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     float* w_v_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
     
     float* src_ptr = qkv_weight.tensor_data;
+    
     for (size_t row = 0; row < embed_dim; row++) {
       std::memcpy(w_q_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
       src_ptr += embed_dim;
-      
       std::memcpy(w_k_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
       src_ptr += embed_dim;
-      
       std::memcpy(w_v_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
       src_ptr += embed_dim;
     }
@@ -282,7 +279,7 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     float* b_k = qkv_bias.tensor_data + embed_dim;
     float* b_v = qkv_bias.tensor_data + 2 * embed_dim;
     
-    float* w_o = attn_proj_transposed.tensor_data; 
+    float* w_o = attn_proj_weight.tensor_data; 
     float* b_o = attn_proj_bias.tensor_data;
     
     void* pool_mem  = alloc.nn_alloc<char>(sizeof(atten::atten_pool));
@@ -299,26 +296,16 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     b->ln2_bias = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.weight", i);
-    tens::tensor fc_raw = load_tensor(&sf, name, alloc);
-    b->ffn_fc_weight = tens::ops::cpu_transpose_avx512(fc_raw, alloc);
-    if (i == 0) {
-      std::printf("[DEBUG] Layer 0 FC Raw Dims: [%zu, %zu]\n", 
-                  fc_raw.shape.dims[0], fc_raw.shape.dims[1]);
-      std::printf("[DEBUG] Layer 0 FC Transposed Dims: [%zu, %zu]\n", 
-                  b->ffn_fc_weight.shape.dims[0], b->ffn_fc_weight.shape.dims[1]);
-    }
-    
+    b->ffn_fc_weight = load_tensor(&sf, name, alloc);
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.bias", i);
     b->ffn_fc_bias = load_tensor(&sf, name, alloc);
     
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.weight", i);
-    tens::tensor proj_raw = load_tensor(&sf, name, alloc);
-    b->ffn_proj_weight = tens::ops::cpu_transpose_avx512(proj_raw, alloc);
-    
+    b->ffn_proj_weight = load_tensor(&sf, name, alloc);
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.bias", i);
     b->ffn_proj_bias = load_tensor(&sf, name, alloc);
   }
-  
+
   m->ln_f_weight = load_tensor(&sf, "ln_f.weight", alloc);
   m->ln_f_bias = load_tensor(&sf, "ln_f.bias", alloc);
   

@@ -226,159 +226,120 @@ void init_model(model* m) {
 }
 
 bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
-  init_model(m);
-  
-  safetensor::safetensor_file sf;
-  if (!safetensor::load_safetensor(path, &sf)) {
-    std::printf("ERROR: failed to load safetensor file\n");
-    return false;
-  }
-
-  std::printf("Loaded tensors:\n");
-  safetensor::print_entries(&sf);
-  std::printf("\n");
-  
-  m->wte = load_tensor(&sf, "wte.weight", alloc);
-  m->wpe = load_tensor(&sf, "wpe.weight", alloc);
-  
-  if (m->wte.tensor_data) {
-    m->cfg.vocab_size = m->wte.shape.dims[0];
-    m->cfg.embed_dim  = m->wte.shape.dims[1]; 
-  }
-  if (m->wpe.tensor_data) {
-    m->cfg.max_seq_len = m->wpe.shape.dims[0];
-  }
-  m->cfg.layer_norm_eps = 1e-5f;
+    init_model(m);
     
-  m->cfg.num_layers = 0;
-  char name[safetensor::MAX_NAME_LEN];
-  
-  for (size_t i = 0; i < MAX_LAYERS; i++) {
-    std::snprintf(name, sizeof(name), "h.%zu.ln_1.weight", i);
-    if (safetensor::find_entry(&sf, name)) {
-      m->cfg.num_layers++;
-    } else {
-      break;
-    }
-  }
-  m->cfg.num_heads = m->cfg.embed_dim / 64;
-  
-  std::printf("Detected config: vocab=%zu, embed=%zu, layers=%zu, heads=%zu\n",
-               m->cfg.vocab_size, m->cfg.embed_dim, m->cfg.num_layers, m->cfg.num_heads);
-
-  m->wte_T = tens::ops::cpu_transpose_avx512(m->wte, alloc);
-
-  size_t embed_dim = m->cfg.embed_dim;
-  size_t atten_arena_size = MAX_SEQ_LEN * embed_dim * 16 * sizeof(float);
-  
-  auto load_linear_transpose = [&](const char* tensor_name) -> tens::tensor {
-    tens::tensor t = load_tensor(&sf, tensor_name, alloc);
-    
-    if (t.tensor_data) {
-      std::printf("[DEBUG] Checking %s: ndim=%zu, dims=[%zu, %zu]\n", 
-                  tensor_name, (size_t)t.shape.ndim, t.shape.dims[0], t.shape.dims[1]);
+    safetensor::safetensor_file sf;
+    if (!safetensor::load_safetensor(path, &sf)) {
+        std::printf("ERROR: failed to load safetensor file\n");
+        return false;
     }
 
-    if (t.tensor_data && t.shape.ndim >= 2) {
-     std::printf("[INFO] Transposing Linear Weight (Manual): %s\n", tensor_name);
-     
-     tens::tensor out_t;
-     out_t.shape.ndim = 2;
-     out_t.shape.dims[0] = t.shape.dims[1];
-     out_t.shape.dims[1] = t.shape.dims[0];
-     out_t.shape.strides[0] = out_t.shape.dims[1];
-     out_t.shape.strides[1] = 1;
-     out_t.tensor_data = alloc.nn_alloc<float>(out_t.shape.numel());
-
-     size_t rows_in = t.shape.dims[0];
-     size_t cols_in = t.shape.dims[1];
-     
-     for (size_t r = 0; r < rows_in; r++) {
-       for (size_t c = 0; c < cols_in; c++) {
-         float val = t.tensor_data[r * cols_in + c];
-         out_t.tensor_data[c * rows_in + r] = val;
-       }
-     }
-      return out_t;
-    } else {
-      std::printf("[WARN] SKIPPING Transpose for %s (ndim=%zu)\n", tensor_name, (size_t)t.shape.ndim);
+    std::printf("Loaded tensors:\n");
+    safetensor::print_entries(&sf);
+    std::printf("\n");
+    
+    m->wte = load_tensor(&sf, "wte.weight", alloc);
+    m->wpe = load_tensor(&sf, "wpe.weight", alloc);
+    
+    if (m->wte.tensor_data) {
+        m->cfg.vocab_size = m->wte.shape.dims[0];
+        m->cfg.embed_dim  = m->wte.shape.dims[1]; 
     }
-    return t;
-  };
+    if (m->wpe.tensor_data) {
+        m->cfg.max_seq_len = m->wpe.shape.dims[0];
+    }
+    m->cfg.layer_norm_eps = 1e-5f;
+    
+    m->cfg.num_layers = 0;
+    char name[safetensor::MAX_NAME_LEN];
+    for (size_t i = 0; i < MAX_LAYERS; i++) {
+        std::snprintf(name, sizeof(name), "h.%zu.ln_1.weight", i);
+        if (safetensor::find_entry(&sf, name)) m->cfg.num_layers++;
+        else break;
+    }
+    m->cfg.num_heads = m->cfg.embed_dim / 64;
+    size_t embed_dim = m->cfg.embed_dim;
 
-  for (size_t i = 0; i < m->cfg.num_layers; i++) {
-    transformer_block* b = &m->blocks[i];
-    
-    std::snprintf(name, sizeof(name), "h.%zu.ln_1.weight", i);
-    b->ln1_weight = load_tensor(&sf, name, alloc);
-    std::snprintf(name, sizeof(name), "h.%zu.ln_1.bias", i);
-    b->ln1_bias = load_tensor(&sf, name, alloc);
-    
-    std::snprintf(name, sizeof(name), "h.%zu.attn.c_attn.weight", i);
-    tens::tensor qkv_weight = load_linear_transpose(name); // [FIX] Transpose
-    
-    std::snprintf(name, sizeof(name), "h.%zu.attn.c_attn.bias", i);
-    tens::tensor qkv_bias = load_tensor(&sf, name, alloc);
-    
-    std::snprintf(name, sizeof(name), "h.%zu.attn.c_proj.weight", i);
-    tens::tensor attn_proj_weight = load_linear_transpose(name); // [FIX] Transpose
-    
-    std::snprintf(name, sizeof(name), "h.%zu.attn.c_proj.bias", i);
-    tens::tensor attn_proj_bias = load_tensor(&sf, name, alloc);
+    std::printf("Detected config: vocab=%zu, embed=%zu, layers=%zu, heads=%zu\n",
+                m->cfg.vocab_size, m->cfg.embed_dim, m->cfg.num_layers, m->cfg.num_heads);
 
-    float* w_q_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
-    float* w_k_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
-    float* w_v_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
-    float* src_ptr = qkv_weight.tensor_data;
-    
-    for (size_t row = 0; row < embed_dim; row++) {
-      std::memcpy(w_q_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
-      src_ptr += embed_dim;
-      std::memcpy(w_k_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
-      src_ptr += embed_dim;
-      std::memcpy(w_v_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
-      src_ptr += embed_dim;
+    m->wte_T = tens::ops::cpu_transpose_avx512(m->wte, alloc);
+
+    size_t atten_arena_size = MAX_SEQ_LEN * embed_dim * 16 * sizeof(float);
+
+    for (size_t i = 0; i < m->cfg.num_layers; i++) {
+        transformer_block* b = &m->blocks[i];
+        
+        std::snprintf(name, sizeof(name), "h.%zu.ln_1.weight", i);
+        b->ln1_weight = load_tensor(&sf, name, alloc);
+        std::snprintf(name, sizeof(name), "h.%zu.ln_1.bias", i);
+        b->ln1_bias = load_tensor(&sf, name, alloc);
+        
+        std::snprintf(name, sizeof(name), "h.%zu.attn.c_attn.weight", i);
+        tens::tensor qkv_weight = load_tensor(&sf, name, alloc);
+        
+        std::snprintf(name, sizeof(name), "h.%zu.attn.c_attn.bias", i);
+        tens::tensor qkv_bias = load_tensor(&sf, name, alloc);
+        
+        std::snprintf(name, sizeof(name), "h.%zu.attn.c_proj.weight", i);
+        tens::tensor attn_proj_weight = load_tensor(&sf, name, alloc);
+        
+        std::snprintf(name, sizeof(name), "h.%zu.attn.c_proj.bias", i);
+        tens::tensor attn_proj_bias = load_tensor(&sf, name, alloc);
+
+        float* w_q_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
+        float* w_k_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
+        float* w_v_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
+        float* src_ptr = qkv_weight.tensor_data;
+        
+        for (size_t row = 0; row < embed_dim; row++) {
+            std::memcpy(w_q_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
+            src_ptr += embed_dim;
+            std::memcpy(w_k_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
+            src_ptr += embed_dim;
+            std::memcpy(w_v_buf + row * embed_dim, src_ptr, embed_dim * sizeof(float));
+            src_ptr += embed_dim;
+        }
+        
+        float* b_q = qkv_bias.tensor_data;
+        float* b_k = qkv_bias.tensor_data + embed_dim;
+        float* b_v = qkv_bias.tensor_data + 2 * embed_dim;
+        float* w_o = attn_proj_weight.tensor_data; 
+        float* b_o = attn_proj_bias.tensor_data;
+        
+        void* pool_mem  = alloc.nn_alloc<char>(sizeof(memory::neural_arena));
+        void* atten_mem = alloc.nn_alloc<char>(sizeof(atten::multi_head_attention));
+        
+        m->atten_pools[i] = new (pool_mem) memory::neural_arena(atten_arena_size);
+        m->attentions[i]  = new (atten_mem) atten::multi_head_attention(embed_dim, m->cfg.num_heads);
+        m->attentions[i]->init(*m->atten_pools[i]);
+        m->attentions[i]->load_weights(w_q_buf, w_k_buf, w_v_buf, w_o, b_q, b_k, b_v, b_o);
+        
+        std::snprintf(name, sizeof(name), "h.%zu.ln_2.weight", i);
+        b->ln2_weight = load_tensor(&sf, name, alloc);
+        std::snprintf(name, sizeof(name), "h.%zu.ln_2.bias", i);
+        b->ln2_bias = load_tensor(&sf, name, alloc);
+        
+        std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.weight", i);
+        b->ffn_fc_weight = load_tensor(&sf, name, alloc);
+        
+        std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.bias", i);
+        b->ffn_fc_bias = load_tensor(&sf, name, alloc);
+        
+        std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.weight", i);
+        b->ffn_proj_weight = load_tensor(&sf, name, alloc);
+        
+        std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.bias", i);
+        b->ffn_proj_bias = load_tensor(&sf, name, alloc);
     }
     
-    float* b_q = qkv_bias.tensor_data;
-    float* b_k = qkv_bias.tensor_data + embed_dim;
-    float* b_v = qkv_bias.tensor_data + 2 * embed_dim;
-    float* w_o = attn_proj_weight.tensor_data; 
-    float* b_o = attn_proj_bias.tensor_data;
+    m->ln_f_weight = load_tensor(&sf, "ln_f.weight", alloc);
+    m->ln_f_bias = load_tensor(&sf, "ln_f.bias", alloc);
     
-    void* pool_mem  = alloc.nn_alloc<char>(sizeof(memory::neural_arena));
-    void* atten_mem = alloc.nn_alloc<char>(sizeof(atten::multi_head_attention));
-    
-    m->atten_pools[i] = new (pool_mem) memory::neural_arena(atten_arena_size);
-    m->attentions[i]  = new (atten_mem) atten::multi_head_attention(embed_dim, m->cfg.num_heads);
-    m->attentions[i]->init(*m->atten_pools[i]);
-    m->attentions[i]->load_weights(w_q_buf, w_k_buf, w_v_buf, w_o, b_q, b_k, b_v, b_o);
-    
-    std::snprintf(name, sizeof(name), "h.%zu.ln_2.weight", i);
-    b->ln2_weight = load_tensor(&sf, name, alloc);
-    std::snprintf(name, sizeof(name), "h.%zu.ln_2.bias", i);
-    b->ln2_bias = load_tensor(&sf, name, alloc);
-    
-    std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.weight", i);
-    b->ffn_fc_weight = load_linear_transpose(name); 
-    
-    std::snprintf(name, sizeof(name), "h.%zu.mlp.c_fc.bias", i);
-    b->ffn_fc_bias = load_tensor(&sf, name, alloc);
-    
-    std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.weight", i);
-    b->ffn_proj_weight = load_linear_transpose(name); 
-    
-    std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.bias", i);
-    b->ffn_proj_bias = load_tensor(&sf, name, alloc);
-  }
-    
-  m->ln_f_weight = load_tensor(&sf, "ln_f.weight", alloc);
-  m->ln_f_bias = load_tensor(&sf, "ln_f.bias", alloc);
-  
-  safetensor::free_safetensor(&sf);
-  m->initialized = true;
-  std::printf("Model loaded successfully\n");
-  return true;
+    safetensor::free_safetensor(&sf);
+    m->initialized = true;
+    std::printf("Model loaded successfully\n");
+    return true;
 }
 
 /*

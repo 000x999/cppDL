@@ -345,6 +345,12 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     m->attentions[i]  = new (atten_mem) atten::multi_head_attention(embed_dim, m->cfg.num_heads);
     m->attentions[i]->init(*m->atten_pools[i]);
     m->attentions[i]->load_weights(w_q_buf, w_k_buf, w_v_buf, w_o, b_q, b_k, b_v, b_o);
+    if (i == 0) {
+    std::printf("[DEBUG] After load_weights - stored W_Q[0][0:3]: %.6f %.6f %.6f\n",
+                m->attentions[i]->weights_data.w_queries.tensor_data[0],
+                m->attentions[i]->weights_data.w_queries.tensor_data[1],
+                m->attentions[i]->weights_data.w_queries.tensor_data[2]);
+    }
     
     std::snprintf(name, sizeof(name), "h.%zu.ln_2.weight", i);
     b->ln2_weight = load_tensor(&sf, name, alloc);

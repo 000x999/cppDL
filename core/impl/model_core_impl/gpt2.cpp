@@ -337,6 +337,9 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
 }
 
 tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &pool) {
+    for (size_t i = 0; i < m->cfg.num_layers; i++) {
+      m->atten_pools[i]->arena.nn_reset();
+    }
     static int call_count = 0;
     bool debug = (call_count == 1);  
     call_count++;

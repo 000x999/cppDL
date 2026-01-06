@@ -288,16 +288,7 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
 
   size_t embed_dim = m->cfg.embed_dim;
   size_t atten_arena_size = MAX_SEQ_LEN * embed_dim * 16 * sizeof(float);
-  
-  auto load_linear_transpose = [&](const char* tensor_name) -> tens::tensor {
-    tens::tensor t = load_tensor(&sf, tensor_name, alloc);
-    if (t.tensor_data && t.shape.ndim == 2) {
-      std::printf("[INFO] Transposing Linear Weight: %s\n", tensor_name);
-      return tens::ops::cpu_transpose_avx512(t, alloc);
-    }
-    return t;
-  };
-
+ 
   for (size_t i = 0; i < m->cfg.num_layers; i++) {
     transformer_block* b = &m->blocks[i];
     
@@ -574,12 +565,7 @@ tens::tensor forward(model *m, const tens::tensor &tokens, memory::neural_arena 
     x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
 
     tens::tensor wte_transposed = m->wte_T;
-    
-    if (wte_transposed.shape.dims[0] != embed_dim) {
-        if (debug) printf("[WARN] wte_T not pre-transposed. Transposing now (Slow!)...\n");
-        wte_transposed = tens::ops::cpu_transpose_avx512(m->wte, pool);
-    }
-
+   
     tens::tensor logits;
     logits.shape.ndim = 2;
     logits.shape.dims[0] = seq_len;

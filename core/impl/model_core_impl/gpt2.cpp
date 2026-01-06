@@ -239,10 +239,11 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
 
   size_t embed_dim = m->cfg.embed_dim;
   size_t atten_arena_size = MAX_SEQ_LEN * embed_dim * 16 * sizeof(float);
-  
-for (size_t i = 0; i < m->cfg.num_layers; i++) {
+
+  for (size_t i = 0; i < m->cfg.num_layers; i++) {
     transformer_block* b = &m->blocks[i];
     
+    // LN1
     std::snprintf(name, sizeof(name), "h.%zu.ln_1.weight", i);
     b->ln1_weight = load_tensor(&sf, name, alloc);
     std::snprintf(name, sizeof(name), "h.%zu.ln_1.bias", i);
@@ -250,7 +251,6 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
     
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_attn.weight", i);
     tens::tensor qkv_weight = load_tensor(&sf, name, alloc);
-    
     std::snprintf(name, sizeof(name), "h.%zu.attn.c_attn.bias", i);
     tens::tensor qkv_bias = load_tensor(&sf, name, alloc);
     
@@ -263,7 +263,6 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
     float* w_q_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
     float* w_k_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
     float* w_v_buf = alloc.nn_alloc<float>(embed_dim * embed_dim);
-    
     float* src_ptr = qkv_weight.tensor_data;
     
     for (size_t row = 0; row < embed_dim; row++) {
@@ -278,13 +277,11 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
     float* b_q = qkv_bias.tensor_data;
     float* b_k = qkv_bias.tensor_data + embed_dim;
     float* b_v = qkv_bias.tensor_data + 2 * embed_dim;
-    
     float* w_o = attn_proj_weight.tensor_data; 
     float* b_o = attn_proj_bias.tensor_data;
     
     void* pool_mem  = alloc.nn_alloc<char>(sizeof(atten::atten_pool));
     void* atten_mem = alloc.nn_alloc<char>(sizeof(atten::multi_head_attention));
-    
     m->atten_pools[i] = new (pool_mem) atten::atten_pool(atten_arena_size);
     m->attentions[i]  = new (atten_mem) atten::multi_head_attention(embed_dim, m->cfg.num_heads);
     m->attentions[i]->init(*m->atten_pools[i]);
@@ -305,16 +302,16 @@ for (size_t i = 0; i < m->cfg.num_layers; i++) {
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.bias", i);
     b->ffn_proj_bias = load_tensor(&sf, name, alloc);
   }
-
+  
   m->ln_f_weight = load_tensor(&sf, "ln_f.weight", alloc);
   m->ln_f_bias = load_tensor(&sf, "ln_f.bias", alloc);
   
   safetensor::free_safetensor(&sf);
-  
   m->initialized = true;
   std::printf("Model loaded successfully\n");
   return true;
 }
+
 tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &pool) {
     for (size_t i = 0; i < m->cfg.num_layers; i++) {
       m->atten_pools[i]->arena.nn_reset();

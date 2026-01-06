@@ -386,6 +386,7 @@ void gemm_test(float A){
 }
 
 int main(int argc, char* argv[]) {
+  std::printf("\n\n>>> BINARY UPDATED: CHECKING WPE FIX <<<\n\n");
   const char* model_path = "model.safetensors";
   const char* vocab_path = "vocab.json";
 

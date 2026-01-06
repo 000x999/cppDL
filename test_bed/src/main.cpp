@@ -450,10 +450,12 @@ int main(int argc, char* argv[]) {
         
         float* last_row = logits.tensor_data + (seq_len - 1) * model.cfg.vocab_size;
         
-        int next_token = gpt2::sample_top_k(
+        int next_token = gpt2::sample_top_k_avx512(
             last_row, 
             model.cfg.vocab_size, 
-            40    
+            40,    
+            0.75f,   
+            temp_pool
         );
         
         std::string token_str = tokenizer.decode(next_token);

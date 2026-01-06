@@ -8,6 +8,11 @@ namespace gpt2 {
 constexpr size_t MAX_LAYERS  = 48;
 constexpr size_t MAX_SEQ_LEN = 2048;
 
+struct Token {
+  float score;
+  int id;
+};
+
 struct config {
   size_t vocab_size;
   size_t embed_dim;
@@ -41,11 +46,12 @@ struct model {
   bool initialized;
 };
 
-void         init_model   (model* m                                                     );
-bool         load_model   (model* m,const char* path, memory::neural_arena& alloc       );
-tens::tensor forward      (model* m,const tens::tensor& tokens,tens::tensor_pool& pool  );
-int          argmax       (const tens::tensor& logits                                   );
-void         free_model   (model* m                                                     );
-int          sample_top_k (float* logits, size_t vocab_size, int k);
-tens::tensor matmul       (const tens::tensor &a, const tens::tensor &b, tens::tensor_pool &pool);
+void         init_model          (model* m                                                     );
+bool         load_model          (model* m,const char* path, memory::neural_arena& alloc       );
+tens::tensor forward             (model* m,const tens::tensor& tokens,tens::tensor_pool& pool  );
+int          argmax              (const tens::tensor& logits                                   );
+void         free_model          (model* m                                                     );
+int          sample_top_k_avx512 (float* logits, size_t vocab_size, int k, float temperature, tens::tensor_pool& pool);
+int          sample_top_k        (float* logits, size_t vocab_size, int k);
+tens::tensor matmul              (const tens::tensor &a, const tens::tensor &b, tens::tensor_pool &pool);
 }  // namespace gpt2

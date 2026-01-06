@@ -536,5 +536,88 @@ int sample_top_k(float* logits, size_t vocab_size, int k) {
   return pairs[k-1].first; 
 }
 
+int sample_top_k_avx512(float* logits, size_t vocab_size, int k, float temperature, tens::tensor_pool& pool) {
+  Token* top_k = pool.arena.nn_alloc<Token>(k + 1);
+  
+  for (int i = 0; i < k; ++i) {
+    top_k[i] = { -1e30f, -1 };
+  }
+
+  float threshold = -1e30f;
+
+  auto insert_candidate = [&](float score, int id) {
+    if (score <= threshold) return;
+
+    int i = k - 1;
+    while (i >= 0 && score > top_k[i].score) {
+      if (i < k - 1) {
+        top_k[i + 1] = top_k[i];
+      }
+      i--;
+  }
+    if (i + 1 < k) {
+      top_k[i + 1] = { score, id };
+    }
+    
+    threshold = top_k[k - 1].score;
+  };
+
+  size_t i = 0;
+  
+  __m512i v_indices_base = _mm512_setr_epi32(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
+  __m512i v_indices_step = _mm512_set1_epi32(16);
+  __m512i v_current_indices = v_indices_base;
+
+  for (; i + 16 <= vocab_size; i += 16) {
+    __m512 v_logits = _mm512_loadu_ps(&logits[i]);
+    
+    __m512 v_threshold = _mm512_set1_ps(threshold);
+    
+    __mmask16 mask = _mm512_cmp_ps_mask(v_logits, v_threshold, _CMP_GT_OQ);
+
+    if (mask) {
+      while (mask) {
+        int bit_idx = __builtin_ctz(mask);
+        
+        float val = logits[i + bit_idx];
+        int id = i + bit_idx;
+        
+        insert_candidate(val, id);
+        
+        mask &= ~(1 << bit_idx); 
+      }
+    }
+    v_current_indices = _mm512_add_epi32(v_current_indices, v_indices_step);
+  }
+
+  for (; i < vocab_size; ++i) {
+    insert_candidate(logits[i], i);
+  }
+
+  float* probs = pool.arena.nn_alloc<float>(k);
+  
+  float max_logit = top_k[0].score / temperature; 
+  float sum_exp = 0.0f;
+  
+  for (int j = 0; j < k; j++) {
+    float val = (top_k[j].score / temperature);
+    probs[j] = std::exp(val - max_logit);
+    sum_exp += probs[j];
+  }
+
+    static std::mt19937 rng(std::random_device{}());
+    std::uniform_real_distribution<float> dist(0.0f, sum_exp);
+    float r = dist(rng);
+    
+    float cum_prob = 0.0f;
+    for (int j = 0; j < k; j++) {
+      cum_prob += probs[j];
+      if (r <= cum_prob) {
+        return top_k[j].id;
+      }
+    }
+  return top_k[k-1].id;
+}
+
 }
 

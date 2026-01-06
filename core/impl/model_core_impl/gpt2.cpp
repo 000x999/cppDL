@@ -325,6 +325,12 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
         w_v_buf[row * embed_dim + col] = qkv_weight.tensor_data[src_row_offset + col * 3 + 2];
       }
     }
+    if (i == 0) {
+      std::printf("[DEBUG] After split - W_Q[0][0:3]: %.6f %.6f %.6f\n",
+                  w_q_buf[0], w_q_buf[1], w_q_buf[2]);
+      std::printf("[DEBUG] After split - W_K[0][0:3]: %.6f %.6f %.6f\n",
+                  w_k_buf[0], w_k_buf[1], w_k_buf[2]);
+    }
     
     float* b_q = qkv_bias.tensor_data;
     float* b_k = qkv_bias.tensor_data + embed_dim;

@@ -362,6 +362,22 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
     
     std::snprintf(name, sizeof(name), "h.%zu.mlp.c_proj.bias", i);
     b->ffn_proj_bias = load_tensor(&sf, name, alloc);
+    
+    if (i == 0) {
+    std::printf("[DEBUG] ffn_fc_weight shape: [%zu, %zu]\n", 
+                b->ffn_fc_weight.shape.dims[0], b->ffn_fc_weight.shape.dims[1]);
+    std::printf("[DEBUG] ffn_proj_weight shape: [%zu, %zu]\n",
+                b->ffn_proj_weight.shape.dims[0], b->ffn_proj_weight.shape.dims[1]);
+    }
+
+    if (i == 0) {
+    std::printf("[DEBUG] attn c_proj shape: [%zu, %zu]\n",
+                attn_proj_weight.shape.dims[0], attn_proj_weight.shape.dims[1]);
+    std::printf("[DEBUG] ffn_fc shape: [%zu, %zu]\n",
+                b->ffn_fc_weight.shape.dims[0], b->ffn_fc_weight.shape.dims[1]);
+    std::printf("[DEBUG] ffn_proj shape: [%zu, %zu]\n",
+                b->ffn_proj_weight.shape.dims[0], b->ffn_proj_weight.shape.dims[1]);
+    }
   }
     
   m->ln_f_weight = load_tensor(&sf, "ln_f.weight", alloc);

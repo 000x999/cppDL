@@ -414,7 +414,13 @@ int main(int argc, char* argv[]) {
     std::printf("Error: Could not encode prompt.\n");
     return 1;
   }
-  
+
+  std::printf("\n[DEBUG] Input IDs: [ ");
+  for(int id : input_ids) {
+    std::printf("%d ", id);
+  }
+  std::printf("]\n");
+
   for (size_t i = 0; i < seq_len; i++) {
     sequence[i] = (float)input_ids[i];
   }

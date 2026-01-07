@@ -1,2 +1,0 @@
-- https://github.com/pavel-kirienko/o1heap/tree/master
-- https://github.com/walker-xian/teisye

@@ -477,14 +477,16 @@ int main(int argc, char* argv[]) {
     for (size_t l = 0; l < model.cfg.num_layers; l++) {
       if (model.atten_pools[l]) model.atten_pools[l]->nn_reset();
     }
+
   }
+  save_ppm("l_n_f_weights",model.ln_f_weight.tensor_data,model.ln_f_weight.shape.dims[0], model.ln_f_weight.shape.dims[1]);
 
   const double secs = (double)total_ns / 1e9;
   const double tok_s = (secs > 0.0) ? ((double)tokens_gen / secs) : 0.0;
   const double gflops = (secs > 0.0)
     ? ((double)(tokens_gen * estimate_flops_per_token(model.cfg, seq_len)) / (double)total_ns)
     : 0.0;
-
+  
   std::printf("\n\nStats: %.2f tok/s | %.2f GFLOP/s\n", tok_s, gflops);
 
   std::free(sequence);

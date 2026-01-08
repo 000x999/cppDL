@@ -498,6 +498,6 @@ int main(int argc, char* argv[]) {
   return 0;
   */
 
-  gemm_test(16384);
+  gemm_test(8192);
   return 0; 
 }

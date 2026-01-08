@@ -375,6 +375,8 @@ void gemm_test(float A){
   double gflopFactor = 1.0e-9;
   std::cout<< totalOps * 1e-9 << " GFLOP" << std::endl; 
 
+  level3::blas::crush_gemm(level3::transpose_gemm::no_transpose,level3::transpose_gemm::no_transpose, mat_a, mat_b, 1.0f, 0.0f, C);
+  
   auto start = nanos(); 
   level3::blas::crush_gemm(level3::transpose_gemm::no_transpose,level3::transpose_gemm::no_transpose, mat_a, mat_b, 1.0f, 0.0f, C);
   auto end = nanos();

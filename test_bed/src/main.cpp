@@ -500,6 +500,6 @@ int main(int argc, char* argv[]) {
   return 0;
   */
 
-  gemm_test(8192);
+  gemm_test(4096);
   return 0; 
 }

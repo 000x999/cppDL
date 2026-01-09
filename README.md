@@ -6,7 +6,7 @@ A high-performance deep learning inference library written in C++ from scratch w
 
 | Benchmark | Configuration | Result |
 |-----------|---------------|--------|
-| GPT-2 Inference | no KV cache, 50 tokens | **35.43 tok/s** + ~86% vs PyTorch CPU: 19 tok/s|
+| GPT-2 Inference | no KV cache, 50 tokens | **~35.43 tok/s** + ~86% vs PyTorch CPU: 19 tok/s|
 | GEMM (FP32) | 4096x4096, 8192x8192, 16384x16384 | **~825 GFLOP/s** sustained |
 | Multi-Head Attention | seq=512, embed=8192, heads=8 | **~343 GFLOP/s** (413.0ms) |
 | Single-Head Attention | seq=512, embed=8192, heads=1 | **~359 GFLOP/s** (394.9ms) |
@@ -221,16 +221,16 @@ All benchmarks performed on AMD Ryzen 9 9950X3D and an Intel i9-9900K with OpenM
 
 | Matrix Size | GFLOP | Time | Throughput |
 |-------------|-------|------|------------|
-| 4096 x 4096 | 137.4 | 0.167s | **825 GFLOP/s** |
-| 8192 x 8192 | 1099.5 | 1.33s | **825 GFLOP/s** |
-| 16384 x 16384 | 8796.1 | 10.66s | **825 GFLOP/s** |
+| 4096 x 4096 | 137.4 | 0.167s | **~825 GFLOP/s** |
+| 8192 x 8192 | 1099.5 | 1.33s | **~825 GFLOP/s** |
+| 16384 x 16384 | 8796.1 | 10.66s | **~825 GFLOP/s** |
 
 ### Attention Performance (FP32)
 
 | Configuration | Params | Time | GFLOP | GFLOP/s |
 |---------------|--------|------|-------|---------|
-| Single-Head Attention | seq=512, embed=8192, heads=1 | 394.9ms | 141.8 | **359 GFLOP/s** |
-| Multi-Head Attention | seq=512, embed=8192, heads=8 | 413.0ms | 141.8 | **343 GFLOP/s** |
+| Single-Head Attention | seq=512, embed=8192, heads=1 | 394.9ms | 141.8 | **~359 GFLOP/s** |
+| Multi-Head Attention | seq=512, embed=8192, heads=8 | 413.0ms | 141.8 | **~343 GFLOP/s** |
 
 *Attention FLOP calculation: 3 × seq × embed² (QKV projections) + 2 × seq² × embed (attention scores) + seq × embed² (output projection)*
 
@@ -238,10 +238,10 @@ All benchmarks performed on AMD Ryzen 9 9950X3D and an Intel i9-9900K with OpenM
 
 | Metric | Value |
 |--------|-------|
-| Tokens/sec (no KV cache) | **35.43 tok/s** |
+| Tokens/sec (no KV cache) | **~35.43 tok/s** |
 | GFLOP/s (average) | ~535 GFLOP/s |
-| PyTorch CPU baseline | 19 tok/s |
-| Speedup vs PyTorch | **+86%** |
+| PyTorch CPU baseline | ~19 tok/s |
+| Speedup vs PyTorch | **~+86%** |
 
 ### PyTorch Comparison Benchmark
 ```python

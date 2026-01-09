@@ -1,5 +1,5 @@
-#ifndef SAFETENSOR_READER_H
-#define SAFETENSOR_READER_H
+#ifndef SAFETENSOR_READER_HPP
+#define SAFETENSOR_READER_HPP
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -11,13 +11,13 @@ constexpr size_t MAX_NAME_LEN  = 256;
 constexpr size_t MAX_DIMS      = 8;
 
 struct tensor_entry {
-  char   name[MAX_NAME_LEN];
-  size_t shape[MAX_DIMS];
-  size_t strides[MAX_DIMS];
+  char   name    [MAX_NAME_LEN];
+  size_t shape   [MAX_DIMS];
+  size_t strides [MAX_DIMS];
   int    ndim;
   size_t data_offset;
   size_t data_size;
-  char   dtype[16];
+  char   dtype   [16];
 };
 
 struct safetensor_file {
@@ -38,6 +38,5 @@ void          free_safetensor   (safetensor_file* sf                            
 tensor_entry* find_entry        (safetensor_file* sf, const char* name                       );
 float*        get_tensor_data   (safetensor_file* sf, const char* name                       );
 void          print_entries     (safetensor_file* sf                                         );
-
 }  // namespace safetensor
 #endif 

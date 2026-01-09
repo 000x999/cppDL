@@ -1,11 +1,15 @@
-#pragma once
-#include "safetensor_core/safetensor_reader.h"
+#ifndef GPT2_HPP
+#define GPT2_HPP
+#include "safetensor_core/safetensor_reader.hpp"
 #include "tensor_core/tensor.hpp"
 #include "neural_memory/nn_memory.hpp"
 #include "attention_core/attention.hpp"
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <cstdio>
+#include <cstring>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -80,7 +84,6 @@ static inline std::vector<std::string> split_utf8_codepoints(const std::string& 
     size_t start = i;
     uint8_t c0 = (uint8_t)s[i++];
     if ((c0 & 0x80) == 0) {
-      // 1-byte
     } else if ((c0 & 0xE0) == 0xC0) {
       i = std::min(i + 1, s.size());
     } else if ((c0 & 0xF0) == 0xE0) {
@@ -104,14 +107,14 @@ static inline std::string join_with_space(const std::vector<std::string>& parts)
 }
 
 struct tokenizer {
-  std::unordered_map<int, std::string> id_to_token;   
-  std::unordered_map<std::string, int> token_to_id;   
+  std::unordered_map <int, std::string>         id_to_token;   
+  std::unordered_map <std::string, int>         token_to_id;   
 
-  std::unordered_map<std::string, int> bpe_ranks;
-  std::unordered_map<std::string, std::string> bpe_cache;
+  std::unordered_map <std::string, int>         bpe_ranks;
+  std::unordered_map <std::string, std::string> bpe_cache;
 
-  std::array<std::string, 256> byte_to_unicode_utf8;        
-  std::unordered_map<uint32_t, uint8_t> unicode_to_byte;    
+  std::array         <std::string, 256>         byte_to_unicode_utf8;        
+  std::unordered_map <uint32_t, uint8_t>        unicode_to_byte;    
 
   static int hex_val(char c) {
     if (c >= '0' && c <= '9') return c - '0';
@@ -214,10 +217,8 @@ struct tokenizer {
 
       id_to_token[id] = decoded;
       token_to_id[decoded] = id;
-
       pos = val_end + 1;
     }
-
     return !id_to_token.empty();
   }
 
@@ -249,7 +250,6 @@ struct tokenizer {
 
       bpe_ranks[pair_key(a, b)] = rank++;
     }
-
     return !bpe_ranks.empty();
   }
 
@@ -457,4 +457,5 @@ void         free_model          (model* m                                      
 int          sample_top_k_avx512 (float* logits, size_t vocab_size, int k, float temperature, memory::neural_arena& pool);
 int          sample_top_k        (float* logits, size_t vocab_size, int k);
 tens::tensor matmul              (const tens::tensor &a, const tens::tensor &b, memory::neural_arena &pool);
-}  // namespace gpt2
+};  // namespace gpt2
+#endif 

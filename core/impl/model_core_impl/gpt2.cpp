@@ -1,32 +1,30 @@
 #include "model_core/gpt2.hpp"
-#include <cstdio>
-#include <cstring>
-#include <cmath>
 
 namespace gpt2{
+
 void debug_tensor(const char* name, const tens::tensor& t) {
-    float min_val = t.tensor_data[0];
-    float max_val = t.tensor_data[0];
-    float sum = 0;
-    bool has_nan = false;
-    bool has_inf = false;
-    
-    size_t numel = t.shape.numel();
-    for (size_t i = 0; i < numel; i++) {
-        float v = t.tensor_data[i];
-        if (std::isnan(v)) has_nan = true;
-        if (std::isinf(v)) has_inf = true;
-        if (v < min_val) min_val = v;
-        if (v > max_val) max_val = v;
-        sum += v;
-    }
-    
-    std::printf("[%s] shape=[", name);
-    for (int i = 0; i < t.shape.ndim; i++) {
-        std::printf("%zu%s", t.shape.dims[i], i < t.shape.ndim - 1 ? "," : "");
-    }
-    std::printf("] min=%.6f max=%.6f mean=%.6f nan=%d inf=%d\n",
-                min_val, max_val, sum / numel, has_nan, has_inf);
+  float min_val = t.tensor_data[0];
+  float max_val = t.tensor_data[0];
+  float sum = 0;
+  bool has_nan = false;
+  bool has_inf = false;
+  
+  size_t numel = t.shape.numel();
+  for (size_t i = 0; i < numel; i++) {
+    float v = t.tensor_data[i];
+    if (std::isnan(v)) has_nan = true;
+    if (std::isinf(v)) has_inf = true;
+    if (v < min_val) min_val = v;
+    if (v > max_val) max_val = v;
+    sum += v;
+  }
+  
+  std::printf("[%s] shape=[", name);
+  for (int i = 0; i < t.shape.ndim; i++) {
+      std::printf("%zu%s", t.shape.dims[i], i < t.shape.ndim - 1 ? "," : "");
+  }
+  std::printf("] min=%.6f max=%.6f mean=%.6f nan=%d inf=%d\n",
+              min_val, max_val, sum / numel, has_nan, has_inf);
 }
 
 tens::tensor load_tensor(safetensor::safetensor_file *sf, const char *name, memory::neural_arena &alloc) {
@@ -106,14 +104,14 @@ tens::tensor matmul(const tens::tensor &a, const tens::tensor &b, memory::neural
 
 /*
 tens::tensor linear(const tens::tensor &x, const tens::tensor &weight, const tens::tensor &bias, memory::neural_arena &pool) {
-size_t seq_len = x.shape.dims[0];
+  size_t seq_len = x.shape.dims[0];
   size_t in_features = x.shape.dims[1];
   
   if (weight.shape.dims[0] != in_features) {
-      std::printf("[FATAL] Linear Dimension Mismatch! Input Col: %zu, Weight Row: %zu\n", 
-                  in_features, weight.shape.dims[0]);
-      std::printf("       Hint: Did you forget to transpose the PyTorch weights?\n");
-      std::exit(1);
+    std::printf("[FATAL] Linear Dimension Mismatch! Input Col: %zu, Weight Row: %zu\n", 
+                in_features, weight.shape.dims[0]);
+    std::printf("       Hint: Did you forget to transpose the PyTorch weights?\n");
+    std::exit(1);
   }
 
   size_t out_features = weight.shape.dims[1]; 
@@ -277,10 +275,10 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
   size_t embed = m->cfg.embed_dim;
 
   for (size_t v = 0; v < vocab; v++) {
-      for (size_t e = 0; e < embed; e++) {
-          float val = m->wte.tensor_data[v * embed + e];
-          m->wte_T.tensor_data[e * vocab + v] = val;
-      }
+    for (size_t e = 0; e < embed; e++) {
+      float val = m->wte.tensor_data[v * embed + e];
+      m->wte_T.tensor_data[e * vocab + v] = val;
+    }
   }
 
   size_t embed_dim = m->cfg.embed_dim;
@@ -362,236 +360,235 @@ bool load_model(model *m, const char *path, memory::neural_arena &alloc) {
 
 /*
 tens::tensor forward(model *m, const tens::tensor &tokens, tens::tensor_pool &pool) {
-    for (size_t i = 0; i < m->cfg.num_layers; i++) {
-      m->atten_pools[i]->arena.nn_reset();
-    }
-    static int call_count = 0;
-    bool debug = (call_count == 0); 
-    call_count++;
+  for (size_t i = 0; i < m->cfg.num_layers; i++) {
+    m->atten_pools[i]->arena.nn_reset();
+  }
+  static int call_count = 0;
+  bool debug = (call_count == 0); 
+  call_count++;
+  
+  size_t seq_len = tokens.shape.dims[0];
+  size_t embed_dim = m->cfg.embed_dim;
+  
+  tens::tensor x = tens::ops::embedding(m->wte, tokens, pool);
+  
+  tens::tensor pos_emb;
+  pos_emb.shape.ndim = 2;
+  pos_emb.shape.dims[0] = seq_len;
+  pos_emb.shape.dims[1] = embed_dim;
+  pos_emb.shape.strides[0] = embed_dim;
+  pos_emb.shape.strides[1] = 1;
+  pos_emb.tensor_data = m->wpe.tensor_data;
+  
+  x = tens::ops::add(x, pos_emb, pool);
+  
+  for (size_t i = 0; i < m->cfg.num_layers; i++) {
+    transformer_block* b = &m->blocks[i];
+    tens::tensor residual = x;
     
-    size_t seq_len = tokens.shape.dims[0];
-    size_t embed_dim = m->cfg.embed_dim;
+    x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
     
-    tens::tensor x = tens::ops::embedding(m->wte, tokens, pool);
+    x = m->attentions[i]->forward(x, *m->atten_pools[i]);
     
-    tens::tensor pos_emb;
-    pos_emb.shape.ndim = 2;
-    pos_emb.shape.dims[0] = seq_len;
-    pos_emb.shape.dims[1] = embed_dim;
-    pos_emb.shape.strides[0] = embed_dim;
-    pos_emb.shape.strides[1] = 1;
-    pos_emb.tensor_data = m->wpe.tensor_data;
+    x = tens::ops::add(residual, x, pool);
+    residual = x;
     
-    x = tens::ops::add(x, pos_emb, pool);
+    x = tens::ops::layer_norm(x, b->ln2_weight, b->ln2_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
     
-    for (size_t i = 0; i < m->cfg.num_layers; i++) {
-      transformer_block* b = &m->blocks[i];
-      tens::tensor residual = x;
-      
-      x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-      
-      x = m->attentions[i]->forward(x, *m->atten_pools[i]);
-      
-      x = tens::ops::add(residual, x, pool);
-      residual = x;
-      
-      x = tens::ops::layer_norm(x, b->ln2_weight, b->ln2_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-      
-      x = linear(x, b->ffn_fc_weight, b->ffn_fc_bias, pool);
-      
-      x = tens::ops::gelu(x, pool);
-      x = linear(x, b->ffn_proj_weight, b->ffn_proj_bias, pool);
-      x = tens::ops::add(residual, x, pool);
-    }
+    x = linear(x, b->ffn_fc_weight, b->ffn_fc_bias, pool);
     
-    x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
+    x = tens::ops::gelu(x, pool);
+    x = linear(x, b->ffn_proj_weight, b->ffn_proj_bias, pool);
+    x = tens::ops::add(residual, x, pool);
+  }
+    
+  x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
 
-    tens::tensor wte_transposed = m->wte_T;
-    
-    if (wte_transposed.shape.dims[0] != embed_dim) {
-      if (debug) printf("[WARN] wte_T not pre-transposed. Transposing now (Slow!)...\n");
-      wte_transposed = tens::ops::cpu_transpose_avx512(m->wte, pool);
-    }
+  tens::tensor wte_transposed = m->wte_T;
+  
+  if (wte_transposed.shape.dims[0] != embed_dim) {
+    if (debug) printf("[WARN] wte_T not pre-transposed. Transposing now (Slow!)...\n");
+    wte_transposed = tens::ops::cpu_transpose_avx512(m->wte, pool);
+  }
 
-    tens::tensor logits;
-    logits.shape.ndim = 2;
-    logits.shape.dims[0] = seq_len;
-    logits.shape.dims[1] = m->cfg.vocab_size;
-    logits.shape.strides[0] = m->cfg.vocab_size;
-    logits.shape.strides[1] = 1;
-    logits.tensor_data = pool.arena.nn_alloc<float>(seq_len * m->cfg.vocab_size);
-    
-    std::memset(logits.tensor_data, 0, seq_len * m->cfg.vocab_size * sizeof(float));
-    
-    level3::mat_ops_view view_x {
-        .row_view = seq_len,
-        .col_view = embed_dim,
-        .leading_dimension = embed_dim,
-        .data_view = x.tensor_data
-    };
-    
-    level3::mat_ops_view view_wte_T {
-        .row_view = embed_dim,
-        .col_view = m->cfg.vocab_size,
-        .leading_dimension = m->cfg.vocab_size, 
-        .data_view = wte_transposed.tensor_data
-    };
-    
-    level3::mat_ops_view view_logits {
-        .row_view = seq_len,
-        .col_view = m->cfg.vocab_size,
-        .leading_dimension = m->cfg.vocab_size,
-        .data_view = logits.tensor_data
-    };
-   
-    level3::blas::crush_gemm(
-        level3::transpose_gemm::no_transpose,
-        level3::transpose_gemm::no_transpose, 
-        view_x,
-        view_wte_T,
-        1.0f,
-        0.0f,
-        view_logits
-    );
-    return logits;
+  tens::tensor logits;
+  logits.shape.ndim = 2;
+  logits.shape.dims[0] = seq_len;
+  logits.shape.dims[1] = m->cfg.vocab_size;
+  logits.shape.strides[0] = m->cfg.vocab_size;
+  logits.shape.strides[1] = 1;
+  logits.tensor_data = pool.arena.nn_alloc<float>(seq_len * m->cfg.vocab_size);
+  
+  std::memset(logits.tensor_data, 0, seq_len * m->cfg.vocab_size * sizeof(float));
+  
+  level3::mat_ops_view view_x {
+    .row_view = seq_len,
+    .col_view = embed_dim,
+    .leading_dimension = embed_dim,
+    .data_view = x.tensor_data
+  };
+  
+  level3::mat_ops_view view_wte_T {
+    .row_view = embed_dim,
+    .col_view = m->cfg.vocab_size,
+    .leading_dimension = m->cfg.vocab_size, 
+    .data_view = wte_transposed.tensor_data
+  };
+  
+  level3::mat_ops_view view_logits {
+    .row_view = seq_len,
+    .col_view = m->cfg.vocab_size,
+    .leading_dimension = m->cfg.vocab_size,
+    .data_view = logits.tensor_data
+  };
+ 
+  level3::blas::crush_gemm(
+    level3::transpose_gemm::no_transpose,
+    level3::transpose_gemm::no_transpose, 
+    view_x,
+    view_wte_T,
+    1.0f,
+    0.0f,
+    view_logits
+  );
+  return logits;
 }
 */
 
 tens::tensor forward(model *m, const tens::tensor &tokens, memory::neural_arena &pool) {
-    static int call_count = 0;
-    bool debug = (call_count == 0); 
-    call_count++;
+  static int call_count = 0;
+  bool debug = (call_count == 0); 
+  call_count++;
+  
+  size_t seq_len = tokens.shape.dims[0];
+  size_t embed_dim = m->cfg.embed_dim;
+
+  tens::tensor x;
+  x.shape.ndim = 2;
+  x.shape.dims[0] = seq_len;
+  x.shape.dims[1] = embed_dim;
+  x.shape.strides[0] = embed_dim;
+  x.shape.strides[1] = 1;
+  x.tensor_data = pool.nn_alloc<float>(seq_len * embed_dim);
+
+  for (size_t t = 0; t < seq_len; t++) {
+    int token_id = (int)tokens.tensor_data[t];
     
-    size_t seq_len = tokens.shape.dims[0];
-    size_t embed_dim = m->cfg.embed_dim;
-
-    tens::tensor x;
-    x.shape.ndim = 2;
-    x.shape.dims[0] = seq_len;
-    x.shape.dims[1] = embed_dim;
-    x.shape.strides[0] = embed_dim;
-    x.shape.strides[1] = 1;
-    x.tensor_data = pool.nn_alloc<float>(seq_len * embed_dim);
-
-    for (size_t t = 0; t < seq_len; t++) {
-        int token_id = (int)tokens.tensor_data[t];
-        
-        if (token_id < 0 || token_id >= m->cfg.vocab_size) {
-             token_id = 50256; 
-        }
-
-        float* wte_row = m->wte.tensor_data + (token_id * embed_dim);
-        
-        float* wpe_row = m->wpe.tensor_data + (t * embed_dim);
-        
-        float* target_row = x.tensor_data + (t * embed_dim);
-
-        size_t wpe_offset = t * embed_dim; 
-        for (size_t j = 0; j < embed_dim; j++) {
-            target_row[j] = wte_row[j] + wpe_row[j];
-        }
+    if (token_id < 0 || token_id >= m->cfg.vocab_size) {
+         token_id = 50256; 
     }
 
-    for (size_t i = 0; i < m->cfg.num_layers; i++) {
-        transformer_block* b = &m->blocks[i];
-        tens::tensor residual = x;
-        
-        x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-        
-        x = m->attentions[i]->forward(x, *m->atten_pools[i]);
-        
-        x = tens::ops::add(residual, x, pool);
-        residual = x;
-        
-        x = tens::ops::layer_norm(x, b->ln2_weight, b->ln2_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
-        
-        x = linear(x, b->ffn_fc_weight, b->ffn_fc_bias, pool);
-        x = tens::ops::gelu(x, pool);
-        x = linear(x, b->ffn_proj_weight, b->ffn_proj_bias, pool);
-        
-        x = tens::ops::add(residual, x, pool);
-    }
+    float* wte_row = m->wte.tensor_data + (token_id * embed_dim);
     
-    x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
+    float* wpe_row = m->wpe.tensor_data + (t * embed_dim);
+    
+    float* target_row = x.tensor_data + (t * embed_dim);
 
-    tens::tensor wte_transposed = m->wte_T;
-   
-    tens::tensor logits;
-    logits.shape.ndim = 2;
-    logits.shape.dims[0] = seq_len;
-    logits.shape.dims[1] = m->cfg.vocab_size;
-    logits.shape.strides[0] = m->cfg.vocab_size;
-    logits.shape.strides[1] = 1;
-    logits.tensor_data = pool.nn_alloc<float>(seq_len * m->cfg.vocab_size);
+    size_t wpe_offset = t * embed_dim; 
+    for (size_t j = 0; j < embed_dim; j++) {
+        target_row[j] = wte_row[j] + wpe_row[j];
+    }
+  }
+
+  for (size_t i = 0; i < m->cfg.num_layers; i++) {
+    transformer_block* b = &m->blocks[i];
+    tens::tensor residual = x;
     
-    level3::mat_ops_view view_x {
-        .row_view = seq_len,
-        .col_view = embed_dim,
-        .leading_dimension = embed_dim,
-        .data_view = x.tensor_data
-    };
+    x = tens::ops::layer_norm(x, b->ln1_weight, b->ln1_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
     
-    level3::mat_ops_view view_wte_T {
-        .row_view = embed_dim,
-        .col_view = m->cfg.vocab_size,
-        .leading_dimension = m->cfg.vocab_size, 
-        .data_view = wte_transposed.tensor_data
-    };
+    x = m->attentions[i]->forward(x, *m->atten_pools[i]);
     
-    level3::mat_ops_view view_logits {
-        .row_view = seq_len,
-        .col_view = m->cfg.vocab_size,
-        .leading_dimension = m->cfg.vocab_size,
-        .data_view = logits.tensor_data
-    };
+    x = tens::ops::add(residual, x, pool);
+    residual = x;
     
-    level3::blas::crush_gemm(
-        level3::transpose_gemm::no_transpose,
-        level3::transpose_gemm::no_transpose, 
-        view_x,
-        view_wte_T,
-        1.0f,
-        0.0f,
-        view_logits
-    );
+    x = tens::ops::layer_norm(x, b->ln2_weight, b->ln2_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
     
-    return logits;
+    x = linear(x, b->ffn_fc_weight, b->ffn_fc_bias, pool);
+    x = tens::ops::gelu(x, pool);
+    x = linear(x, b->ffn_proj_weight, b->ffn_proj_bias, pool);
+    
+    x = tens::ops::add(residual, x, pool);
+  }
+  
+  x = tens::ops::layer_norm(x, m->ln_f_weight, m->ln_f_bias, pool, x.shape.ndim - 1, m->cfg.layer_norm_eps);
+
+  tens::tensor wte_transposed = m->wte_T;
+ 
+  tens::tensor logits;
+  logits.shape.ndim = 2;
+  logits.shape.dims[0] = seq_len;
+  logits.shape.dims[1] = m->cfg.vocab_size;
+  logits.shape.strides[0] = m->cfg.vocab_size;
+  logits.shape.strides[1] = 1;
+  logits.tensor_data = pool.nn_alloc<float>(seq_len * m->cfg.vocab_size);
+  
+  level3::mat_ops_view view_x {
+    .row_view = seq_len,
+    .col_view = embed_dim,
+    .leading_dimension = embed_dim,
+    .data_view = x.tensor_data
+  };
+  
+  level3::mat_ops_view view_wte_T {
+    .row_view = embed_dim,
+    .col_view = m->cfg.vocab_size,
+    .leading_dimension = m->cfg.vocab_size, 
+    .data_view = wte_transposed.tensor_data
+  };
+  
+  level3::mat_ops_view view_logits {
+    .row_view = seq_len,
+    .col_view = m->cfg.vocab_size,
+    .leading_dimension = m->cfg.vocab_size,
+    .data_view = logits.tensor_data
+  };
+  
+  level3::blas::crush_gemm(
+    level3::transpose_gemm::no_transpose,
+    level3::transpose_gemm::no_transpose, 
+    view_x,
+    view_wte_T,
+    1.0f,
+    0.0f,
+    view_logits
+  );
+  
+  return logits;
 }
 
 int argmax(const tens::tensor& logits) {
-    size_t vocab_size = logits.shape.dims[1];
-    size_t seq_len = logits.shape.dims[0];
-    
-    float* last_row = logits.tensor_data + (seq_len - 1) * vocab_size;
-    
-    float top_vals[5] = {-1e30f, -1e30f, -1e30f, -1e30f, -1e30f};
-    int top_idxs[5] = {0, 0, 0, 0, 0};
-    
-    for (size_t i = 0; i < vocab_size; i++) {
-        float val = last_row[i];
-        for (int k = 0; k < 5; k++) {
-            if (val > top_vals[k]) {
-                for (int j = 4; j > k; j--) {
-                    top_vals[j] = top_vals[j-1];
-                    top_idxs[j] = top_idxs[j-1];  
-                }
-                top_vals[k] = val;
-                top_idxs[k] = i;
-                break;
-            }
-        }
-    }
-    
+  size_t vocab_size = logits.shape.dims[1];
+  size_t seq_len = logits.shape.dims[0];
+  
+  float* last_row = logits.tensor_data + (seq_len - 1) * vocab_size;
+  
+  float top_vals[5] = {-1e30f, -1e30f, -1e30f, -1e30f, -1e30f};
+  int top_idxs[5] = {0, 0, 0, 0, 0};
+  
+  for (size_t i = 0; i < vocab_size; i++) {
+    float val = last_row[i];
     for (int k = 0; k < 5; k++) {
-      std::printf("%d(%.2f) ", top_idxs[k], top_vals[k]);
+      if (val > top_vals[k]) {
+        for (int j = 4; j > k; j--) {
+          top_vals[j] = top_vals[j-1];
+          top_idxs[j] = top_idxs[j-1];  
+        }
+        top_vals[k] = val;
+        top_idxs[k] = i;
+        break;
+      }
     }
-    std::printf("\n");
-    
-    return top_idxs[0];
+  }
+  
+  for (int k = 0; k < 5; k++) {
+    std::printf("%d(%.2f) ", top_idxs[k], top_vals[k]);
+  }
+  std::printf("\n");
+  
+  return top_idxs[0];
 }
 
 void free_model(model* m) {
-
   for (size_t i = 0; i < m->cfg.num_layers; i++) {
     if (m->attentions[i]) {
       m->attentions[i]->~multi_head_attention();
@@ -611,10 +608,7 @@ int sample_top_k(float* logits, size_t vocab_size, int k) {
     pairs[i] = { (int)i, logits[i] };
   }
 
-  std::partial_sort(pairs.begin(), pairs.begin() + k, pairs.end(), 
-                    [](const auto& a, const auto& b) {
-                        return a.second > b.second; 
-                    });
+  std::partial_sort(pairs.begin(), pairs.begin() + k, pairs.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
 
   float max_logit = pairs[0].second;
   float sum_exp = 0.0f;
@@ -657,7 +651,7 @@ int sample_top_k_avx512(float* logits, size_t vocab_size, int k, float temperatu
       if (i < k - 1) {
         top_k[i + 1] = top_k[i];
       }
-      i--;
+    i--;
   }
     if (i + 1 < k) {
       top_k[i + 1] = { score, id };
@@ -709,18 +703,20 @@ for (int j = 0; j < k; j++) {
     sum_exp += probs[j];
   }
 
-    static std::mt19937 rng(std::random_device{}());
-    std::uniform_real_distribution<float> dist(0.0f, sum_exp);
-    float r = dist(rng);
-    
-    float cum_prob = 0.0f;
-    for (int j = 0; j < k; j++) {
-      cum_prob += probs[j];
-      if (r <= cum_prob) {
-        return top_k[j].id;
-      }
+  static std::mt19937 rng(std::random_device{}());
+  std::uniform_real_distribution<float> dist(0.0f, sum_exp);
+  float r = dist(rng);
+  
+  float cum_prob = 0.0f;
+  
+  for (int j = 0; j < k; j++) {
+    cum_prob += probs[j];
+    if (r <= cum_prob) {
+      return top_k[j].id;
     }
+  }
   return top_k[k-1].id;
-}
-}
+  }
+
+}//namespace
 

@@ -232,17 +232,6 @@ void atten::multi_head_attention::load_weights(float *w_q, float *w_k, float *w_
   std::memcpy(weights_data.b_output.tensor_data,  b_o, embedded_dim * sizeof(float));
 }
 
-void atten::multi_head_attention::load_weights(float *w_q, float *w_k, float *w_v, float *w_o){
-  size_t weights_size = embedded_dim * embedded_dim; 
-  
-  std::memcpy(weights_data.w_queries.tensor_data, w_q, weights_size * sizeof(float));
-  std::memcpy(weights_data.w_values.tensor_data , w_v, weights_size * sizeof(float));
-  std::memcpy(weights_data.w_keys.tensor_data   , w_k, weights_size * sizeof(float));
-  std::memcpy(weights_data.w_output.tensor_data , w_o, weights_size * sizeof(float));
-
-}
-
-
 tens::tensor atten::multi_head_attention::forward(tens::tensor &input_tensor, memory::neural_arena &alloc_pool) {
   size_t sequence_length = input_tensor.shape.dims[0]; 
   size_t embed_dim       = input_tensor.shape.dims[1]; 

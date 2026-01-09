@@ -268,12 +268,20 @@ void multi_head_attention_test(){
   float *wk_data = temp_arena.nn_alloc<float>(weight_size);
   float *wv_data = temp_arena.nn_alloc<float>(weight_size);
   float *wo_data = temp_arena.nn_alloc<float>(weight_size);
+  float *bq_data = temp_arena.nn_alloc<float>(weight_size); 
+  float *bk_data = temp_arena.nn_alloc<float>(weight_size);
+  float *bv_data = temp_arena.nn_alloc<float>(weight_size);
+  float *bo_data = temp_arena.nn_alloc<float>(weight_size);
 
   for(size_t i = 0; i < weight_size; ++i){
     wq_data[i] = dist(gen); 
     wk_data[i] = dist(gen); 
     wv_data[i] = dist(gen); 
-    wo_data[i] = dist(gen); 
+    wo_data[i] = dist(gen);
+    bq_data[i] = dist(gen); 
+    bk_data[i] = dist(gen); 
+    bv_data[i] = dist(gen); 
+    bo_data[i] = dist(gen); 
   }
 
   tens::tensor input_tensor; 
@@ -284,7 +292,7 @@ void multi_head_attention_test(){
   input_tensor.shape.strides[0] = embed_dim; 
   input_tensor.shape.strides[1] = 1;
 
-  attn.load_weights(wq_data, wk_data, wv_data, wo_data);
+  attn.load_weights(wq_data, wk_data, wv_data, wo_data, bq_data, bk_data, bv_data, bo_data);
 
   auto start = nanos();  
   auto output_tensor = attn.forward(input_tensor, temp_arena); 

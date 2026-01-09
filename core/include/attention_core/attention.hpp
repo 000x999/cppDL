@@ -61,7 +61,6 @@ public:
   multi_head_attention      (size_t       embedded_dim, size_t num_heads                  ); 
   void         init         (memory::neural_arena   &persistent_arena                     ); 
   void         load_weights (float *w_q,  float *w_k, float *w_v, float*w_o, float *b_q, float *b_k, float *b_v, float *b_o); 
-  void         load_weights (float *w_q,  float *w_k, float *w_v, float*w_o               );
   tens::tensor forward      (tens::tensor &input_tensor, memory::neural_arena &alloc_pool ); 
 };
 

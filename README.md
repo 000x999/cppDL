@@ -13,7 +13,7 @@ A high-performance deep learning inference library written in C++ from scratch w
 
 ### Some more important benchmarks can be found below in the **Benchmarks** section.
 
-*Run `multi_head_attention_test()`, `gemm_test()`, `gpt2_test()` or `attention_test` in the test bed to reproduce these benchmarks.!*
+*Run `multi_head_attention_test()`, `gemm_test()`, `gpt2_test()` or `attention_test()` in the test bed to reproduce these benchmarks!*
 
 ## Features
 

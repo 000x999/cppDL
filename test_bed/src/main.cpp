@@ -489,11 +489,6 @@ int main(int argc, char* argv[]) {
     }
 
   }
-
-  save_ppm("l_n_f_weights",model.ln_f_weight.tensor_data,model.ln_f_weight.shape.dims[0], model.ln_f_weight.shape.dims[1]);
-  save_ppm("wpe",model.wpe.tensor_data,model.wpe.shape.dims[0], model.wpe.shape.dims[1]);
-  save_ppm("wte",model.wte.tensor_data,model.wte.shape.dims[0], model.wte.shape.dims[1]);
-
   const double secs = (double)total_ns / 1e9;
   const double tok_s = (secs > 0.0) ? ((double)tokens_gen / secs) : 0.0;
   const double gflops = (secs > 0.0)

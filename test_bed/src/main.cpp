@@ -253,7 +253,7 @@ void multi_head_attention_test(){
   atten::multi_head_attention attn(embed_dim, num_heads);
 
   size_t weight_size = embed_dim * embed_dim;
-  size_t total_weights = weight_size * 4;    
+  size_t total_weights = weight_size * 8;    
   memory::neural_arena persistent_arena(total_weights * sizeof(float) + 4096); 
   attn.init(persistent_arena); 
 

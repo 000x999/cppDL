@@ -507,6 +507,7 @@ int main(int argc, char* argv[]) {
   gpt2::free_model(&model);
   return 0;
   */
+  attention_test(); 
   multi_head_attention_test(); 
   //gemm_test(4096);
   return 0; 

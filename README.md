@@ -6,7 +6,7 @@ A high-performance deep learning inference library written in C++ from scratch w
 
 | Benchmark | Configuration | Result |
 |-----------|---------------|--------|
-| GPT-2 Inference | no KV cache, 50 tokens | **35.43 tok/s** (PyTorch CPU: 19 tok/s, +86%) |
+| GPT-2 Inference | no KV cache, 50 tokens | **35.43 tok/s** + ~86% vs PyTorch CPU: 19 tok/s|
 | GEMM (FP32) | 4096x4096, 8192x8192, 16384x16384 | **825 GFLOP/s** sustained |
 | Multi-Head Attention | seq=512, embed=8192, heads=8 | **343 GFLOP/s** (413.0ms) |
 | Single-Head Attention | seq=512, embed=8192, heads=1 | **359 GFLOP/s** (394.9ms) |

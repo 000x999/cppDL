@@ -284,7 +284,7 @@ void multi_head_attention_test(){
   input_tensor.shape.strides[0] = embed_dim; 
   input_tensor.shape.strides[1] = 1;
 
-  //attn.load_weights(wq_data, wk_data, wv_data, wo_data);
+  attn.load_weights(wq_data, wk_data, wv_data, wo_data);
 
   auto start = nanos();  
   auto output_tensor = attn.forward(input_tensor, temp_arena); 
@@ -499,7 +499,7 @@ int main(int argc, char* argv[]) {
   gpt2::free_model(&model);
   return 0;
   */
-
-  gemm_test(4096);
+  multi_head_attention_test(); 
+  //gemm_test(4096);
   return 0; 
 }

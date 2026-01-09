@@ -28,7 +28,7 @@ A high-performance deep learning inference library written in C++ from scratch w
 - **Attention**: Single-head and Multi-head Attention with or without causal masking
 - **Models**: GPT-2 inference implementation
 
-### CRUSHBLAS Backend
+### [CRUSHBLAS Backend](https://github.com/000x999/CRUSHBLAS)
 - **Microkernel**: 6x16, 4x8 and register-blocked FMA kernel for AVX2/AVX-512
 - **Cache blocking**: 256x256x256 tiles optimized for L2/L3 cache hierarchy
 - **Matrix packing**: Contiguous memory layout for optimal cache line utilization

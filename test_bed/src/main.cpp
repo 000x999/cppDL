@@ -4,7 +4,7 @@
 #include "tensor_core/tensor.hpp"
 #include "attention_core/attention.hpp"
 #include "model_core/gpt2.hpp"
-#include "safetensor_core/safetensor_reader.h"
+#include "safetensor_core/safetensor_reader.hpp"
 #include <stdlib.h>
 #include <chrono>
 #include <fstream>

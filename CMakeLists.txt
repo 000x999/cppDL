@@ -10,15 +10,40 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-option(USE_AVX256  "Enable AVX2/FMA" ON)
-option(USE_AVX512  "Enable AVX-512" OFF)
-option(DEBUG_CPPDL "Enable DEBUG macro" OFF)
-option(USE_VULKAN  "Enable Vulkan support" OFF)
-option(USE_OPENGL  "Enable OpenGL support" OFF)
+
+option(USE_AVX256   "Enable AVX2/FMA support" ON)
+
+option(USE_AVX512   "Enable AVX-512 support" ON)
+
+option(DEBUG_CPPDL  "Enable DEBUG macro" OFF)
+option(USE_VULKAN   "Enable Vulkan support" OFF)
+option(USE_OPENGL   "Enable OpenGL support" OFF)
+
+option(USE_BLAS     "Placeholder for external BLAS support" OFF)
 
 find_package(OpenMP)
 
-set(CRUSHBLAS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/core/include/CRUSHBLAS_MODULE)
+
+set(CPPDL_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set(CPPDL_CORE_DIR ${CPPDL_ROOT}/core)
+set(CPPDL_INCLUDE_DIR ${CPPDL_CORE_DIR}/include)
+
+set(CRUSHBLAS_ROOT ${CPPDL_INCLUDE_DIR}/CRUSHBLAS_MODULE)
+
+
+file(GLOB_RECURSE CPPDL_IMPL_SOURCES CONFIGURE_DEPENDS
+  ${CPPDL_CORE_DIR}/impl/neural_core_impl/*.cpp
+  ${CPPDL_CORE_DIR}/impl/neural_memory_impl/*.cpp
+  ${CPPDL_CORE_DIR}/impl/tokenizer_core_impl/*.cpp
+  ${CPPDL_CORE_DIR}/impl/tensor_core_impl/*.cpp
+  ${CPPDL_CORE_DIR}/impl/attention_core_impl/*.cpp
+  ${CPPDL_CORE_DIR}/impl/model_core_impl/*.cpp
+  ${CPPDL_CORE_DIR}/impl/safetensor_core_impl/*.cpp
+)
+
+file(GLOB_RECURSE CPPDL_TEST_SOURCES CONFIGURE_DEPENDS
+  ${CPPDL_ROOT}/test_bed/src/*.cpp
+)
 
 file(GLOB_RECURSE CRUSHBLAS_SOURCES CONFIGURE_DEPENDS
   ${CRUSHBLAS_ROOT}/core/impl/*.cpp
@@ -26,19 +51,74 @@ file(GLOB_RECURSE CRUSHBLAS_SOURCES CONFIGURE_DEPENDS
   ${CRUSHBLAS_ROOT}/core/impl/*.cxx
 )
 
-file(GLOB_RECURSE CPPDL_IMPL_SOURCES CONFIGURE_DEPENDS
-  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/neural_core_impl/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/neural_memory_impl/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/tokenizer_core_impl/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/tensor_core_impl/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/attention_core_impl/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/model_core_impl/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/core/impl/safetensor_core_impl/*.cpp
-)
 
-file(GLOB_RECURSE CPPDL_TEST_SOURCES CONFIGURE_DEPENDS
-  ${CMAKE_CURRENT_SOURCE_DIR}/test_bed/src/*.cpp
-)
+function(cppdl_apply_common_flags target_name)
+
+  target_compile_definitions(${target_name} PUBLIC
+    $<$<BOOL:${USE_AVX256}>:USE_AVX256>
+    $<$<BOOL:${USE_AVX512}>:USE_AVX512>
+    $<$<BOOL:${USE_VULKAN}>:USE_VULKAN>
+    $<$<BOOL:${USE_OPENGL}>:USE_OPENGL>
+    $<$<BOOL:${DEBUG_CPPDL}>:DEBUG>
+  )
+
+  if(MSVC)
+
+    target_compile_options(${target_name} PRIVATE
+      /W4
+    )
+
+    if(USE_AVX256)
+      target_compile_options(${target_name} PRIVATE
+        /arch:AVX2
+      )
+    endif()
+
+  else()
+
+    target_compile_options(${target_name} PRIVATE
+      -Wall
+      -Wextra
+      -Wpedantic
+      -O3
+      -march=native
+    )
+
+    if(USE_AVX256)
+      target_compile_options(${target_name} PRIVATE
+        -mavx
+        -mavx2
+        -mfma
+      )
+    endif()
+
+    if(USE_AVX512)
+      target_compile_options(${target_name} PRIVATE
+        -mavx512f
+        -mavx512vl
+        -mavx512bw
+        -mavx512dq
+        -mavx512cd
+        -mavx512vbmi
+        -mavx512vbmi2
+        -mavx512vnni
+        -mavx512bitalg
+        -mavx512vpopcntdq
+        -mavx512ifma
+        -mavx512bf16
+      )
+    endif()
+
+  endif()
+
+  if(OpenMP_CXX_FOUND)
+    target_link_libraries(${target_name} PUBLIC
+      OpenMP::OpenMP_CXX
+    )
+  endif()
+
+endfunction()
+
 
 add_library(crushblas_core STATIC
   ${CRUSHBLAS_SOURCES}
@@ -47,63 +127,33 @@ add_library(crushblas_core STATIC
 target_include_directories(crushblas_core PUBLIC
   ${CRUSHBLAS_ROOT}/core
   ${CRUSHBLAS_ROOT}/core/include
+  ${CRUSHBLAS_ROOT}/core/impl
   ${CRUSHBLAS_ROOT}/core/BLAS
 )
 
+cppdl_apply_common_flags(crushblas_core)
+
 add_library(crushblas::crushblas ALIAS crushblas_core)
+
 
 add_library(cppdl_core STATIC
   ${CPPDL_IMPL_SOURCES}
 )
 
 target_include_directories(cppdl_core PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/core
-  ${CMAKE_CURRENT_SOURCE_DIR}/core/include
+  ${CPPDL_ROOT}
+  ${CPPDL_CORE_DIR}
+  ${CPPDL_INCLUDE_DIR}
 )
 
 target_link_libraries(cppdl_core PUBLIC
   crushblas::crushblas
 )
 
+cppdl_apply_common_flags(cppdl_core)
+
 add_library(cppdl::cppdl ALIAS cppdl_core)
 
-foreach(target crushblas_core cppdl_core)
-  target_compile_definitions(${target} PUBLIC
-    USE_AVX256=$<BOOL:${USE_AVX256}>
-    USE_VULKAN=$<BOOL:${USE_VULKAN}>
-    USE_OPENGL=$<BOOL:${USE_OPENGL}>
-    $<$<BOOL:${DEBUG_CPPDL}>:DEBUG>
-  )
-
-  if(MSVC)
-    target_compile_options(${target} PRIVATE /W4 /O2)
-    if(USE_AVX256)
-      target_compile_options(${target} PRIVATE /arch:AVX2)
-    endif()
-  else()
-    target_compile_options(${target} PRIVATE
-      -Wall -Wextra -Wpedantic
-      -O3 -march=native
-    )
-
-    if(USE_AVX256)
-      target_compile_options(${target} PRIVATE
-        -mavx2 -mfma -mavx
-      )
-    endif()
-
-    if(USE_AVX512)
-      target_compile_options(${target} PRIVATE
-        -mavx512f -mavx512vl -mavx512bw -mavx512dq
-      )
-    endif()
-  endif()
-
-  if(OpenMP_CXX_FOUND)
-    target_link_libraries(${target} PUBLIC OpenMP::OpenMP_CXX)
-  endif()
-endforeach()
 
 add_executable(cppDL
   ${CPPDL_TEST_SOURCES}
@@ -113,11 +163,14 @@ target_link_libraries(cppDL PRIVATE
   cppdl::cppdl
 )
 
+cppdl_apply_common_flags(cppDL)
+
+
 if(WIN32)
   add_custom_target(run
-    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/run.bat"
+    COMMAND "${CPPDL_ROOT}/run.bat"
     DEPENDS cppDL
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    WORKING_DIRECTORY "${CPPDL_ROOT}"
     COMMENT "Building and running cppDL via run.bat"
   )
 endif()

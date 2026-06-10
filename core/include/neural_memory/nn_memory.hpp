@@ -14,13 +14,13 @@ private:
   size_t                  nn_capacity;
   std::unique_ptr<char[]> nn_buffer;
 
-  size_t align_forward( size_t ptr_address );
+  size_t align_forward   ( size_t ptr_address   );
   
 public:
-  explicit neural_arena( size_t nn_arena_size );
+  explicit neural_arena  ( size_t nn_arena_size );
 
-  neural_arena           ( const neural_arena& )  = delete;
-  neural_arena operator= ( const neural_arena& )  = delete;
+  neural_arena           ( const neural_arena&  )  = delete;
+  neural_arena operator= ( const neural_arena&  )  = delete;
 
   template<typename T> 
   T*     nn_alloc     ( size_t nn_alloc_size ){

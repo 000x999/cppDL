@@ -400,7 +400,7 @@ int main(int argc, char* argv[]) {
   const char* vocab_path = "vocab.json";
   const char* merges_path = "merges.txt";
 
-  std::string prompt; 
+  std::string prompt = "Hello, my name is";
   if (argc > 1) {
     prompt = argv[1];
   }
@@ -450,8 +450,8 @@ int main(int argc, char* argv[]) {
   std::fflush(stdout);
 
   const int max_new_tokens = 50;
-  uint64_t total_ns        = 0;
-  int tokens_gen           = 0;
+  uint64_t total_ns = 0;
+  int tokens_gen = 0;
 
   for (int step = 0; step < max_new_tokens; step++) {
     tens::tensor input;

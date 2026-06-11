@@ -396,6 +396,7 @@ void gemm_test(float A){
 }
 
 int main(int argc, char* argv[]) {
+ /*
   const char* model_path = "model.safetensors";
   const char* vocab_path = "vocab.json";
   const char* merges_path = "merges.txt";
@@ -499,10 +500,11 @@ int main(int argc, char* argv[]) {
 
   std::free(sequence);
   gpt2::free_model(&model);
-
+  */
   gemm_test(1024);
   gemm_test(2048); 
   gemm_test(4096); 
+  gemm_test(8192); 
   gemm_test(16384); 
   return 0;
 }

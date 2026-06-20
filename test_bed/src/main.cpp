@@ -452,7 +452,6 @@ void int8_gemm_test(float A){
 
 
 int main(int argc, char* argv[]) {
- /*
   const char* model_path = "model.safetensors";
   const char* vocab_path = "vocab.json";
   const char* merges_path = "merges.txt";
@@ -556,7 +555,8 @@ int main(int argc, char* argv[]) {
 
   std::free(sequence);
   gpt2::free_model(&model);
-  */
-  int8_gemm_test(1024);
+<<<<<<< HEAD
+=======
+>>>>>>> 5855d4315dd7f4c340b02493c1cebac126112918
   return 0;
 }

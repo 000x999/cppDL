@@ -395,6 +395,62 @@ void gemm_test(float A){
             << "s, GFLOP/S = " << optGflops << "\n";
 }
 
+void int8_gemm_test(float A){
+  std::cout << "=== AVX512 INT8 GEMM TEST ===" <<'\n'; 
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<float> dist(-1.0f, 1.0f); 
+  memory::neural_arena temp_arena(3 * (A * A) * sizeof(float) + 4096);
+
+  int8_t *data_ptr_a = temp_arena.nn_alloc<int8_t>(A * A); 
+  int8_t *data_ptr_b = temp_arena.nn_alloc<int8_t>(A * A);
+  int8_t *data_ptr_c = temp_arena.nn_alloc<int8_t>(A * A);
+
+  for(size_t i = 0; i < A * A; ++i){
+    data_ptr_a[i] = dist(gen);
+    data_ptr_b[i] = dist(gen); 
+  }
+
+  level3::mat_ops_view_int8 mat_a {
+    .row_view = (size_t)A, 
+    .col_view = (size_t)A, 
+    .leading_dimension = (size_t)A,
+    .data_view = data_ptr_a
+  };
+  
+  level3::mat_ops_view_int8 mat_b {
+    .row_view = (size_t)A, 
+    .col_view = (size_t)A, 
+    .leading_dimension = (size_t)A,
+    .data_view = data_ptr_b
+  };
+
+  level3::mat_ops_view_int8 C {
+    .row_view = (size_t)A, 
+    .col_view = (size_t)A, 
+    .leading_dimension = (size_t)A, 
+    .data_view = data_ptr_c 
+  };
+
+  double totalOps = 2.0 * double(A) * double(A) * double(A);
+  double gflopFactor = 1.0e-9;
+  std::cout<< totalOps * 1e-9 << " GFLOP" << std::endl; 
+
+  level3::blas::crush_gemm_int8(level3::transpose_gemm::no_transpose,level3::transpose_gemm::no_transpose, mat_a, mat_b, 1.0f, 0.0f, C);
+  
+  auto start = nanos(); 
+  level3::blas::crush_gemm_int8(level3::transpose_gemm::no_transpose,level3::transpose_gemm::no_transpose, mat_a, mat_b, 1.0f, 0.0f, C);
+  auto end = nanos();
+  
+  double optTime = (end - start) * 1e-9;
+  double optGflops = (totalOps * gflopFactor) / optTime;
+  std::cout << "AVX512 MatMul: " << optTime
+            << "s, GFLOP/S = " << optGflops << "\n";
+}
+
+
+
+
 int main(int argc, char* argv[]) {
  /*
   const char* model_path = "model.safetensors";
@@ -501,10 +557,6 @@ int main(int argc, char* argv[]) {
   std::free(sequence);
   gpt2::free_model(&model);
   */
-  gemm_test(1024);
-  gemm_test(2048); 
-  gemm_test(4096); 
-  gemm_test(8192); 
-  gemm_test(16384); 
+  int8_gemm_test(1024);
   return 0;
 }
